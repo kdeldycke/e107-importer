@@ -3,8 +3,8 @@
 +---------------------------------------------------------------+
 |   Wordpress filter to import e107 website.
 |
-|   Version: 0.1
-|   Date: 22 aug 2006
+|   Version: 0.2
+|   Date: 3 sep 2006
 |
 |   (c) Kevin Deldycke 2006
 |   http://kev.coolcavemen.com
@@ -20,15 +20,18 @@ class e107_Import {
 
   var $file;
 
+
   function header() {
     echo '<div class="wrap">';
     echo '<h2>'.__('Import e107').'</h2>';
     echo '<p>'.__('Steps may take a few minutes depending on the size of your database. Please be patient.').'</p>';
   }
 
+
   function footer() {
     echo '</div>';
   }
+
 
   function greet() {
     echo '<p>'.__('Hi! This importer allows you to extract news from e107 MySQL Database and import them as posts into your blog.').'</p>';
@@ -55,11 +58,13 @@ class e107_Import {
     echo '</form>';
   }
 
+
   // Convert unix timestamp to mysql datetimestamp
   function mysql_date($unix_time)
   {
     return date("Y-m-d H:i:s", $unix_time);
   }
+
 
   // Step 1 : get e107 news and save them as Wordpress posts
   function e107news2posts()
@@ -88,116 +93,32 @@ class e107_Import {
 
       // $news_category should be set as tag
 
-      $ret_id = wp_insert_post(array('post_author'     => $news_author     //OK! users must be imported first then the user id mapping should be used
-                                    , 'post_date'      => $this->mysql_date($news_datestamp)  //OK! convert date to iso timestamp
-                                    , 'post_date_gmt'  => $this->mysql_date($news_datestamp)  //OK! ask or get the time offset
-                                    , 'post_content'   => $news_body       //OK! translate bb tag to html tags
-                                    , 'post_title'     => $news_title      //OK!
-                                    , 'post_excerpt'   => $news_extended   //OK! add a global option in the importer to ignore this
-                                    , 'post_status'    => 'publish'    //OK! news are always published in e107
-                                    , 'comment_status' => $news_allow_comments //OK! get global config: it override this value
-                                    , 'ping_status'    => 'open'
-                                    //, 'post_modified'  => // Auto or now ?
-                                    //, 'post_modified_gmt'  => // Auto or now ?
-                                    , 'comment_count'  => $news_comment_total
-                                   ));
+      // Create a new bb code parser only once
+      require_once(e_HANDLER.'bbcode_handler.php');
+      if (!is_object($this->e_bb)) {
+        $this->e_bb = new e_bbcode;
+      }
+
+      $ret_id = wp_insert_post(array(
+          'post_author'    => $news_author     //OK! users must be imported first then the user id mapping should be used
+        , 'post_date'      => $this->mysql_date($news_datestamp)  //OK! convert date to iso timestamp
+        , 'post_date_gmt'  => $this->mysql_date($news_datestamp)  //OK! ask or get the time offset
+        , 'post_content'   => $this->e_bb->parseBBCodes($news_body, $news_id) //OK! translate bb tag to html tags
+        , 'post_title'     => $news_title      //OK!
+        , 'post_excerpt'   => $news_extended   //OK! add a global option in the importer to ignore this
+        , 'post_status'    => 'publish'    //OK! news are always published in e107
+        , 'comment_status' => $news_allow_comments //OK! get global config: it override this value
+        , 'ping_status'    => 'open'
+        //, 'post_modified'  => // Auto or now ?
+        //, 'post_modified_gmt'  => // Auto or now ?
+        , 'comment_count'  => $news_comment_total
+        ));
       // Update post mapping
       $e107news2wpposts[$news_id] = $ret_id;
     }
 
   }
 
-  ///////////// START OF non-KEfVIN CODE /////////////
-  function news2posts($posts='')
-  {
-    // General Housekeeping
-    global $wpdb;
-    $count = 0;
-    $dcposts2wpposts = array();
-    $cats = array();
-
-    // Do the Magic
-    if(is_array($posts))
-    {
-      echo '<p>'.__('Importing Posts...').'<br /><br /></p>';
-      foreach($posts as $post)
-      {
-        $count++;
-        extract($post);
-
-        // Set Dotclear-to-WordPress status translation
-        $stattrans = array(0 => 'draft', 1 => 'publish');
-        $comment_status_map = array (0 => 'closed', 1 => 'open');
-
-        //Can we do this more efficiently?
-        $uinfo = ( get_userdatabylogin( $user_id ) ) ? get_userdatabylogin( $user_id ) : 1;
-        $authorid = ( is_object( $uinfo ) ) ? $uinfo->ID : $uinfo ;
-
-        $Title = $wpdb->escape(csc ($post_titre));
-        $post_content = textconv ($post_content);
-        if ($post_chapo != "") {
-          $post_excerpt = textconv ($post_chapo);
-          $post_content = $post_excerpt ."\n<!--more-->\n".$post_content;
-        }
-        $post_excerpt = $wpdb->escape ($post_excerpt);
-        $post_content = $wpdb->escape ($post_content);
-        $post_status = $stattrans[$post_pub];
-
-        // Import Post data into WordPress
-
-        if($pinfo = post_exists($Title,$post_content))
-        {
-          $ret_id = wp_insert_post(array(
-              'ID'      => $pinfo,
-              'post_author'   => $authorid,
-              'post_date'   => $post_dt,
-              'post_date_gmt'   => $post_dt,
-              'post_modified'   => $post_upddt,
-              'post_modified_gmt' => $post_upddt,
-              'post_title'    => $Title,
-              'post_content'    => $post_content,
-              'post_excerpt'    => $post_excerpt,
-              'post_status'   => $post_status,
-              'post_name'   => $post_titre_url,
-              'comment_status'  => $comment_status_map[$post_open_comment],
-              'ping_status'   => $comment_status_map[$post_open_tb],
-              'comment_count'   => $post_nb_comment + $post_nb_trackback)
-              );
-        }
-        else
-        {
-          $ret_id = wp_insert_post(array(
-              'post_author'   => $authorid,
-              'post_date'   => $post_dt,
-              'post_date_gmt'   => $post_dt,
-              'post_modified'   => $post_modified_gmt,
-              'post_modified_gmt' => $post_modified_gmt,
-              'post_title'    => $Title,
-              'post_content'    => $post_content,
-              'post_excerpt'    => $post_excerpt,
-              'post_status'   => $post_status,
-              'post_name'   => $post_titre_url,
-              'comment_status'  => $comment_status_map[$post_open_comment],
-              'ping_status'   => $comment_status_map[$post_open_tb],
-              'comment_count'   => $post_nb_comment + $post_nb_trackback)
-              );
-        }
-        $dcposts2wpposts[$post_id] = $ret_id;
-
-        // Make Post-to-Category associations
-        $cats = array();
-        if($cat1 = get_catbynicename($post_cat_name)) { $cats[1] = $cat1; }
-
-        if(!empty($cats)) { wp_set_post_cats('', $ret_id, $cats); }
-      }
-    }
-    // Store ID translation for later use
-    add_option('dcposts2wpposts',$dcposts2wpposts);
-
-    echo '<p>'.sprintf(__('Done! <strong>%1$s</strong> posts imported.'), $count).'<br /><br /></p>';
-    return true;
-  }
-  ///////////// END OF non-KEVIN CODE /////////////
 
   function import_posts()
   {
@@ -208,6 +129,7 @@ class e107_Import {
     printf('<input type="submit" name="submit" value="%s" />', __('Next Import Step !!!!!'));
     echo '</form>';
   }
+
 
   function dispatch()
   {
@@ -273,7 +195,83 @@ class e107_Import {
   }
 }
 
-$e107_import = new e107_Import();
 
+
+$e107_import = new e107_Import();
 register_importer('e107', 'e107', __('Import news as posts from e107'), array ($e107_import, 'dispatch'));
+
+
+
+//////////////////////////////////////////////////////////////////////
+// The code below is inspired by code from the e107 project, licensed
+// under the GPL and (c) copyrighted to Steve Dunstan (see copyright
+// headers).
+//////////////////////////////////////////////////////////////////////
+
+
+
+////////////////// Start of code inspired by e107_handlers/e107_class.php file //////////////////
+/*
++ ----------------------------------------------------------------------------+
+|     e107 website system
+|
+|     (c) Steve Dunstan 2001-2002
+|     http://e107.org
+|     jalist@e107.org
+|
+|     Released under the terms and conditions of the
+|     GNU General Public License (http://gnu.org).
+|
+|     $Source: /cvsroot/e107/e107_0.7/e107_handlers/e107_class.php,v $
+|     $Revision: 1.51 $
+|     $Date: 2006/04/05 12:03:04 $
+|     $Author: mcfly_e107 $
++----------------------------------------------------------------------------+
+*/
+
+$path = "";
+$i = 0;
+while (!file_exists("{$path}wp-config.php")) {
+  $path .= "../";
+  $i++;
+}
+
+// Redifine som globals to match wordpress importer file hierarchy
+define("e_BASE", $path);
+define("e_FILE", e_BASE.'wp-admin/import/');
+define("e_HANDLER", e_BASE.'wp-admin/import/bbcode/');
+
+/////////////////// END of code inspired by e107_handlers/e107_class.php file ///////////////////
+
+
+
+////////////////// START of code inspired by class2.php file //////////////////
+/*
++ ----------------------------------------------------------------------------+
+|     e107 website system
+|
+|     (c) Steve Dunstan 2001-2002
+|     http://e107.org
+|     jalist@e107.org
+|
+|     Released under the terms and conditions of the
+|     GNU General Public License (http://gnu.org).
+|
+|     $Source: /cvsroot/e107/e107_0.7/class2.php,v $
+|     $Revision: 1.277 $
+|     $Date: 2006/04/30 23:48:39 $
+|     $Author: mcfly_e107 $
++----------------------------------------------------------------------------+
+*/
+
+define("e107_INIT", TRUE);
+
+require_once(e_HANDLER.'e_parse_class.php');
+$tp = new e_parse;
+
+define("THEME", "");
+define("E107_DEBUG_LEVEL", FALSE);
+
+/////////////////// END of code inspired by class2.php file ///////////////////
+
 ?>
