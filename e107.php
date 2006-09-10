@@ -1,10 +1,14 @@
-<?php
+ <?php
 /*
 +---------------------------------------------------------------+
 |   Wordpress filter to import e107 website.
 |
-|   Version: 0.2
-|   Date: 3 sep 2006
+|   Version: 0.3
+|   Date: 10 sep 2006
+|
+|   For todo-list and changelog:
+|     * http://kev.coolcavemen.com/2006/09/e107-to-wordpress-importer-v02-with-bbcode-support/
+|     * http://kev.coolcavemen.com/2006/08/e107-to-wordpress-importer-alpha-version/
 |
 |   (c) Kevin Deldycke 2006
 |   http://kev.coolcavemen.com
@@ -33,8 +37,179 @@ class e107_Import {
   }
 
 
+  // Convert unix timestamp to mysql datetimestamp
+  function mysql_date($unix_time)
+  {
+    return date("Y-m-d H:i:s", $unix_time);
+  }
+
+
+  // Step 1: import e107 users
+  // TODO: support subtile role migration (see: http://codex.wordpress.org/Roles_and_Capabilities )
+  function importUsers()
+  {
+    // General Housekeeping
+    // TODO: reuse this code (create a method or something a little bit more generic)
+    $e107db = new wpdb( get_option('e107_db_user')
+                      , get_option('e107_db_pass')
+                      , get_option('e107_db_name')
+                      , get_option('e107_db_host')
+                      );
+    set_magic_quotes_runtime(0);
+    $prefix = get_option('e107_db_prefix');
+
+    // Prepare the SQL request
+    $e107_userTable         = $prefix."user";
+    $e107_userExtendedTable = $prefix."user_extended";
+    $sql  = "SELECT * FROM `".$e107_userTable."`, `".$e107_userExtendedTable."` ";
+    $sql .= "WHERE ".$e107_userTable.".user_id = ".$e107_userExtendedTable.".user_extended_id";
+
+    // Get user list
+    $user_list = $e107db->get_results($sql, ARRAY_A);
+
+    // This array contain the mapping between old e107 users and new wordpress users
+    $user_mapping = array();
+
+    // Convert news to post
+    echo '<p>'.__('Importing e107 users...').'<br/><br/></p>';
+    foreach($user_list as $user)
+    {
+      $count++;
+      extract($user);
+
+      // Add a user
+      if (! username_exists($user_loginname) ) {
+        // New password is required because we are not able to decrypt e107 password
+        $new_password = substr(md5(uniqid(microtime())), 0, 6);
+
+        // $user_image // XXX how to handle this ? export to gravatar ???
+
+        // Build up the description based on signature, location and birthday.
+        $desc = '';
+        if (!empty($user_signature))
+          $desc .= $user_signature.".\n";
+        if (!empty($user_location))
+          $desc .= __("Location: ").$user_location.".\n";
+        if (!empty($user_birthday) && $user_birthday != '0000-00-00')
+          $desc .= __("Birthday: ").$user_birthday.".\n";
+
+        // Decode strings from UTF-8
+        $user_customtitle = utf8_decode($user_customtitle);
+        $user_name        = utf8_decode($user_name);
+
+        // Get the best nickname
+        $nickname = utf8_decode($user_loginname);
+        if (!empty($user_customtitle)) {
+          $nickname = $user_customtitle;
+        } elseif (!empty($user_name)) {
+          $nickname = $user_name;
+        }
+
+        $ret_id = wp_insert_user(array(
+              'user_login'      => $e107db->escape(utf8_decode($user_loginname))
+            , 'first_name'      => $user_name
+            , 'nickname'        => $nickname
+            , 'user_pass'       => $new_password
+            , 'user_email'      => $e107db->escape($user_email)
+            , 'user_registered' => $this->mysql_date($user_join)
+            , 'user_url'        => $user_homepage
+            , 'aim'             => $user_aim
+            , 'yim'             => $user_msn  // Put MSN contact here because MSN and Yahoo! have merged some months ago: http://slashdot.org/articles/05/10/12/0227207.shtml
+            , 'description'     => utf8_decode($desc)
+            ));
+
+          // Send mail notification to users to warn them of a new password (and new login because of UTF-8)
+          // TODO: This should be optionnal
+          // wp_new_user_notification($ret_id, $new_password)
+      }
+
+      // Update user mapping
+      $user_mapping[$user_id] = $ret_id;
+    }
+
+    // Return user mapping to let us pass it as global variable via options
+    return $user_mapping;
+  }
+
+
+  // Step 2: get e107 news and save them as Wordpress posts
+  function e107news2posts()
+  {
+    // General Housekeeping
+    $e107db = new wpdb( get_option('e107_db_user')
+                      , get_option('e107_db_pass')
+                      , get_option('e107_db_name')
+                      , get_option('e107_db_host')
+                      );
+    set_magic_quotes_runtime(0);
+    $prefix = get_option('e107_db_prefix');
+    $user_mapping = get_option('e107_user_mapping');
+
+    // Prepare the SQL request
+    $e107_newsTable  = $prefix."news";
+    $sql  = "SELECT * FROM `".$e107_newsTable."`";
+
+    // Get News list
+    $news_list = $e107db->get_results($sql, ARRAY_A);
+
+    // This array contain the mapping between old e107 news and newly inserted wordpress posts
+    $news_mapping = array();
+
+    // Convert news to post
+    echo '<p>'.__('Importing e107 news as Wordpress posts...').'<br/><br/></p>';
+    foreach($news_list as $news)
+    {
+      $count++;
+      extract($news);
+
+      //TODO: $news_category should be set as tag
+
+      // Create a new bb code parser only once
+      require_once(e_HANDLER.'bbcode_handler.php');
+      if (!is_object($this->e_bb)) {
+        $this->e_bb = new e_bbcode;
+      }
+
+      // Update author role if necessary;
+      // If the user has the minimum role (aka subscriber) he is not able to post
+      //   news. In this case, we raise is role by 1 level (aka contributor).
+      $author_id = $user_mapping[$news_author];
+      $author = new WP_User($author_id);
+      if (! $author->has_cap('edit_posts'))
+      {
+        $author->set_role('contributor');
+      }
+
+      // Save e107 news in Wordpress database
+      $ret_id = wp_insert_post(array(
+          'post_author'    => $author_id     // use the new wordpress user ID
+        , 'post_date'      => $this->mysql_date($news_datestamp)  //XXX ask or get the time offset ?
+        , 'post_date_gmt'  => $this->mysql_date($news_datestamp)  //XXX ask or get the time offset ?
+        , 'post_content'   => $this->e_bb->parseBBCodes($news_body, $news_id)
+        , 'post_title'     => $news_title      //XXX bbcode allowed in titles ?
+        , 'post_excerpt'   => $news_extended   //TODO: add a global option in the importer to ignore this
+        , 'post_status'    => 'publish'        // News are always published in e107
+        , 'comment_status' => $news_allow_comments //TODO: get global config to set this value dynamiccaly
+        , 'ping_status'    => 'open'               //XXX is there such a concept in e107 ?
+        //, 'post_modified'  =>     //XXX Auto or now() ?
+        //, 'post_modified_gmt'  => //XXX Auto or now() ?
+        , 'comment_count'  => $news_comment_total
+        ));
+      // Update post mapping
+      $news_mapping[$news_id] = $ret_id;
+    }
+
+    // Return news mapping to let us pass it as global variable via options
+    return $news_mapping;
+  }
+
+
+  // Step 0 screen
   function greet() {
-    echo '<p>'.__('Hi! This importer allows you to extract news from e107 MySQL Database and import them as posts into your blog.').'</p>';
+    echo '<p>'.__('Hi! This importer allows you to extract news and users from e107 MySQL Database and import them into your Wordpress blog.').'</p>';
+    // TODO: support all kind of charset
+    echo '<p>'.__('WARNING: This plugin assume that your e107 site is fully encoded in UTF-8.').'</p>';
+    echo '<p>'.__('This plugin was tested with e107 v0.7.5 and Wordpress v2.0.4.').'</p>';
     echo '<p>'.__('Your e107 Configuration settings are as follows:').'</p>';
     echo '<form action="admin.php?import=e107&amp;step=1" method="post">';
     echo '<ul>';
@@ -54,86 +229,60 @@ class e107_Import {
           , __('e107 Table prefix:')
           );
     echo '</ul>';
-    echo '<input type="submit" name="submit" value="'.__('Import e107 News').'" />';
+    echo '<p>'.__("Click on the 'Next Step' button to import users.").'</p>';
+    printf('<p>'.__("All users will be imported in the Wordpress database with the '%s' role. If you want to change this, change default role from the 'Options' > 'General' panel of the admin area.").'</p>'
+          , __(get_settings('default_role'))
+          );
+    echo '<p>'.__("WARNING ! Wordpress don't like UTF-8 char (like é, è, à, etc) in login. So, when the user will be added, all non-ascii chars will be deleted from the login string.").'</p>';
+    echo '<input type="submit" name="submit" value="'.__('Next Step: Import e107 Users').'" />';
     echo '</form>';
   }
 
 
-  // Convert unix timestamp to mysql datetimestamp
-  function mysql_date($unix_time)
+  // Step 1 screen
+  function import_users()
   {
-    return date("Y-m-d H:i:s", $unix_time);
+    // Import e107 users
+    $user_mapping = $this->importUsers();
+    add_option('e107_user_mapping', $user_mapping);
+
+    echo '<p>'.__('Database connexion successful !').'</p>';
+    echo '<p>'.__('All e107 users were imported !').'</p>';
+    echo '<p>'.__('The next step consist of importing all e107 news as Wordpress posts.').'</p>';
+    echo '<form action="admin.php?import=e107&amp;step=2" method="post">';
+    printf('<input type="submit" name="submit" value="%s" />', __('Next Step: Import e107 news'));
+    echo '</form>';
   }
 
 
-  // Step 1 : get e107 news and save them as Wordpress posts
-  function e107news2posts()
-  {
-    // General Housekeeping
-    $e107db = new wpdb(get_option('e107user'), get_option('e107pass'), get_option('e107name'), get_option('e107host'));
-    set_magic_quotes_runtime(0);
-    $prefix = get_option('e107dbprefix');
-
-    // Prepare the SQL request
-    $e107_newsTable  = $prefix."news";
-    $sql  = "SELECT * FROM `".$e107_newsTable."`";
-
-    // Get News list
-    $news_list = $e107db->get_results($sql, ARRAY_A);
-
-    // This array contain the mapping between old e107 news and newly inserted wordpress posts
-    $e107news2wpposts = array();
-
-    // Convert news to post
-    echo '<p>'.__('Importing e107 news as Wordpress posts...').'<br/><br/></p>';
-    foreach($news_list as $news)
-    {
-      $count++;
-      extract($news);
-
-      // $news_category should be set as tag
-
-      // Create a new bb code parser only once
-      require_once(e_HANDLER.'bbcode_handler.php');
-      if (!is_object($this->e_bb)) {
-        $this->e_bb = new e_bbcode;
-      }
-
-      $ret_id = wp_insert_post(array(
-          'post_author'    => $news_author     //OK! users must be imported first then the user id mapping should be used
-        , 'post_date'      => $this->mysql_date($news_datestamp)  //OK! convert date to iso timestamp
-        , 'post_date_gmt'  => $this->mysql_date($news_datestamp)  //OK! ask or get the time offset
-        , 'post_content'   => $this->e_bb->parseBBCodes($news_body, $news_id) //OK! translate bb tag to html tags
-        , 'post_title'     => $news_title      //OK!
-        , 'post_excerpt'   => $news_extended   //OK! add a global option in the importer to ignore this
-        , 'post_status'    => 'publish'    //OK! news are always published in e107
-        , 'comment_status' => $news_allow_comments //OK! get global config: it override this value
-        , 'ping_status'    => 'open'
-        //, 'post_modified'  => // Auto or now ?
-        //, 'post_modified_gmt'  => // Auto or now ?
-        , 'comment_count'  => $news_comment_total
-        ));
-      // Update post mapping
-      $e107news2wpposts[$news_id] = $ret_id;
-    }
-
-  }
-
-
+  // Step 2 screen
   function import_posts()
   {
     // Import e107 news as posts
-    $this->e107news2posts();
+    $news_mapping = $this->e107news2posts();
+    add_option('e107_news_mapping', $news_mapping);
 
-    echo '<form action="admin.php?import=e107&amp;step=2" method="post">';
+    echo '<p>'.__('All e107 news imported !').'</p>';
+    echo '<form action="admin.php?import=e107&amp;step=3" method="post">';
     printf('<input type="submit" name="submit" value="%s" />', __('Next Import Step !!!!!'));
     echo '</form>';
   }
 
 
+  function cleanup_e107import()
+  {
+    delete_option('e107_db_user');
+    delete_option('e107_db_pass');
+    delete_option('e107_db_name');
+    delete_option('e107_db_host');
+    delete_option('e107_db_prefix');
+    delete_option('e107_user_mapping');
+    delete_option('e107_news_mapping');
+  }
+
+
   function dispatch()
   {
-
     if (empty ($_GET['step']))
       $step = 0;
     else
@@ -144,38 +293,37 @@ class e107_Import {
     {
       if($_POST['dbuser'])
       {
-        if(get_option('e107user'))
-          delete_option('e107user');
-        add_option('e107user',$_POST['dbuser']);
+        if(get_option('e107_db_user'))
+          delete_option('e107_db_user');
+        add_option('e107_db_user', $_POST['dbuser']);
       }
       if($_POST['dbpass'])
       {
-        if(get_option('e107pass'))
-          delete_option('e107pass');
-        add_option('e107pass',$_POST['dbpass']);
+        if(get_option('e107_db_pass'))
+          delete_option('e107_db_pass');
+        add_option('e107_db_pass', $_POST['dbpass']);
       }
-
       if($_POST['dbname'])
       {
-        if(get_option('e107name'))
-          delete_option('e107name');
-        add_option('e107name',$_POST['dbname']);
+        if(get_option('e107_db_name'))
+          delete_option('e107_db_name');
+        add_option('e107_db_name', $_POST['dbname']);
       }
       if($_POST['dbhost'])
       {
-        if(get_option('e107host'))
-          delete_option('e107host');
-        add_option('e107host',$_POST['dbhost']);
+        if(get_option('e107_db_host'))
+          delete_option('e107_db_host');
+        add_option('e107_db_host', $_POST['dbhost']);
       }
       if($_POST['dbprefix'])
       {
-        if(get_option('e107dbprefix'))
-          delete_option('e107dbprefix');
-        add_option('e107dbprefix',$_POST['dbprefix']);
+        if(get_option('e107_db_prefix'))
+          delete_option('e107_db_prefix');
+        add_option('e107_db_prefix', $_POST['dbprefix']);
       }
-
     }
 
+    // TODO: split user import step and database connexion step to make things easier to understand
     switch ($step)
     {
       default:
@@ -183,7 +331,13 @@ class e107_Import {
         $this->greet();
         break;
       case 1 :
+        $this->import_users();
+        break;
+      case 2 :
         $this->import_posts();
+        break;
+      case 3 :
+        $this->cleanup_e107import();
         break;
     }
 
@@ -191,27 +345,25 @@ class e107_Import {
   }
 
   function e107_Import() {
-    // Nothing.
+    // This space intentionally left blank.
   }
 }
 
 
-
+// Add e107 importer in the list of default Wordpress import filter
 $e107_import = new e107_Import();
 register_importer('e107', 'e107', __('Import news as posts from e107'), array ($e107_import, 'dispatch'));
 
 
 
-//////////////////////////////////////////////////////////////////////
-// The code below is inspired by code from the e107 project, licensed
-// under the GPL and (c) copyrighted to Steve Dunstan (see copyright
-// headers).
-//////////////////////////////////////////////////////////////////////
+
+/* The code below is copy of (and/or inspired by) code from the e107 project, licensed
+** under the GPL and (c) copyrighted to Steve Dunstan (see copyright headers).
+*/
 
 
 
-////////////////// Start of code inspired by e107_handlers/e107_class.php file //////////////////
-/*
+/*========== START of code inspired by e107_handlers/e107_class.php file ==========
 + ----------------------------------------------------------------------------+
 |     e107 website system
 |
@@ -241,12 +393,12 @@ define("e_BASE", $path);
 define("e_FILE", e_BASE.'wp-admin/import/');
 define("e_HANDLER", e_BASE.'wp-admin/import/bbcode/');
 
-/////////////////// END of code inspired by e107_handlers/e107_class.php file ///////////////////
+/*========== END of code inspired by e107_handlers/e107_class.php file ==========*/
 
 
 
-////////////////// START of code inspired by class2.php file //////////////////
-/*
+
+/*========== START of code inspired by class2.php file ==========
 + ----------------------------------------------------------------------------+
 |     e107 website system
 |
@@ -272,6 +424,5 @@ $tp = new e_parse;
 define("THEME", "");
 define("E107_DEBUG_LEVEL", FALSE);
 
-/////////////////// END of code inspired by class2.php file ///////////////////
-
+/*========== END of code inspired by class2.php file ==========*/
 ?>
