@@ -3,8 +3,8 @@
 +---------------------------------------------------------------+
 |   Wordpress filter to import e107 website.
 |
-|   Version: 0.4
-|   Date: 12 nov 2006
+|   Version: 0.5
+|   Date: 19 nov 2006
 |
 |   For todo-list and changelog:
 |     * http://kev.coolcavemen.com/2006/09/e107-to-wordpress-importer-v02-with-bbcode-support/
@@ -28,7 +28,6 @@ class e107_Import {
   function header() {
     echo '<div class="wrap">';
     echo '<h2>'.__('Import e107').'</h2>';
-
     echo '<p>'.__('Steps may take a few minutes depending on the size of your database. Please be patient.').'</p>';
   }
 
@@ -42,6 +41,23 @@ class e107_Import {
   function mysql_date($unix_time)
   {
     return date("Y-m-d H:i:s", $unix_time);
+  }
+
+
+  // Convert hexadecimal IP adresse string to decimal
+  function ip_hex2dec($hex_ip)
+  {
+    if (strlen($hex_ip) != 8) {
+      return '';
+    }
+    $dec_ip  = (string) hexdec(substr($hex_ip, 0, 2));
+    $dec_ip .= '.';
+    $dec_ip .= (string) hexdec(substr($hex_ip, 2, 2));
+    $dec_ip .= '.';
+    $dec_ip .= (string) hexdec(substr($hex_ip, 4, 2));
+    $dec_ip .= '.';
+    $dec_ip .= (string) hexdec(substr($hex_ip, 6, 2));
+    return $dec_ip;
   }
 
 
@@ -220,7 +236,143 @@ class e107_Import {
   }
 
 
-  // Step 3: get e107 comments and save them as Wordpress comments
+  // Step 3: get e107 static pages and save them as Wordpress pages
+  function importPages()
+  {
+    // General Housekeeping
+    $e107db = new wpdb( get_option('e107_db_user')
+                      , get_option('e107_db_pass')
+                      , get_option('e107_db_name')
+                      , get_option('e107_db_host')
+                      );
+    set_magic_quotes_runtime(0);
+    $prefix                  = get_option('e107_db_prefix');
+    $user_mapping            = get_option('e107_user_mapping');
+    $import_type             = get_option('e107_page_import_type');
+    $protected_page_password = get_option('e107_page_password');
+    $patch_theme             = get_option('e107_patch_theme');
+
+    // Prepare the SQL request
+    $e107_pagesTable  = $prefix."page";
+    $sql = "SELECT * FROM `".$e107_pagesTable."`";
+
+    // Get Static Pages list
+    $page_list = $e107db->get_results($sql, ARRAY_A);
+
+    // This array contain the mapping between old e107 static pages and newly inserted wordpress pages
+    $pages_mapping = array();
+
+    // Convert static pages to Wordpress pages
+    echo '<p>'.__('Importing e107 static pages as Wordpress pages...').'<br/><br/></p>';
+    foreach($page_list as $page)
+    {
+      $count++;
+      extract($page);
+      // Cast to int
+      $page_id = (int) $page_id;
+
+      // Special actions for private static pages
+      $post_password;
+      unset($post_password);
+      $skip = False;
+      if ($page_class != '0')
+      {
+        if ($import_type != 'import_as_public' and $import_type != 'import_and_protect')
+        {
+          $skip = True;
+        }
+        if ($import_type == 'import_and_protect')
+        {
+          $post_password = $protected_page_password;
+          // TODO: send mail to the admin as a password reminder. When this is done, make the "import and protect" option as default one
+        }
+      }
+
+      if (!$skip)
+      {
+        // Create a new bb code parser only once
+        require_once(e_HANDLER.'bbcode_handler.php');
+        if (!is_object($this->e_bb)) {
+          $this->e_bb = new e_bbcode;
+        }
+
+        if ($patch_theme == 'patch_theme') {
+          // Auto-patch kubrick Page Template file to show comments by default
+          // Switch to default kubrick theme
+          $ct = current_theme_info();
+          if ($ct->name != 'default')
+          {
+            update_option('template', 'default');
+            update_option('stylesheet', 'default');
+          }
+          // TODO: send patch to fix this in trunk kubrik
+          $real_file = get_real_file_to_edit("wp-content/themes/default/page.php");
+          $f = fopen($real_file, 'r');
+          $content = fread($f, filesize($real_file));
+          fclose($f);
+          // Check if patch already applied
+          if (!strpos($content, "comments_template()"))
+          {
+            // Look at the last "</div>" tag
+            require_once(e_BASE.'wp-admin/import/e107-includes/strripos.php');
+            $cut_position = strripos($content, "</div>");
+            $patched_content  = substr($content, 0, $cut_position);
+            $patched_content .= "<?php comments_template(); ?>";
+            $patched_content .= substr($content, $cut_position, strlen($content)-1);
+            $f = fopen($real_file, 'w+');
+            fwrite($f, $patched_content);
+            fclose($f);
+          }
+          // TODO: support K2 theme ? In this case, just add "$page_template = 'page-comments.php';" when inserting static page to Wordpress
+        }
+
+        // Update author role if necessary;
+        // If the user has the minimum role (aka subscriber) he is not able to post
+        //   news. In this case, we raise is role by 1 level (aka contributor).
+        $author_id = $user_mapping[$page_author];
+        $author = new WP_User($author_id);
+        if (! $author->has_cap('edit_posts'))
+        {
+          $author->set_role('contributor');
+        }
+
+        // Define comment status
+        $page_template;
+        if (! $page_comment_flag)
+        {
+          $comment_status = 'closed';
+          unset($page_template);
+        } else {
+          $comment_status = 'open';
+        }
+
+        // Save e107 static page in Wordpress database
+        $ret_id = wp_insert_post(array(
+            'post_author'    => $author_id     // use the new wordpress user ID
+          , 'post_date'      => $this->mysql_date($page_datestamp)  //XXX ask or get the time offset ?
+          , 'post_date_gmt'  => $this->mysql_date($page_datestamp)  //XXX ask or get the time offset ?
+          , 'post_content'   => $e107db->escape($this->e_bb->parseBBCodes($page_text, $page_id))
+          , 'post_title'     => $e107db->escape($page_title)      //XXX bbcode allowed in titles ?
+          , 'post_status'    => 'static'
+          , 'comment_status' => $comment_status
+          , 'post_password'  => $post_password
+          , 'ping_status'    => 'closed'               //XXX is there a global variable in wordpress or e107 to guess this ?
+          //, 'post_modified'  =>     //XXX Auto or now() ?
+          //, 'post_modified_gmt'  => //XXX Auto or now() ?
+          , 'page_template'  => $page_template
+          ));
+
+        // Update page mapping
+        $pages_mapping[$page_id] = (int) $ret_id;
+      }
+    }
+
+    // Return page mapping to let us pass it as global variable via options
+    return $pages_mapping;
+  }
+
+
+  // Step 4: get e107 comments and save them as Wordpress comments
   function importComments()
   {
     // General Housekeeping
@@ -230,11 +382,10 @@ class e107_Import {
                       , get_option('e107_db_host')
                       );
     set_magic_quotes_runtime(0);
-    $prefix = get_option('e107_db_prefix');
-    $user_mapping = get_option('e107_user_mapping');
-    $news_mapping = get_option('e107_news_mapping');
-
-    //echo '$user_mapping='.print_r($user_mapping).'<br/>';
+    $prefix        = get_option('e107_db_prefix');
+    $user_mapping  = get_option('e107_user_mapping');
+    $news_mapping  = get_option('e107_news_mapping');
+    $pages_mapping = get_option('e107_pages_mapping');
 
     // Prepare the SQL request
     $e107_commentsTable  = $prefix."comments";
@@ -254,11 +405,19 @@ class e107_Import {
       extract($comment);
       // Cast to int
       $comment_id      = (int) $comment_id;
-      $comment_item_id = (int) $comment_item_id
-      $post_id         = $news_mapping[$comment_item_id]
+      $comment_item_id = (int) $comment_item_id;
+
+      // Get the post_id from $news_mapping or $pages_mapping depending of the comment type
+      if ($comment_type == 'page')
+      {
+        $post_id = $pages_mapping[$comment_item_id];
+      } else {
+        $post_id = $news_mapping[$comment_item_id];
+      }
 
       // Don't import comments not linked with news
-      if (get_post_status($post_id) != False)
+      $post_status = get_post_status($post_id);
+      if ($post_status != False)
       {
         // Create a new bb code parser only once
         require_once(e_HANDLER.'bbcode_handler.php');
@@ -269,7 +428,7 @@ class e107_Import {
         // Get author details from Wordpress if registered.
         $author_name  = substr($comment_author, strpos($comment_author, '.') + 1);
         $author_id    = (int) strrev(substr(strrev($comment_author), strpos(strrev($comment_author), '.') + 1));
-        $author_ip    = $comment_ip; // TODO: normalize IP
+        $author_ip    = $this->ip_hex2dec($comment_ip);
         $author_email = $comment_author_email;
         unset($author_url);
 
@@ -335,47 +494,53 @@ class e107_Import {
 
   // Step 0 screen
   function greet() {
-    echo '<p>'.__('This importer allows you to extract the most important content and data from e107 MySQL Database and import them into your Wordpress blog.').'</p>';
+    echo '<p>'.__('This importer allows you to extract the most important content and data from e107 MySQL database and import them into your Wordpress blog.').'</p>';
     echo '<p>'.__('Features:').'<br/><ul><li>';
     echo __('Import news').'</li><li>';
+    echo __('Import static pages').'</li><li>';
     echo __('Import users and their profile').'</li><li>';
-    echo __('Import comments (on news only for the moment)').'</li><li>';
-    echo __('Support bbcode (on news only)');
+    echo __('Import comments').'</li><li>';
+    echo __('Support bbcode');
     echo '</li></ul></p>';
     // TODO: support all kind of charset
-    echo '<p>'.'<u><b>'.__('WARNING').'</b></u>: '.__("This plugin assume that your e107 site is fully encoded in UTF-8. If it's not the case, please look at <a href='http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8'>Upgrading database content to UTF8</a> article on e107 wiki.").'</p>';
-    echo '<p>'.__('This plugin was tested with e107 v0.7.5 and Wordpress v2.0.4.').'</p>';
+    echo '<p>'.'<strong>'.__('Warning').'</strong>: '.__("This plugin assume that your e107 site is fully encoded in UTF-8. If it's not the case, please look at <a href='http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8'>Upgrading database content to UTF8</a> article on e107 wiki.").'</p>';
+    echo '<p>'.__('This plugin was tested with e107 v0.7.5 and Wordpress v2.0.5.').'</p>';
 
     echo '<hr/>';
 
-    echo '<p>'.__('Your e107 Configuration settings are as follows:').'</p>';
+    echo '<p>'.__('Your e107 configuration settings are as follows (filled by default with current Wordpress config):').'</p>';
     echo '<form action="admin.php?import=e107&amp;step=1" method="post">';
     echo '<ul>';
-    printf( '<li><label for="dbuser">%s</label> <input type="text" name="dbuser" id="dbuser"/></li>'
+    printf( '<li><label for="dbuser">%s</label> <input type="text" name="dbuser" id="dbuser" value="%s"/></li>'
           , __('e107 Database User:')
+          , DB_USER
           );
-    printf( '<li><label for="dbpass">%s</label> <input type="password" name="dbpass" id="dbpass"/></li>'
+    printf( '<li><label for="dbpass">%s</label> <input type="password" name="dbpass" id="dbpass" value="%s"/></li>'
           , __('e107 Database Password:')
+          , DB_PASSWORD
           );
-    printf( '<li><label for="dbname">%s</label> <input type="text" name="dbname" id="dbname"/></li>'
+    printf( '<li><label for="dbname">%s</label> <input type="text" name="dbname" id="dbname" value="%s"/></li>'
           , __('e107 Database Name:')
+          , DB_NAME
           );
-    printf( '<li><label for="dbhost">%s</label> <input type="text" name="dbhost" id="dbhost" value="localhost"/></li>'
+    printf( '<li><label for="dbhost">%s</label> <input type="text" name="dbhost" id="dbhost" value="%s"/></li>'
           , __('e107 Database Host:')
+          , DB_HOST
           );
     printf('<li><label for="dbprefix">%s</label> <input type="text" name="dbprefix" value="e107_"/></li>'
           , __('e107 Table prefix:')
           );
-    echo '</ul><p>';
-    echo __("Click on the 'Next Step' button to import users.").'</p><p>';
+    echo '</ul>';
 
     echo '<hr/>';
 
-    printf(__("All users will be imported in the Wordpress database with the '%s' role. If you want to change this, change default role from the 'Options' > 'General' panel of the admin area.").'</p><p>'
+    printf(__("<p>All users will be imported in the Wordpress database with the '%s' role. If you want to change this, change default role from the 'Options' > 'General' panel of the admin area.").'</p>'
           , __(get_settings('default_role'))
           );
-    echo __("WARNING ! Wordpress don't like UTF-8 char (like the one with accents, etc) in login. So, when the user will be added, all non-ascii chars will be deleted from the login string.").'</p>';
-    echo '<input type="submit" name="submit" value="'.__('Next Step: Import e107 Users').'" />';
+    echo __("<p><strong>Warning</strong>:<ul><li>");
+    echo __("Wordpress don't like UTF-8 char (like accents, etc) in login. So, when the user will be added, all non-ascii chars will be deleted from the login string.").'</li><li>';
+    echo __("All users' password will be resetted.").'</li></ul>';
+    echo '<input type="submit" name="submit" value="'.__('Next step: Import e107 users').'" />';
     echo '</form>';
   }
 
@@ -386,12 +551,12 @@ class e107_Import {
     // Import e107 users
     $user_mapping = $this->importUsers();
     add_option('e107_user_mapping', $user_mapping);
-
     echo '<p>'.__('Database connexion successful !').'</p>';
-    echo '<p>'.__('All e107 users were imported !').'</p>';
+    echo '<p><strong>'.sizeof($user_mapping).'</strong>'.__(' users imported from e107 to Wordpress.').'</p><hr/>';
+
     echo '<p>'.__('The next step consist of importing all e107 news as Wordpress posts.').'</p>';
     echo '<form action="admin.php?import=e107&amp;step=2" method="post">';
-    printf('<input type="submit" name="submit" value="%s" />', __('Next Step: Import e107 news'));
+    printf('<input type="submit" name="submit" value="%s" />', __('Next step: Import e107 news'));
     echo '</form>';
   }
 
@@ -402,29 +567,70 @@ class e107_Import {
     // Import e107 news as posts
     $news_mapping = $this->e107news2posts();
     add_option('e107_news_mapping', $news_mapping);
+    echo '<p><strong>'.sizeof($news_mapping).'</strong>'.__(' news imported from e107 to Wordpress.').'</p><hr/>';
 
-    echo '<p>'.__('All e107 news imported !').'</p>';
+    echo '<p>'.__('The next step consist of importing all e107 static pages as Wordpress pages.').'</p>';
+
     echo '<form action="admin.php?import=e107&amp;step=3" method="post">';
-    printf('<input type="submit" name="submit" value="%s" />', __('Next Step: Import e107 comments'));
+
+    echo '<p><strong>'.__('Warning 1').':</strong> '.__("Wordpress doesn't display comments on static pages by default. However, this import tool can do this by patching the default Wordpress theme (Kubrick).").'</p>';
+
+    echo '<p>Do you want to patch Kubrick ?';
+    echo '<ul><li>';
+    echo '<label><input name="patch_default_theme" type="radio" value="no_patch_theme" checked="checked"/> No, I don\'t want to patch the default theme</label>';
+    echo '</li><li>';
+    echo '<label><input name="patch_default_theme" type="radio" value="patch_theme"/> Yes, I want to let this import tool patch the Kubrick theme and set it as the current one.</label>';
+    echo '</li></ul></p>';
+
+
+    echo '<p><strong>'.__('Warning 2').':</strong> '.__('all protected pages in e107 will be publicly visible on your blog after this step, because there is no mechanism to make pages private in Wordpress.').'</p>';
+
+    echo '<p>How private static pages should be handled ?';
+    echo '<ul><li>';
+    echo '<label><input name="page_import_type" type="radio" value="no_import" checked="checked"/> Do not import private pages</label>';
+    echo '</li><li>';
+    echo '<label><input name="page_import_type" type="radio" value="import_as_public"/> Import private pages and change visibility to public</label>';
+    echo '</li><li>';
+    printf( '<label><input name="page_import_type" type="radio" value="import_and_protect"/> Import private pages and protect them with the following password: <input type="text" name="page_password" id="page_password" value="%s"/></label>'
+          , substr(md5(uniqid(microtime())), 0, 6)
+          );
+    echo '</li></ul></p>';
+    printf('<input type="submit" name="submit" value="%s" />', __('Next step: Import e107 static pages'));
     echo '</form>';
   }
 
 
   // Step 3 screen
+  function import_pages()
+  {
+    // Import e107 static pages
+    $pages_mapping = $this->importPages();
+    add_option('e107_pages_mapping', $pages_mapping);
+    echo '<p><strong>'.sizeof($pages_mapping).'</strong>'.__(' static pages imported from e107 to Wordpress.').'</p><hr/>';
+
+    echo '<p>'.__('The next step consist of importing all e107 comments to Wordpress.').'</p>';
+    echo '<form action="admin.php?import=e107&amp;step=4" method="post">';
+    printf('<input type="submit" name="submit" value="%s" />', __('Next step: Import e107 comments'));
+    echo '</form>';
+  }
+
+
+  // Step 4 screen
   function import_comments()
   {
     // Import e107 news comments
     $comments_mapping = $this->importComments();
     add_option('e107_comments_mapping', $comments_mapping);
+    echo '<p><strong>'.sizeof($comments_mapping).'</strong>'.__(' comments imported from e107 to Wordpress.').'</p><hr/>';
 
-    echo '<p>'.__('All e107 comments imported !').'</p>';
-    echo '<form action="admin.php?import=e107&amp;step=4" method="post">';
-    printf('<input type="submit" name="submit" value="%s" />', __('Next Import Step !!!!!'));
+    echo '<p>'.__('The last step is needed to clean-up the import process.').'</p>';
+    echo '<form action="admin.php?import=e107&amp;step=5" method="post">';
+    printf('<input type="submit" name="submit" value="%s" />', __('Last step: Finish import process'));
     echo '</form>';
   }
 
 
-  // Step 4
+  // Step 5
   function cleanup_e107import()
   {
     delete_option('e107_db_user');
@@ -434,6 +640,10 @@ class e107_Import {
     delete_option('e107_db_prefix');
     delete_option('e107_user_mapping');
     delete_option('e107_news_mapping');
+    delete_option('e107_pages_mapping');
+    delete_option('e107_page_import_type');
+    delete_option('e107_page_password');
+    delete_option('e107_patch_theme');
     delete_option('e107_comments_mapping');
   }
 
@@ -480,6 +690,29 @@ class e107_Import {
       }
     }
 
+    // Keep static pages options on step 3
+    if ($step == 3)
+    {
+      if($_POST['page_import_type'])
+      {
+        if(get_option('e107_page_import_type'))
+          delete_option('e107_page_import_type');
+        add_option('e107_page_import_type', $_POST['page_import_type']);
+      }
+      if($_POST['page_password'])
+      {
+        if(get_option('e107_page_password'))
+          delete_option('e107_page_password');
+        add_option('e107_page_password', $_POST['page_password']);
+      }
+      if($_POST['patch_default_theme'])
+      {
+        if(get_option('e107_patch_theme'))
+          delete_option('e107_patch_theme');
+        add_option('e107_patch_theme', $_POST['patch_default_theme']);
+      }
+    }
+
     // TODO: split user import step and database connexion step to make things easier to understand
     switch ($step)
     {
@@ -494,9 +727,12 @@ class e107_Import {
         $this->import_posts();
         break;
       case 3 :
-        $this->import_comments();
+        $this->import_pages();
         break;
       case 4 :
+        $this->import_comments();
+        break;
+      case 5 :
         $this->cleanup_e107import();
         break;
     }
@@ -551,7 +787,7 @@ while (!file_exists("{$path}wp-config.php")) {
 // Redifine som globals to match wordpress importer file hierarchy
 define("e_BASE", $path);
 define("e_FILE", e_BASE.'wp-admin/import/');
-define("e_HANDLER", e_BASE.'wp-admin/import/bbcode/');
+define("e_HANDLER", e_BASE.'wp-admin/import/e107-includes/');
 
 /*========== END of code inspired by e107_handlers/e107_class.php file ==========*/
 
