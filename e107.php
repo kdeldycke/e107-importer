@@ -3,8 +3,8 @@
 +---------------------------------------------------------------+
 |   Wordpress filter to import e107 website.
 |
-|   Version: 0.5
-|   Date: 19 nov 2006
+|   Version: 0.6
+|   Date: 26 nov 2006
 |
 |   For todo-list and changelog:
 |     * http://kev.coolcavemen.com/2006/09/e107-to-wordpress-importer-v02-with-bbcode-support/
@@ -58,6 +58,65 @@ class e107_Import {
     $dec_ip .= '.';
     $dec_ip .= (string) hexdec(substr($hex_ip, 6, 2));
     return $dec_ip;
+  }
+
+
+  // Below isValidInetAddress() function come from PEAR's Mail package v1.1.14
+  // See http://pear.php.net/package/Mail for details.
+  // +-----------------------------------------------------------------------+
+  // | Copyright (c) 2001-2002, Richard Heyes                                |
+  // | All rights reserved.                                                  |
+  // |                                                                       |
+  // | Redistribution and use in source and binary forms, with or without    |
+  // | modification, are permitted provided that the following conditions    |
+  // | are met:                                                              |
+  // |                                                                       |
+  // | o Redistributions of source code must retain the above copyright      |
+  // |   notice, this list of conditions and the following disclaimer.       |
+  // | o Redistributions in binary form must reproduce the above copyright   |
+  // |   notice, this list of conditions and the following disclaimer in the |
+  // |   documentation and/or other materials provided with the distribution.|
+  // | o The names of the authors may not be used to endorse or promote      |
+  // |   products derived from this software without specific prior written  |
+  // |   permission.                                                         |
+  // |                                                                       |
+  // | THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS   |
+  // | "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT     |
+  // | LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR |
+  // | A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT  |
+  // | OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, |
+  // | SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT      |
+  // | LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, |
+  // | DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY |
+  // | THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT   |
+  // | (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE |
+  // | OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  |
+  // |                                                                       |
+  // +-----------------------------------------------------------------------+
+  // | Authors: Richard Heyes <richard@phpguru.org>                          |
+  // |          Chuck Hagenbuch <chuck@horde.org>                            |
+  // +-----------------------------------------------------------------------+
+  /**
+    * This is a email validating function separate to the rest of the
+    * class. It simply validates whether an email is of the common
+    * internet form: <user>@<domain>. This can be sufficient for most
+    * people. Optional stricter mode can be utilised which restricts
+    * mailbox characters allowed to alphanumeric, full stop, hyphen
+    * and underscore.
+    *
+    * @param  string  $data   Address to check
+    * @param  boolean $strict Optional stricter mode
+    * @return mixed           False if it fails, an indexed array
+    *                         username/domain if it matches
+    */
+  function isValidInetAddress($data, $strict = false)
+  {
+    $regex = $strict ? '/^([.0-9a-z_+-]+)@(([0-9a-z-]+\.)+[0-9a-z]{2,})$/i' : '/^([*+!.&#$|\'\\%\/0-9a-z^_`{}=?~:-]+)@(([0-9a-z-]+\.)+[0-9a-z]{2,})$/i';
+    if (preg_match($regex, trim($data), $matches)) {
+      return array($matches[1], $matches[2]);
+    } else {
+      return false;
+    }
   }
 
 
@@ -171,8 +230,9 @@ class e107_Import {
                       , get_option('e107_db_host')
                       );
     set_magic_quotes_runtime(0);
-    $prefix = get_option('e107_db_prefix');
-    $user_mapping = get_option('e107_user_mapping');
+    $prefix        = get_option('e107_db_prefix');
+    $user_mapping  = get_option('e107_user_mapping');
+    $extended_news = get_option('e107_extended_news');
 
     // Prepare the SQL request
     $e107_newsTable  = $prefix."news";
@@ -195,10 +255,12 @@ class e107_Import {
 
       //TODO: $news_category should be set as tag
 
-      // Create a new bb code parser only once
-      require_once(e_HANDLER.'bbcode_handler.php');
-      if (!is_object($this->e_bb)) {
-        $this->e_bb = new e_bbcode;
+      // Special actions for extended news
+      if ($extended_news == 'import_all')
+      {
+        $news_body = $news_body."\n\n".$news_extended;
+      } elseif ($extended_news == 'ignore_body') {
+        $news_body = $news_extended;
       }
 
       // Update author role if necessary;
@@ -211,14 +273,19 @@ class e107_Import {
         $author->set_role('contributor');
       }
 
+      // Create a new html parser
+      if (!is_object($this->e_parse)) {
+        require_once(e_HANDLER.'e_parse_class.php');
+        $this->e_parse = new e_parse;
+      }
+
       // Save e107 news in Wordpress database
       $ret_id = wp_insert_post(array(
           'post_author'    => $author_id     // use the new wordpress user ID
         , 'post_date'      => $this->mysql_date($news_datestamp)  //XXX ask or get the time offset ?
         , 'post_date_gmt'  => $this->mysql_date($news_datestamp)  //XXX ask or get the time offset ?
-        , 'post_content'   => $e107db->escape($this->e_bb->parseBBCodes($news_body, $news_id))
+        , 'post_content'   => $e107db->escape($this->e_parse->toHTML($news_body, $parseBB = TRUE))
         , 'post_title'     => $e107db->escape($news_title)      //XXX bbcode allowed in titles ?
-        , 'post_excerpt'   => $e107db->escape($news_extended)   //TODO: add a global option in the importer to ignore this
         , 'post_status'    => 'publish'        // News are always published in e107
         , 'comment_status' => $news_allow_comments //TODO: get global config to set this value dynamiccaly
         , 'ping_status'    => 'open'               //XXX is there such a concept in e107 ?
@@ -290,10 +357,10 @@ class e107_Import {
 
       if (!$skip)
       {
-        // Create a new bb code parser only once
-        require_once(e_HANDLER.'bbcode_handler.php');
-        if (!is_object($this->e_bb)) {
-          $this->e_bb = new e_bbcode;
+        // Create a new html parser
+        if (!is_object($this->e_parse)) {
+          require_once(e_HANDLER.'e_parse_class.php');
+          $this->e_parse = new e_parse;
         }
 
         if ($patch_theme == 'patch_theme') {
@@ -351,7 +418,7 @@ class e107_Import {
             'post_author'    => $author_id     // use the new wordpress user ID
           , 'post_date'      => $this->mysql_date($page_datestamp)  //XXX ask or get the time offset ?
           , 'post_date_gmt'  => $this->mysql_date($page_datestamp)  //XXX ask or get the time offset ?
-          , 'post_content'   => $e107db->escape($this->e_bb->parseBBCodes($page_text, $page_id))
+          , 'post_content'   => $e107db->escape($this->e_parse->toHTML($page_text, $parseBB = TRUE))
           , 'post_title'     => $e107db->escape($page_title)      //XXX bbcode allowed in titles ?
           , 'post_status'    => 'static'
           , 'comment_status' => $comment_status
@@ -419,10 +486,10 @@ class e107_Import {
       $post_status = get_post_status($post_id);
       if ($post_status != False)
       {
-        // Create a new bb code parser only once
-        require_once(e_HANDLER.'bbcode_handler.php');
-        if (!is_object($this->e_bb)) {
-          $this->e_bb = new e_bbcode;
+        // Create a new html parser
+        if (!is_object($this->e_parse)) {
+          require_once(e_HANDLER.'e_parse_class.php');
+          $this->e_parse = new e_parse;
         }
 
         // Get author details from Wordpress if registered.
@@ -448,17 +515,12 @@ class e107_Import {
         // Unregistered user
         } else {
           unset($author_id);
-
-          // TODO: guess author name from email if exist
-  /*
-  $comment_author=0.mail_user@wanadoo.fr
-  $author_id=0
-  $author_name=mail_user@wanadoo.fr
-  $author_id=
-  $author_email=
-  $author_name=mail_user@wanadoo.fr
-  $author_url=
-  */
+          // Sometimes $author_name is of given as email address. In this case, try to guess the user name.
+          if ($author_email == '' and $this->isValidInetAddress($author_name, $strict=True))
+          {
+            $author_email = $author_name;
+            $author_name = substr($author_name, 0, strpos($author_name, '@'));
+          }
         }
 
         // Save e107 comment in Wordpress database
@@ -470,7 +532,7 @@ class e107_Import {
           , 'comment_author_IP'    => $author_ip
           , 'comment_date'         => $this->mysql_date($comment_datestamp)  //XXX ask or get the time offset ?
           , 'comment_date_gmt'     => $this->mysql_date($comment_datestamp)  //XXX ask or get the time offset ?
-          , 'comment_content'      => $e107db->escape($this->e_bb->parseBBCodes($comment_comment, $comment_id))
+          , 'comment_content'      => $e107db->escape($this->e_parse->toHTML($comment_comment,  $parseBB = TRUE))
           , 'comment_approved'     => ! (int) $comment_blocked
           , 'user_id'              => $author_id
           , 'user_ID'              => $author_id
@@ -504,7 +566,7 @@ class e107_Import {
     echo '</li></ul></p>';
     // TODO: support all kind of charset
     echo '<p>'.'<strong>'.__('Warning').'</strong>: '.__("This plugin assume that your e107 site is fully encoded in UTF-8. If it's not the case, please look at <a href='http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8'>Upgrading database content to UTF8</a> article on e107 wiki.").'</p>';
-    echo '<p>'.__('This plugin was tested with e107 v0.7.5 and Wordpress v2.0.5.').'</p>';
+    echo '<p>'.__('This plugin was tested with <a href="http://e107.org/news.php?item.799.1">e107 v0.7.6</a> and <a href="http://wordpress.org/development/2006/10/205-ronan/">Wordpress v2.0.5</a>.').'</p>';
 
     echo '<hr/>';
 
@@ -556,6 +618,18 @@ class e107_Import {
 
     echo '<p>'.__('The next step consist of importing all e107 news as Wordpress posts.').'</p>';
     echo '<form action="admin.php?import=e107&amp;step=2" method="post">';
+
+    echo '<p><strong>'.__('Warning').':</strong> '.__("Wordpress doesn't support extended news. This tool can aggregate the extended part and the body of e107 news in the main body of Wordpress posts.").'</p>';
+
+    echo '<p>Do you want to import extended part of e107 news ?';
+    echo '<ul><li>';
+    echo '<label><input name="extended_news" type="radio" value="ignore_extended" checked="checked"/> No: Ignore extended part of news, import the body only.</label>';
+    echo '</li><li>';
+    echo '<label><input name="extended_news" type="radio" value="import_all"/> Yes: Import both extended part and body.</label>';
+    echo '</li><li>';
+    echo '<label><input name="extended_news" type="radio" value="ignore_body"/> Ignore body and import extended part only.</label>';
+    echo '</li></ul></p>';
+
     printf('<input type="submit" name="submit" value="%s" />', __('Next step: Import e107 news'));
     echo '</form>';
   }
@@ -639,6 +713,7 @@ class e107_Import {
     delete_option('e107_db_host');
     delete_option('e107_db_prefix');
     delete_option('e107_user_mapping');
+    delete_option('e107_extended_news');
     delete_option('e107_news_mapping');
     delete_option('e107_pages_mapping');
     delete_option('e107_page_import_type');
@@ -656,7 +731,7 @@ class e107_Import {
       $step = (int) $_GET['step'];
     $this->header();
 
-    if ( $step > 0 )
+    if ($step > 0)
     {
       if($_POST['dbuser'])
       {
@@ -687,6 +762,17 @@ class e107_Import {
         if(get_option('e107_db_prefix'))
           delete_option('e107_db_prefix');
         add_option('e107_db_prefix', $_POST['dbprefix']);
+      }
+    }
+
+    // Keep news options on step 2
+    if ($step == 2)
+    {
+      if($_POST['extended_news'])
+      {
+        if(get_option('e107_extended_news'))
+          delete_option('e107_extended_news');
+        add_option('e107_extended_news', $_POST['extended_news']);
       }
     }
 
@@ -746,18 +832,16 @@ class e107_Import {
 }
 
 
-// Add e107 importer in the list of default Wordpress import filter
-$e107_import = new e107_Import();
-register_importer('e107', 'e107', __('Import news as posts from e107'), array ($e107_import, 'dispatch'));
 
 
 
+// Generic code to initialize e107 context
 
-/* The code below is copy of (and/or inspired by) code from the e107 project, licensed
+
+
+/* Some part of the code below is copy of (and/or inspired by) code from the e107 project, licensed
 ** under the GPL and (c) copyrighted to Steve Dunstan (see copyright headers).
 */
-
-
 
 /*========== START of code inspired by e107_handlers/e107_class.php file ==========
 + ----------------------------------------------------------------------------+
@@ -784,14 +868,15 @@ while (!file_exists("{$path}wp-config.php")) {
   $i++;
 }
 
+$e107_to_wordpress_includes = 'wp-admin/import/e107-includes/';
+
 // Redifine som globals to match wordpress importer file hierarchy
 define("e_BASE", $path);
-define("e_FILE", e_BASE.'wp-admin/import/');
-define("e_HANDLER", e_BASE.'wp-admin/import/e107-includes/');
+define("e_PLUGIN" , e_BASE);
+define("e_FILE"   , e_BASE.'wp-admin/import/');
+define("e_HANDLER", e_BASE.$e107_to_wordpress_includes);
 
 /*========== END of code inspired by e107_handlers/e107_class.php file ==========*/
-
-
 
 
 /*========== START of code inspired by class2.php file ==========
@@ -815,10 +900,75 @@ define("e_HANDLER", e_BASE.'wp-admin/import/e107-includes/');
 define("e107_INIT", TRUE);
 
 require_once(e_HANDLER.'e_parse_class.php');
+global $tp;
 $tp = new e_parse;
 
 define("THEME", "");
 define("E107_DEBUG_LEVEL", FALSE);
+define('E107_DBG_BBSC',    FALSE);    // Show BBCode/ Shortcode usage in postings
+
 
 /*========== END of code inspired by class2.php file ==========*/
+
+
+// Set global preferences
+global $pref;
+
+// Get e107 site preferences from user database
+$e107_db_user = get_option('e107_db_user');
+$e107_db_pass = get_option('e107_db_pass');
+$e107_db_name = get_option('e107_db_name');
+$e107_db_host = get_option('e107_db_host');
+$prefix       = get_option('e107_db_prefix');
+if ($e107_db_user != '' and $e107_db_pass != '' and $e107_db_name != '' and $e107_db_host != '' and $prefix != '') {
+  $e107db = new wpdb( $e107_db_user
+                    , $e107_db_pass
+                    , $e107_db_name
+                    , $e107_db_host
+                    );
+  set_magic_quotes_runtime(0);
+  $e107_coreTable  = $prefix."core";
+  $sql = "SELECT `e107_value` FROM `".$e107_coreTable."` WHERE `e107_name`='SitePrefs'";
+  $site_pref = $e107db->get_results($sql, ARRAY_A);
+  extract($site_pref[0]);
+  $pref = '';
+  $array_data = '$pref = '.trim($e107_value).';';
+  @eval($array_data);
+}
+
+// Override bbcode definition files configuration
+if (!isset($pref) || !is_array($pref))
+{
+  $pref = array();
+}
+$pref['bbcode_list'] = array();
+$pref['bbcode_list'][$e107_to_wordpress_includes] = array();
+// This $core_bb array come from bbcode_handler.php
+$core_bb = array(
+'blockquote', 'img', 'i', 'u', 'center',
+'*br', 'color', 'size', 'code',
+'html', 'flash', 'link', 'email',
+'url', 'quote', 'left', 'right',
+'b', 'justify', 'file', 'stream',
+'textarea', 'list', 'php', 'time',
+'spoiler', 'hide'
+);
+foreach($core_bb as $c)
+{
+  $pref['bbcode_list'][$e107_to_wordpress_includes][$c] = 'dummy_u_class';
+}
+
+// TODO: support image handling
+unset($pref['image_post']);
+
+// Don't transform smileys to <img>, Wordpress will do it automaticcaly
+unset($pref['smiley_activate']);
+
+
+
+
+// Add e107 importer in the list of default Wordpress import filter
+$e107_import = new e107_Import();
+register_importer('e107', 'e107', __('Import news as posts from e107'), array ($e107_import, 'dispatch'));
+
 ?>

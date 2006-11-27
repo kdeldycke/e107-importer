@@ -3,7 +3,7 @@
 + ----------------------------------------------------------------------------+
 |     e107 website system
 |
-|     � Steve Dunstan 2001-2002
+|      Steve Dunstan 2001-2002
 |     http://e107.org
 |     jalist@e107.org
 |
@@ -11,9 +11,9 @@
 |     GNU General Public License (http://gnu.org).
 |
 |     $Source: /cvsroot/e107/e107_0.7/e107_handlers/e_parse_class.php,v $
-|     $Revision: 1.150 $
-|     $Date: 2006/04/29 01:03:10 $
-|     $Author: mcfly_e107 $
+|     $Revision: 1.173 $
+|     $Date: 2006/11/16 04:00:35 $
+|     $Author: e107coders $
 +----------------------------------------------------------------------------+
 */
 if (!defined('e107_INIT')) { exit; }
@@ -28,7 +28,8 @@ class e_parse
 	var $e_hook;
 	var $search = array('&#39;', '&#039;', '&quot;', 'onerror', '&gt;', '&amp;#039;', '&amp;quot;');
 	var $replace = array("'", "'", '"', 'one<i></i>rror', '>', "'", '"');
-	var $e_query;
+	var $e_highlighting;		// Set to TRUE or FALSE once it has been calculated
+	var $e_query;			// Highlight query
 
 	function toDB($data, $nostrip = false, $no_encode = false, $mod = false)
 	{
@@ -46,16 +47,22 @@ class e_parse
 			{
 				$no_encode = TRUE;
 			}
-			if (getperms("0") || $no_encode === TRUE)
+			if ($no_encode === TRUE && $mod != 'no_html')
 			{
 				$search = array('$', '"', "'", '\\', '<?');
-				$replace = array('&#036;','&quot;','&#039;', '&#092;', '&lt?');
+				$replace = array('&#036;','&quot;','&#039;', '&#092;', '&lt;?');
 				$ret = str_replace($search, $replace, $data);
 			} else {
 				$data = htmlspecialchars($data, ENT_QUOTES, CHARSET);
 				$data = str_replace('\\', '&#092;', $data);
 				$ret = preg_replace("/&amp;#(\d*?);/", "&#\\1;", $data);
 			}
+			//If user is not allowed to use [php] change to entities
+			if(!check_class($pref['php_bbcode']))
+			{
+				$ret = str_replace(array("[php]", "[/php]"), array("&#91;php&#93;", "&#91;/php&#93;"), $ret);
+			}
+
 		}
 
 		return $ret;
@@ -68,16 +75,19 @@ class e_parse
 		$search = array('&#036;', '&quot;');
 		$replace = array('$', '"');
 		$text = str_replace($search, $replace, $text);
-		return html_entity_decode($text, $mode);
+		$text = html_entity_decode($text, $mode,CHARSET);
+		return str_replace(chr(160),"&amp;nbsp;",$text);  // fix for utf-8 issue with html_entity_decode("&nbsp;");
 	}
 
+
 	function post_toForm($text) {
-		if (MAGIC_QUOTES_GPC == TRUE) {
+		if (defined("MAGIC_QUOTES_GPC") && (MAGIC_QUOTES_GPC == TRUE)) {
 			$text = stripslashes($text);
 		}
 		// ensure apostrophes are properly converted, or else the form item could break
 		return str_replace(array( "'", '"'), array("&#039;", "&quot;"), $text);
 	}
+
 
 	function post_toHTML($text, $modifier = true, $extra = '') {
 		/*
@@ -112,6 +122,12 @@ class e_parse
 		}
 
 		$text = $this->replaceConstants($text);
+
+		//If user is not allowed to use [php] change to entities
+		if(!check_class($pref['php_bbcode']))
+		{
+			$text = str_replace(array("[php]", "[/php]"), array("&#91;php&#93;", "&#91;/php&#93;"), $text);
+		}
 
 		return ($modifier ? $this->toHTML($text, true, $extra) : $text);
 	}
@@ -259,8 +275,10 @@ class e_parse
 	function text_truncate($text, $len = 200, $more = "[more]") {
 		if(strlen($text) <= $len) {
 			return $text;
-		} else {
-			return substr($text, 0, $len).$more;
+		} else { // utf-8 compatible substr()
+            return preg_replace('#^(?:[\x00-\x7F]|[\xC0-\xFF][\x80-\xBF]+){0,0}'.
+					'((?:[\x00-\x7F]|[\xC0-\xFF][\x80-\xBF]+){0,'.$len.'}).*#s',
+					'$1',$text).$more;
 		}
 	}
 
@@ -273,6 +291,36 @@ class e_parse
 		return $text;
 	}
 
+	//
+	// Test for text highlighting, and determine the text highlighting transformation
+	// Returns TRUE if highlighting is active for this page display
+	//
+	function checkHighlighting()
+	{
+		global $pref;
+
+		if (!defined('e_SELF'))
+		{
+			return FALSE;	// Still in startup, so can't calculate highlighting
+		}
+
+		if (!isset($this->e_highlighting))
+		{
+			$this->e_highlighting = FALSE;
+			$shr = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : "");
+			if ($pref['search_highlight'] && (strpos(e_SELF, 'search.php') === FALSE) && ((strpos($shr, 'q=') !== FALSE) || (strpos($shr, 'p=') !== FALSE)))
+			{
+				$this->e_highlighting = TRUE;
+				if (!isset($this -> e_query))
+				{
+					$query = preg_match('#(q|p)=(.*?)(&|$)#', $shr, $matches);
+					$this -> e_query = str_replace(array('+', '*', '"', ' '), array('', '.*?', '', '\b|\b'), trim(urldecode($matches[2])));
+				}
+			}
+		}
+		return $this->e_highlighting;
+	}
+
 	function toHTML($text, $parseBB = FALSE, $modifiers = "", $postID = "", $wrap=FALSE) {
 		if ($text == '')
 		{
@@ -283,7 +331,7 @@ class e_parse
 		$fromadmin = strpos($modifiers, "fromadmin");
 		//$text = str_replace(array("&#092;&quot;", "&#092;&#039;", "&#092;&#092;"), array("&quot;", "&#039;", "&#092;"), $text);
 
-		// support for converting defines(constants) within text. eg. Lan_XXXX
+		// support for converting defines(constants) within text. eg. Lan_XXXX - must be the entire text string (i.e. not embedded)
 		if(strpos($modifiers,"defs") !== FALSE && strlen($text) < 25 && defined(trim($text))){
 			return constant(trim($text));
 		}
@@ -294,125 +342,133 @@ class e_parse
 			$text = $this->replaceConstants($text);
 		}
 
-		if(!$wrap && $pref['main_wordwrap']) $wrap = $pref['main_wordwrap'];
-		$text = " ".$text;
+       if(!$wrap && $pref['main_wordwrap']) $wrap = $pref['main_wordwrap'];
+        $text = " ".$text;
 
-		if (strpos($modifiers, 'nobreak') === FALSE) {
-			$text = preg_replace("#>\s*[\r]*\n[\r]*#", ">", $text);
-			preg_match_all("#<(script|style)[^>]+>.*?</(script|style)>#is", $text, $embeds);
-			$text = preg_replace("#<(script|style)[^>]+>.*?</(script|style)>#is", "<|>", $text);
+			// Prepare for line-break compression. Avoid compressing newlines in embedded scripts and CSS
+        if (strpos($modifiers, 'nobreak') === FALSE) {
+            $text = preg_replace("#>\s*[\r]*\n[\r]*#", ">", $text);
+            preg_match_all("#<(script|style)[^>]+>.*?</(script|style)>#is", $text, $embeds);
+            $text = preg_replace("#<(script|style)[^>]+>.*?</(script|style)>#is", "<|>", $text);
+        }
+
+			// Convert URL's to clickable links, unless modifiers or prefs override
+        if($pref['make_clickable'] && strpos($modifiers, 'no_make_clickable') === FALSE) {
+            if($pref['link_replace'] && strpos($modifiers, 'no_replace') === FALSE) {
+                $_ext = ($pref['links_new_window'] ? " rel=\"external\"" : "");
+                $text = preg_replace("#(^|[\n ])([\w]+?://[^ \"\n\r\t<]*)#is", "\\1<a href=\"\\2\" {$_ext}>".$pref['link_text']."</a>", $text);
+                $text = preg_replace("#(^|[\n ])((www|ftp)\.[^ \"\t\n\r<]*)#is", "\\1<a href=\"http://\\2\" {$_ext}>".$pref['link_text']."</a>", $text);
+                if(CHARSET != "utf-8" && CHARSET != "UTF-8"){
+                    $email_text = ($pref['email_text']) ? $this->replaceConstants($pref['email_text']) : "\\1\\2&copy;\\3";
+                }else{
+                    $email_text = ($pref['email_text']) ? $this->replaceConstants($pref['email_text']) : "\\1\\2©\\3";
+                }
+                $text = preg_replace("#([\n ])([a-z0-9\-_.]+?)@([\w\-]+\.([\w\-\.]+\.)*[\w]+)#i", "\\1<a rel='external' href='javascript:window.location=\"mai\"+\"lto:\"+\"\\2\"+\"@\"+\"\\3\";self.close();' onmouseover='window.status=\"mai\"+\"lto:\"+\"\\2\"+\"@\"+\"\\3\"; return true;' onmouseout='window.status=\"\";return true;'>".$email_text."</a>", $text);
+            } else {
+                $text = preg_replace("#(^|[\n ])([\w]+?://[^ \"\n\r\t<,]*)#is", "\\1<a href=\"\\2\" rel=\"external\">\\2</a>", $text);
+                $text = preg_replace("#(^|[\n ])((www|ftp)\.[^ \"\t\n\r<,]*)#is", "\\1<a href=\"http://\\2\" rel=\"external\">\\2</a>", $text);
+                $text = preg_replace("#([\n ])([a-z0-9\-_.]+?)@([\w\-]+\.([\w\-\.]+\.)*[\w]+)#i", "\\1<a rel='external' href='javascript:window.location=\"mai\"+\"lto:\"+\"\\2\"+\"@\"+\"\\3\";self.close();' onmouseover='window.status=\"mai\"+\"lto:\"+\"\\2\"+\"@\"+\"\\3\"; return true;' onmouseout='window.status=\"\";return true;'>-email-</a>", $text);
+            }
+        }
+
+			// Convert emoticons to graphical icons, unless modifiers override
+        if (strpos($modifiers, 'emotes_off') === FALSE) {
+            if ($pref['smiley_activate'] || strpos($modifiers,'emotes_on') !== FALSE) {
+                if (!is_object($this->e_emote)) {
+                    require_once(e_HANDLER.'emote_filter.php');
+                    $this->e_emote = new e_emoteFilter;
+                }
+                $text = $this->e_emote->filterEmotes($text);
+            }
+        }
+
+			// Reduce multiple newlines in all forms to a single newline character, except for embedded scripts and CSS
+        if (strpos($modifiers, 'nobreak') === FALSE) {
+            $text = preg_replace("#[\r]*\n[\r]*#", E_NL, $text);
+            foreach ($embeds[0] as $embed) {
+                $text = preg_replace("#<\|>#", $embed, $text, 1);
+            }
+        }
+
+		// Restore entity form of quotes and such to single characters, except for text destined for tag attributes or JS.
+		if (strpos($modifiers, 'value') === FALSE) { // output not used for attribute values.
+	       	$text = str_replace($this -> search, $this -> replace, $text);
+        }else{   									// output used for attribute values.
+            $text = str_replace($this -> replace, $this -> search, $text);
 		}
 
-		if($pref['make_clickable'] && strpos($modifiers, 'no_make_clickable') === FALSE) {
-			if($pref['link_replace'] && strpos($modifiers, 'no_replace') === FALSE) {
-				$_ext = ($pref['links_new_window'] ? " rel=\"external\"" : "");
-				$text = preg_replace("#(^|[\n ])([\w]+?://[^ \"\n\r\t<]*)#is", "\\1<a href=\"\\2\" {$_ext}>".$pref['link_text']."</a>", $text);
-				$text = preg_replace("#(^|[\n ])((www|ftp)\.[^ \"\t\n\r<]*)#is", "\\1<a href=\"http://\\2\" {$_ext}>".$pref['link_text']."</a>", $text);
-				if(CHARSET != "utf-8" && CHARSET != "UTF-8"){
-					$email_text = ($pref['email_text']) ? $pref['email_text'] : "\\1\\2&copy;\\3";
-				}else{
-					$email_text = ($pref['email_text']) ? $pref['email_text'] : "\\1\\2©\\3";
-				}
-				$text = preg_replace("#([\n ])([a-z0-9\-_.]+?)@([\w\-]+\.([\w\-\.]+\.)*[\w]+)#i", "\\1<a rel='external' href='javascript:window.location=\"mai\"+\"lto:\"+\"\\2\"+\"@\"+\"\\3\";self.close();' onmouseover='window.status=\"mai\"+\"lto:\"+\"\\2\"+\"@\"+\"\\3\"; return true;' onmouseout='window.status=\"\";return true;'>".$email_text."</a>", $text);
-			} else {
-				$text = preg_replace("#(^|[\n ])([\w]+?://[^ \"\n\r\t<,]*)#is", "\\1<a href=\"\\2\" rel=\"external\">\\2</a>", $text);
-				$text = preg_replace("#(^|[\n ])((www|ftp)\.[^ \"\t\n\r<,]*)#is", "\\1<a href=\"http://\\2\" rel=\"external\">\\2</a>", $text);
-				$text = preg_replace("#([\n ])([a-z0-9\-_.]+?)@([\w\-]+\.([\w\-\.]+\.)*[\w]+)#i", "\\1<a rel='external' href='javascript:window.location=\"mai\"+\"lto:\"+\"\\2\"+\"@\"+\"\\3\";self.close();' onmouseover='window.status=\"mai\"+\"lto:\"+\"\\2\"+\"@\"+\"\\3\"; return true;' onmouseout='window.status=\"\";return true;'>-email-</a>", $text);
-			}
-		}
+        // Start parse [bb][/bb] codes
+        if ($parseBB === TRUE) {
+            if (!is_object($this->e_bb)) {
+                require_once(e_HANDLER.'bbcode_handler.php');
+                $this->e_bb = new e_bbcode;
+            }
+            $text = $this->e_bb->parseBBCodes($text, $postID);
+        }
+        // End parse [bb][/bb] codes
 
-		if (strpos($modifiers, 'emotes_off') === FALSE) {
-			if ($pref['smiley_activate'] || strpos($modifiers,'emotes_on') !== FALSE) {
-				if (!is_object($this->e_emote)) {
-					require_once(e_HANDLER.'emote_filter.php');
-					$this->e_emote = new e_emoteFilter;
-				}
-				$text = $this->e_emote->filterEmotes($text);
-			}
-		}
+				// profanity filter
+        if ($pref['profanity_filter']) {
+            if (!is_object($this->e_pf)) {
+                require_once(e_HANDLER."profanity_filter.php");
+                $this->e_pf = new e_profanityFilter;
+            }
+            $text = $this->e_pf->filterProfanities($text);
+        }
 
-		if (strpos($modifiers, 'nobreak') === FALSE) {
-			$text = preg_replace("#[\r]*\n[\r]*#", E_NL, $text);
-			foreach ($embeds[0] as $embed) {
-				$text = preg_replace("#<\|>#", $embed, $text, 1);
-			}
-		}
+			// Optional short-code conversion
+        if (strpos($modifiers,'parse_sc') !== FALSE)
+        {
+            $text = $this->parseTemplate($text, TRUE);
+        }
 
-		$text = str_replace($this -> search, $this -> replace, $text);
+        //Run any hooked in parsers
+        if(isset($pref['tohtml_hook']) && $pref['tohtml_hook'])
+        {
+            foreach(explode(",",$pref['tohtml_hook']) as $hook)
+            {
+                if (strpos($modifiers, 'no_hook') === FALSE)
+                {
+                    if (!is_object($this->e_hook[$hook]))
+                    {
+                        require_once(e_PLUGIN.$hook."/".$hook.".php");
+                        $hook_class = "e_".$hook;
+                        $this->e_hook[$hook] = new $hook_class;
+                    }
+                    $text = $this->e_hook[$hook]->$hook($text);
+                }
+            }
+        }
 
-		// Start parse [bb][/bb] codes
-		if ($parseBB === TRUE) {
-			if (!is_object($this->e_bb)) {
-				require_once(e_HANDLER.'bbcode_handler.php');
-				$this->e_bb = new e_bbcode;
-			}
-			$text = $this->e_bb->parseBBCodes($text, $postID);
-		}
-		// End parse [bb][/bb] codes
+        if (strpos($modifiers, 'nobreak') === FALSE) {
+            $text = $this -> textclean($text, $wrap);
+        }
 
-		if ($pref['profanity_filter']) {
-			if (!is_object($this->e_pf)) {
-				require_once(e_HANDLER."profanity_filter.php");
-				$this->e_pf = new e_profanityFilter;
-			}
-			$text = $this->e_pf->filterProfanities($text);
-		}
-
-		if (strpos($modifiers,'parse_sc') !== FALSE)
-		{
-			$text = $this->parseTemplate($text, TRUE);
-		}
-
-		//Run any hooked in parsers
-		if(isset($pref['tohtml_hook']) && $pref['tohtml_hook'])
-		{
-			foreach(explode(",",$pref['tohtml_hook']) as $hook)
-			{
-				if (strpos($modifiers, 'no_hook') === FALSE)
-				{
-					if (!is_object($this->e_hook[$hook]))
-					{
-						require_once(e_PLUGIN.$hook."/".$hook.".php");
-						$hook_class = "e_".$hook;
-						$this->e_hook[$hook] = new $hook_class;
+        // Search Highlight
+        if (strpos($modifiers, 'emotes_off') === FALSE) {
+        	if ($this->checkHighlighting())
+        	{
+						$text = $this -> e_highlight($text, $this -> e_query);
 					}
-					$text = $this->e_hook[$hook]->$hook($text);
 				}
-			}
-		}
 
-		if (strpos($modifiers, 'nobreak') === FALSE) {
-			$text = $this -> textclean($text, $wrap);
-		}
-
-		// Search Highlight
-		if (strpos($modifiers, 'emotes_off') === FALSE) {
-			$shr = (isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : "");
-			if ($pref['search_highlight'] && (strpos(e_SELF, 'search.php') === FALSE) && ((strpos($shr, 'q=') !== FALSE) || (strpos($shr, 'p=') !== FALSE))) {
-				if (!isset($this -> e_query)) {
-					$query = preg_match('#(q|p)=(.*?)(&|$)#', $shr, $matches);
-					$this -> e_query = str_replace(array('+', '*', '"', ' '), array('', '.*?', '', '\b|\b'), trim(urldecode($matches[2])));
-				}
-				$text = $this -> e_highlight($text, $this -> e_query);
-			}
-		}
-
-		$nl_replace = "<br />";
-		if (strpos($modifiers, 'nobreak') !== FALSE)
-		{
-			$nl_replace = '';
-		}
-		elseif (strpos($modifiers, 'retain_nl') !== FALSE)
-		{
-			$nl_replace = "\n";
-		}
-		$text = str_replace(E_NL, $nl_replace, $text);
+        $nl_replace = "<br />";
+        if (strpos($modifiers, 'nobreak') !== FALSE)
+        {
+            $nl_replace = '';
+        }
+        elseif (strpos($modifiers, 'retain_nl') !== FALSE)
+        {
+            $nl_replace = "\n";
+        }
+        $text = str_replace(E_NL, $nl_replace, $text);
 
 		return trim($text);
 	}
 
 	function toAttribute($text) {
 		if (!preg_match('/&#|\'|"|\(|\)|<|>/s', $text)) {
+			$text = $this->replaceConstants($text);
 			return $text;
 		} else {
 			return '';
@@ -420,26 +476,35 @@ class e_parse
 	}
 
 	function toJS($stringarray) {
-		$stringarray = str_replace("\r\n", "\\n", $stringarray);
-		$stringarray = str_replace("\r", "", $stringarray);
+		$search = array("\r\n","\r","<br />","'");
+		$replace = array("\\n","","\\n","\'");
+		$stringarray = str_replace($search, $replace, $stringarray);
+        $stringarray = strip_tags($stringarray);
+
 		$trans_tbl = get_html_translation_table (HTML_ENTITIES);
 		$trans_tbl = array_flip ($trans_tbl);
+
 		return strtr ($stringarray, $trans_tbl);
 	}
 
 	function toRss($text,$tags=FALSE)
 	{
 
-		if($tags != TRUE){
+		if($tags != TRUE)
+		{
 			$text = $this -> toHTML($text,TRUE);
 			$text = strip_tags($text);
 		}
 
-		$search = array("&amp;#039;", "&amp;#036;", "&#039;", "&#036;"," & ",);
-		$replace = array("'", '$', "'", '$',' &amp; ' );
-		$text = str_replace($search, $replace, $text);
+		$text = $this->toEmail($text);
+   		$search = array("&amp;#039;", "&amp;#036;", "&#039;", "&#036;"," & ", e_BASE, "href='request.php");
+   		$replace = array("'", '$', "'", '$',' &amp; ', SITEURL, "href='".SITEURL."request.php" );
+   		$text = str_replace($search, $replace, $text);
 
-		//$text = htmlspecialchars($text);
+		if($tags == TRUE && ($text))
+		{
+        	$text = "<![CDATA[".$text."]]>";
+		}
 
 		return $text;
 	}
@@ -453,17 +518,36 @@ class e_parse
 		return $text;
 	}
 
-	function replaceConstants($text,$nonrelative = FALSE)
+//
+// $nonrelative:
+//   "full" = produce absolute URL path, e.g. http://sitename.com/e107_plugins/etc
+//   TRUE = produce truncated URL path, e.g. e107plugins/etc
+//   "" (default) = URL's get relative path e.g. ../e107_plugins/etc
+//                  AND all other e107 constants are replaced
+//
+// only an ADMIN user can convert {e_ADMIN}
+//
+	function replaceConstants($text, $nonrelative = "", $all = false)
 	{
-		if($nonrelative !== FALSE){
-			global $IMAGES_DIRECTORY, $PLUGINS_DIRECTORY, $FILES_DIRECTORY, $THEMES_DIRECTORY;
-        	$replace = array($IMAGES_DIRECTORY,$PLUGINS_DIRECTORY,$FILES_DIRECTORY,$THEMES_DIRECTORY);
-        	$search = array("{"."e_IMAGE"."}","{"."e_PLUGIN"."}","{"."e_FILE"."}","{"."e_THEME"."}");
-            return str_replace($search,$replace,$text);
+		if($nonrelative != "")
+		{
+			global $IMAGES_DIRECTORY, $PLUGINS_DIRECTORY, $FILES_DIRECTORY, $THEMES_DIRECTORY,$DOWNLOADS_DIRECTORY,$ADMIN_DIRECTORY;
+			$replace_relative = array("",$IMAGES_DIRECTORY,$PLUGINS_DIRECTORY,$FILES_DIRECTORY,$THEMES_DIRECTORY,$DOWNLOADS_DIRECTORY);
+			$replace_absolute = array(SITEURL,SITEURL.$IMAGES_DIRECTORY,SITEURL.$PLUGINS_DIRECTORY,SITEURL.$FILES_DIRECTORY,SITEURL.$THEMES_DIRECTORY,SITEURL.$DOWNLOADS_DIRECTORY);
+			$search = array("{e_BASE}","{e_IMAGE}","{e_PLUGIN}","{e_FILE}","{e_THEME}","{e_DOWNLOAD}");
+			if (ADMIN) {
+				$replace_relative[] = $ADMIN_DIRECTORY;
+				$replace_absolute[] = SITEURL.$ADMIN_DIRECTORY;
+				$search[] = "{e_ADMIN}";
+			}
+			$replace = ((string)$nonrelative == "full" ) ? $replace_absolute : $replace_relative;
+			return str_replace($search,$replace,$text);
 		}
+		$pattern = ($all ? "#\{([A-Za-z_0-9]*)\}#s" : "#\{(e_[A-Z]*)\}#s");
+	 	$text = preg_replace_callback($pattern, array($this, 'doReplace'), $text);
+		$theme_path = (defined("THEME")) ? constant("THEME") : "";
+		$text = str_replace("{THEME}",$theme_path,$text);
 
-		$text = preg_replace_callback("#\{(e_[A-Z]*)\}#s", array($this, 'doReplace'), $text);
-		$text = str_replace("{THEME}",constant("THEME"),$text);
 		return $text;
 	}
 
@@ -476,11 +560,41 @@ class e_parse
 		return $matches[1];
 	}
 
-    function createConstants($text){
-        global $IMAGES_DIRECTORY, $PLUGINS_DIRECTORY, $FILES_DIRECTORY, $THEMES_DIRECTORY;
-        $search = array($IMAGES_DIRECTORY,$PLUGINS_DIRECTORY,$FILES_DIRECTORY,$THEMES_DIRECTORY);
-        $replace = array("{"."e_IMAGE"."}","{"."e_PLUGIN"."}","{"."e_FILE"."}","{"."e_THEME"."}");
-		return str_replace($search,$replace,$text);
+    function createConstants($url,$mode=0){
+        global $IMAGES_DIRECTORY,$PLUGINS_DIRECTORY,$FILES_DIRECTORY,$THEMES_DIRECTORY,$DOWNLOADS_DIRECTORY,$ADMIN_DIRECTORY;
+
+        if($mode == 0) // folder name only.
+		{
+			$tmp = array(
+				"{"."e_IMAGE"."}"=>$IMAGES_DIRECTORY,
+				"{"."e_PLUGIN"."}"=>$PLUGINS_DIRECTORY,
+				"{"."e_FILE"."}"=>$FILES_DIRECTORY,
+				"{"."e_THEME"."}"=>$THEMES_DIRECTORY,
+				"{"."e_DOWNLOAD"."}"=>$DOWNLOADS_DIRECTORY,
+				"{"."e_ADMIN"."}"=>$ADMIN_DIRECTORY,
+  			);
+        }
+		elseif($mode == 1)  // relative path
+		{
+			$tmp = array(
+				"{"."e_IMAGE"."}"=>e_IMAGE,
+				"{"."e_PLUGIN"."}"=>e_PLUGIN,
+				"{"."e_FILE"."}"=>e_FILE,
+				"{"."e_THEME"."}"=>e_THEME,
+				"{"."e_DOWNLOAD"."}"=>e_DOWNLOAD,
+				"{"."e_ADMIN"."}"=>e_ADMIN
+			);
+		}
+		foreach($tmp as $key=>$val)
+		{
+        	$len = strlen($val);
+			if(substr($url,0,$len) == $val)
+			{
+            	return str_replace($val,$key,$url);
+			}
+		}
+
+		return $url;
     }
 
 
@@ -493,6 +607,18 @@ class e_parse
 		}
 		return $text;
 	}
+
+    function toEmail($text,$posted="")
+	{
+		if ($posted === TRUE && MAGIC_QUOTES_GPC) {
+			$text = stripslashes($text);
+		}
+
+	  	$text = $this->replaceConstants($text,"full");
+    	$text = $this->toHTML($text,TRUE,"parse_sc");
+        return $text;
+	}
+
 }
 
 ?>
