@@ -8,7 +8,7 @@
 |
 |   (c) Kevin Deldycke 2006-2008
 |   http://kev.coolcavemen.com
-|   kev@coolcavemen.com
+|   kevin@deldycke.com
 |
 |   Released under the terms and conditions of the
 |   GNU General Public License (http://gnu.org).
