@@ -7,7 +7,7 @@
 |   Date: 11 jan 2008
 |
 |   (c) Kevin Deldycke 2006-2008
-|   http://kev.coolcavemen.com
+|   http://kevin.deldycke.com
 |   kevin@deldycke.com
 |
 |   Released under the terms and conditions of the
@@ -248,7 +248,7 @@ class e107_Import {
     // Turn-off profanity filter: if profanities must be hidden in content,
     //   it should be done by a dedicated Wordpress plug-in,
     //   not by a direct alteration of original content.
-    // As suggested by Jon Freger ( http://kev.coolcavemen.com/2006/11/wordpress-to-e107-v06-better-content-rendering-and-extended-news-support/#comment-2937 ), use  WebPurify WP Plugin ( http://www.webpurify.com/wp-plugin.php ).
+    // As suggested by Jon Freger ( http://kevin.deldycke.com/2006/11/wordpress-to-e107-v06-better-content-rendering-and-extended-news-support/#comment-2937 ), use  WebPurify WP Plugin ( http://www.webpurify.com/wp-plugin.php ).
     // TODO: show this suggestion in the UI if profanity_filter is activated on e107.
     $this->e107_pref['profanity_filter'] = False;
 
@@ -386,7 +386,7 @@ class e107_Import {
     $html_content = $post->post_content;
 
     // Locate all <img/> tags and import them into Wordpress
-    // Look at http://kev.coolcavemen.com/2007/03/ultimate-regular-expression-for-html-tag-parsing-with-php/ for details about this regex
+    // Look at http://kevin.deldycke.com/2007/03/ultimate-regular-expression-for-html-tag-parsing-with-php/ for details about this regex
     $img_regex = "/<\s*img((\s+\w+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>/i";
     preg_match_all($img_regex, $html_content, $matches, PREG_SET_ORDER);
     foreach ($matches as $val) {
