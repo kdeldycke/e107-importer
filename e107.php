@@ -3,8 +3,8 @@
 +---------------------------------------------------------------+
 |   Wordpress filter to import e107 website.
 |
-|   Version: 0.9
-|   Date: 11 jan 2008
+|   Version: 0.10-wip
+|   Date: 12 jan 2008
 |
 |   (c) Kevin Deldycke 2006-2008
 |   http://kevin.deldycke.com
@@ -25,16 +25,18 @@ class e107_Import {
 
   // Class wide variables
   var $e107_db;
+
+  var $e107_db_host;
   var $e107_db_user;
   var $e107_db_pass;
   var $e107_db_name;
-  var $e107_db_host;
   var $e107_db_prefix;
 
   var $e107_mail_user;
   var $e107_extended_news;
+  var $e107_patch_theme;
   var $e107_bbcode_parser;
-  var $patch_theme;
+  var $e107_import_images;
 
   var $user_mapping;
   var $news_mapping;
@@ -379,7 +381,7 @@ class e107_Import {
   // This method search for images path in a post (or page) content,
   //   then it import the images from the remote location and
   //   finally update the HTML code accordingly.
-  function importImagesFromPost($post_id) {
+  function importImagesFromPost($post_id, $allowed_domains=array()) {
     global $wpdb;
     // Get post content
     $post = get_post($post_id);
@@ -406,6 +408,21 @@ class e107_Import {
       $http_prefix_regex = '/^https?:\/\//i';
       if (! preg_match($http_prefix_regex, $img_url))
         $img_url = SITEURL.$img_url;
+
+      // Only import files from authorized domains
+      $domain_ok = true;
+      if ($allowed_domains && is_array($allowed_domains) && sizeof($allowed_domains) > 0) {
+        $domain_ok = false;
+        foreach ($allowed_domains as $domain) {
+          $domain = $this->deleteTrailingChar($domain, '/');
+          if (substr($img_url, 0, strlen($domain)) == $domain) {
+            $domain_ok = true;
+            break;
+          }
+        }
+      }
+      if (!$domain_ok)
+        continue;
 
       // The fopen() function in wp_remote_fopen() don't like URLs with space chars not translated to html entities
       $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
@@ -587,6 +604,76 @@ class e107_Import {
       $gmt_offset = (int) $gmt_offset + $x;
     }
     update_option('gmt_offset', $gmt_offset);
+  }
+
+
+  // Install the redirections plugin
+  function installRedirectionPlugin() {
+    global $wpdb;
+    $source = ABSPATH . E107_INCLUDES_PATH . E107_REDIRECT_PLUGIN;
+    $dest   = ABSPATH . PLUGINDIR . '/' . E107_REDIRECT_PLUGIN;
+
+    // Get current active plugins
+    $current = get_option('active_plugins');
+
+    // Remove previous plugin if exist
+    if (is_file($dest))
+      // Desactivate the plugin before removing it
+      if (in_array(E107_REDIRECT_PLUGIN, $current)) {
+        array_splice($current, array_search(E107_REDIRECT_PLUGIN, $current), 1 ); // Array-fu!
+        update_option('active_plugins', $current);
+        do_action('deactivate_' . E107_REDIRECT_PLUGIN);
+      }
+      // No need to unlink() here: copy() will overwrite the $dest file
+
+    // Copy the plugin to plugin directory
+    copy($source, $dest);
+  }
+
+
+  // Update the redirection plugin with data related to this import
+  // Mainly used to add the mapping of old e107 content to their Wordpress equivalent
+  function updateRedirectionPlugin($keyword, $data) {
+    global $wpdb;
+    // Get plugin file path
+    $real_file = get_real_file_to_edit(PLUGINDIR . '/' . E107_REDIRECT_PLUGIN);
+
+    // Extract plugin content
+    $f = fopen($real_file, 'r+');
+    $content = fread($f, filesize($real_file));
+    //fclose($f);
+
+    // Create the tag
+    $tag = '// XXX '.strtoupper(str_replace('_', ' ', trim($keyword))).' XXX';
+
+    // Generate the PHP code
+    $data_code = '$'.$keyword.' = '.var_export($data, true).';';
+
+    // Replace the tag by the php code in the plugin
+    $updated_content = str_replace($tag, $data_code, $content);
+
+    // Save modifications in the plugin
+    rewind($f);
+    //$f = fopen($real_file, 'w+');
+    fwrite($f, $updated_content);
+    fclose($f);
+  }
+
+
+  // Validate and activate the redirection plugin
+  function activateRedirectionPlugin() {
+    global $wpdb;
+    // Get current active plugins
+    $current = get_option('active_plugins');
+
+    // Validate the plugin
+    if (validate_file(E107_REDIRECT_PLUGIN))
+      wp_die(__('Invalid plugin.'));
+
+    // Activate the plugin
+    $current[] = E107_REDIRECT_PLUGIN;
+    update_option('active_plugins', $current);
+    do_action('activate_' . E107_REDIRECT_PLUGIN);
   }
 
 
@@ -787,7 +874,7 @@ class e107_Import {
       extract($page);
       $page_id = (int) $page_id;
 
-      if ($this->patch_theme == 'patch_theme') {
+      if ($this->e107_patch_theme == 'patch_theme') {
         // Auto-patch kubrick Page Template file to show comments by default
         // Switch to default kubrick theme
         $ct = current_theme_info();
@@ -978,6 +1065,7 @@ class e107_Import {
   function replaceWithPermalinks() {
     global $wpdb;
     // Associate each mapping with their related regexp
+    // TODO: Load mappings from the e107-to-wordpress-redirect.php plugin
     $redirect_rules = array(
       array( 'mapping' => $this->news_mapping
            , 'rules'   => array( '/^\/*comment\.php(?:%3F|\?)comment\.news\.(\d+)(.*)$/i'
@@ -1096,12 +1184,60 @@ class e107_Import {
   }
 
 
+  // Transform BBcode to html using Kevin's custom parser
+  function parseBBcodeWithCustomParser() {
+    /*
+    // cleanup html and semantics enhancements
+
+    "<br />" -> "\n"
+    "<br /><br />" -> "\n\n"
+    "<br /><br /><br />" -> "\n\n"
+    ...
+
+    "<em class='bbcode italic'>" -> <em>
+
+    "class='bbcode'" -> ''
+
+    "<strong class='bbcode bold'>" -> "<strong>"
+
+    " class='bbcode underline'" -> ''
+
+    "alt=''"
+
+    "style='vertical-align:middle; border:0'"
+
+    "style='vertical-align:middle; border:0'"
+
+    *
+    *
+    *
+    -> wiki style lists
+
+    -
+    -
+    -
+    -> wiki style lists
+
+    1
+    2
+    3
+    -> wiki style lists
+
+    */
+  }
+
+
   // This method import all images embedded in news and pages to WP
-  function importImages() {
+  function importImages($local_only = false) {
+    // Build the list of authorized domains from which we are allowed to import images
+    $allowed_domains = array();
+    if ($local_only == true)
+      $allowed_domains[] = $this->e107_pref['siteurl'];
+
     // Get the list of WP news and page IDs
     $news_and_pages_ids = array_merge(array_values($this->news_mapping), array_values($this->page_mapping));
     foreach ($news_and_pages_ids as $post_id)
-      $this->importImagesFromPost($post_id);
+      $this->importImagesFromPost($post_id, $allowed_domains);
   }
 
 
@@ -1130,11 +1266,13 @@ class e107_Import {
     echo __('Take care of page visibility (private / public),').'</li><li>';
     echo __('Import comments (both from news and custom pages),').'</li><li>';
     echo __('Import images from news and pages,').'</li><li>';
+    echo __('Let you choose which kind of images you want to upload to Wordpress (external or not),').'</li><li>';
     echo __('Import preferences (like site name, description, ...),').'</li><li>';
     echo __('Convert embedded bbcode to plain HTML,').'</li><li>';
     echo __('Import users and their profile (or try to update the profile if user already exist),').'</li><li>';
     echo __('Try to map users to appropriate roles,').'</li><li>';
-    echo __('Send mails to users to inform them about their new credentials.');
+    echo __('Send mails to users to inform them about their new credentials,').'</li><li>';
+    echo __('Redirect old e107 URLs to new permalinks via an integrated plugin (for SEO).');
     echo '</li></ul></p>';
 
     echo '<p>'.'<strong>'.__('Warning').'</strong>: '.__("Your e107 site <u>must</u> be fully encoded in UTF-8. If it's not the case, please look at <a href='http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8'>Upgrading database content to UTF-8</a> article on e107 wiki.").'</p>';
@@ -1178,33 +1316,33 @@ class e107_Import {
     echo __("<p><strong>Warning 1</strong>: e107 users' password are encrypted. All passwords will be resetted.</p>");
     echo __("<p>Do you want to inform each user of their new password ?");
     echo '<ul><li>';
-    echo __('<label><input name="e107_mail_user" type="radio" value="no_mail" checked="checked"/> No: reset each password but don\'t send a mail to users.</label>');
-    echo '</li><li>';
     echo __('<label><input name="e107_mail_user" type="radio" value="send_mail"/> Yes: reset each password and send each user a mail to inform them.</label>');
+    echo '</li><li>';
+    echo __('<label><input name="e107_mail_user" type="radio" value="no_mail" checked="checked"/> No: reset each password but don\'t send a mail to users.</label>');
     echo '</li></ul>';
     echo '</p>';
     echo __("<p><strong>Warning 2</strong>: Unlike e107, Wordpress don't accept strange char (like accents, etc) in login. When a user will be added to WP, all non-ascii chars will be deleted from the login string.</p>");
     echo '</fieldset>';
 
-    echo '<fieldset class="options"><legend>'.__('News').'</legend>';
+    echo '<fieldset class="options"><legend>'.__('News Extends').'</legend>';
     echo '<p>Wordpress doesn\'t support extended news.</p>';
     echo '<p>Do you want to import the extended part of all e107 news ?';
     echo '<ul><li>';
-    echo '<label><input name="e107_extended_news" type="radio" value="ignore_extended" checked="checked"/> No: Ignore extended part of news, import the body only.</label>';
+    echo '<label><input name="e107_extended_news" type="radio" value="import_all"/> Yes: import both extended part and body and merge them.</label>';
     echo '</li><li>';
-    echo '<label><input name="e107_extended_news" type="radio" value="import_all"/> Yes: Import both extended part and body and merge them.</label>';
+    echo '<label><input name="e107_extended_news" type="radio" value="ignore_body"/> Yes, but: ignore body and import extended part only.</label>';
     echo '</li><li>';
-    echo '<label><input name="e107_extended_news" type="radio" value="ignore_body"/> Ignore body and import extended part only.</label>';
+    echo '<label><input name="e107_extended_news" type="radio" value="ignore_extended" checked="checked"/> No: ignore extended part of news, import the body only.</label>';
     echo '</li></ul></p>';
     echo '</fieldset>';
 
-    echo '<fieldset class="options"><legend>'.__('Custom Pages').'</legend>';
+    echo '<fieldset class="options"><legend>'.__('Comments on Custom Pages').'</legend>';
     echo '<p>'.__("Wordpress <a href='http://trac.wordpress.org/ticket/3753'>doesn't display comments on pages</a> by default. However, this tool can fix this by patching the default Wordpress theme (Kubrick).").'</p>';
     echo '<p>Do you want to patch Kubrick ?';
     echo '<ul><li>';
-    echo '<label><input name="e107_patch_theme" type="radio" value="no_patch_theme" checked="checked"/> No, I don\'t want to patch the default theme</label>';
+    echo '<label><input name="e107_patch_theme" type="radio" value="patch_theme"/> Yes: I want to let this import tool patch the Kubrick theme and set it as the current one.</label>';
     echo '</li><li>';
-    echo '<label><input name="e107_patch_theme" type="radio" value="patch_theme"/> Yes, I want to let this import tool patch the Kubrick theme and set it as the current one.</label>';
+    echo '<label><input name="e107_patch_theme" type="radio" value="no_patch_theme" checked="checked"/> No: I don\'t want to patch the default theme</label>';
     echo '</li></ul></p>';
     echo '</fieldset>';
 
@@ -1213,7 +1351,21 @@ class e107_Import {
     echo '<ul><li>';
     echo '<label><input name="e107_bbcode_parser" type="radio" value="original" checked="checked"/> e107 parser (content will be rendered exactly as they appear in e107).</label>';
     echo '</li><li>';
+    echo '<label><input name="e107_bbcode_parser" type="radio" value="semantic"/> WordPress-like (enhance semantics and output html code very similar to what WP produce by default).</label>';
+    echo '</li><li>';
     echo '<label><input name="e107_bbcode_parser" type="radio" value="none"/> Do not translate bbcode to html and let them appear as is.</label>';
+    echo '</li></ul></p>';
+    echo '</fieldset>';
+
+    echo '<fieldset class="options"><legend>'.__('Images upload').'</legend>';
+    echo '<p>This tool can find images URLs embedded in news and pages and upload them to this blog autommaticcaly.</p>';
+    echo '<p>Do you want to upload image files ?';
+    echo '<ul><li>';
+    echo '<label><input name="e107_import_images" type="radio" value="upload_all"/> Yes: upload all images, even those located on external sites.</label>';
+    echo '</li><li>';
+    echo '<label><input name="e107_import_images" type="radio" value="site_upload" checked="checked"/> Yes, but: upload files from the e107 site only, not external images.</label>';
+    echo '</li><li>';
+    echo '<label><input name="e107_import_images" type="radio" value="no_upload"/> No: do not upload image files to Wordpress.</label>';
     echo '</li></ul></p>';
     echo '</fieldset>';
 
@@ -1231,6 +1383,7 @@ class e107_Import {
                               , 'e107_extended_news'
                               , 'e107_patch_theme'
                               , 'e107_bbcode_parser'
+                              , 'e107_import_images'
                               );
 
     // Register each option as class global variables
@@ -1255,6 +1408,10 @@ class e107_Import {
     $this->importPreferences();
     echo '<p>'.__('All e107 preferences imported.').'</p>';
 
+    echo '<h3>'.__('Install the redirection plugin').'</h3>';
+    $this->installRedirectionPlugin();
+    echo '<p>'.__('Plugin installed.').'</p>';
+
     echo '<h3>'.__('Import users').'</h3>';
     $this->importUsers();
     echo '<p><strong>'.sizeof($this->user_mapping).'</strong>'.__(' users imported.').'</p>';
@@ -1265,10 +1422,18 @@ class e107_Import {
     echo '<p><strong>'.sizeof($this->category_mapping).'</strong>'.__(' categories imported.').'</p>';
     // TODO: echo '<p><strong>'.sizeof($images).'</strong>'.__(' images uploaded.').'</p>';
 
+    echo '<h3>'.__('Update redirection plugin').'</h3>';
+    $this->updateRedirectionPlugin('news_mapping', $this->news_mapping);
+    echo '<p>'.__('Old news URLs are now redirected to permalinks.').'</p>';
+
     echo '<h3>'.__('Import custom pages').'</h3>';
     $this->importPages();
     echo '<p><strong>'.sizeof($this->page_mapping).'</strong>'.__(' custom pages imported.').'</p>';
     // TODO: echo '<p><strong>'.sizeof($images).'</strong>'.__(' images uploaded.').'</p>';
+
+    echo '<h3>'.__('Update redirection plugin').'</h3>';
+    $this->updateRedirectionPlugin('page_mapping', $this->page_mapping);
+    echo '<p>'.__('Old static pages URLs are now redirected to permalinks.').'</p>';
 
     echo '<h3>'.__('Import comments').'</h3>';
     $this->importComments();
@@ -1285,19 +1450,33 @@ class e107_Import {
     echo '<p>'.__('All migrated content use permalinks now.').'</p>';
 
     echo '<h3>'.__('Parse BBcode').'</h3>';
-    if ($this->e107_bbcode_parser == 'original') {
+    if ($this->e107_bbcode_parser == 'semantic') {
+      $this->parseBBcodeWithCustomParser();
+      echo '<p>'.__("BBcode converted to pure html using kevin's custom parser.").'</p>';
+    } elseif ($this->e107_bbcode_parser == 'original') {
       $this->parseBBcodeWithE107();
       echo '<p>'.__('BBcode converted to pure html using original e107 parser.').'</p>';
     } else {
       echo '<p>'.__('BBcode tags left as-is.').'</p>';
     }
 
-    echo '<h3>'.__('Import all images').'</h3>';
-    $this->importImages();
-    echo '<p>'.__('All images embeded in news and pages imported.').'</p>';
+    echo '<h3>'.__('Upload images').'</h3>';
+    if ($this->e107_import_images == 'upload_all') {
+      $this->importImages();
+      echo '<p>'.__('All image embedded in news and pages uploaded to Wordpress.').'</p>';
+    } elseif ($this->e107_import_images == 'site_upload') {
+      $this->importImages(true);
+      printf('<p>'.__('All image files from %s domain and which are used in news and pages were uploaded to Wordpress.').'</p>', '<a href="'.$this->e107_pref['siteurl'].'">'.$this->e107_pref['siteurl'].'</a>');
+    } else {
+      echo '<p>'.__('Image upload skipped.').'</p>';
+    }
+
+    echo '<h3>'.__('Activate the redirection plugin').'</h3>';
+    $this->activateRedirectionPlugin();
+    echo '<p>'.__('Plugin active !').'</p>';
 
     echo '<h2>'.__('Import e107: Finished !').'</h2>';
-    printf('<p><a href="%s">Have fun !</a></p>', get_option('siteurl'));
+    printf('<p><a href="%s">'.__('Have fun !').'</a></p>', get_option('siteurl'));
 
     echo '</div>';
   }
@@ -1310,6 +1489,6 @@ $wpdb->show_errors();
 
 // Add e107 importer in the list of default Wordpress import filter
 $e107_import = new e107_Import();
-register_importer('e107', __('e107'), __("Import e107 news, categories, users, custom pages, comments, images and preferences to Wordpress."), array ($e107_import, 'start'));
+register_importer('e107', __('e107'), __("Import e107 news, categories, users, custom pages, comments, images and preferences to Wordpress. Also take care of URL redirections, but don't make coffee (yet <img src='".get_option('siteurl')."/wp-includes/images/smilies/icon_wink.gif' alt=';)' class='wp-smiley'/>)."), array ($e107_import, 'start'));
 
 ?>
