@@ -4,15 +4,15 @@
 |     e107 website system
 |
 |      Steve Dunstan 2001-2002
-|     http://e107.org
-|     jalist@e107.org
+|     Copyright (C) 2008-2010 e107 Inc (e107.org)
+|
 |
 |     Released under the terms and conditions of the
 |     GNU General Public License (http://gnu.org).
 |
-|     $Source: /cvsroot/e107/e107_0.7/e107_handlers/e_parse_class.php,v $
-|     $Revision: 1.203 $
-|     $Date: 2007/12/30 09:49:42 $
+|     $URL: https://e107.svn.sourceforge.net/svnroot/e107/trunk/e107_0.7/e107_handlers/e_parse_class.php $
+|     $Revision: 11804 $
+|     $Id: e_parse_class.php 11804 2010-09-21 07:38:40Z e107steved $
 |     $Author: e107steved $
 +----------------------------------------------------------------------------+
 */
@@ -26,8 +26,8 @@ class e_parse
 	var $e_pf;
 	var $e_emote;
 	var $e_hook;
-	var $search = array('&#39;', '&#039;', '&quot;', 'onerror', '&gt;', '&amp;#039;', '&amp;quot;', ' & ');
-	var $replace = array("'", "'", '"', 'one<i></i>rror', '>', "'", '"', ' &amp; ');
+	var $search = array('&amp;#039;', '&#039;', '&#39;', '&quot;', 'onerror', '&gt;', '&amp;quot;', ' & ');
+	var $replace = array("'", "'", "'", '"', 'one<i></i>rror', '>', '"', ' &amp; ');
 	var $e_highlighting;		// Set to TRUE or FALSE once it has been calculated
 	var $e_query;			// Highlight query
 
@@ -90,7 +90,7 @@ class e_parse
 
 				'user_body' =>					// text is user-entered (i.e. untrusted)'body' or 'bulk' text (e.g. custom page body, content body)
 					array(
-						// no changes to default-on items
+						'constants'=>TRUE
 						),
 
 				'linktext' =>			// text is the 'content' of a link (A tag, etc)
@@ -105,6 +105,10 @@ class e_parse
 						)
 		);
 
+	var $replaceVars = array();
+
+
+
 	function e_parse()
 	{
 		// Preprocess the supermods to be useful default arrays with all values
@@ -117,22 +121,41 @@ class e_parse
 		{
 			$this->e_modSet[$key] = TRUE;
 		}
-
 	}
 
+
+
+	/**
+	 *
+	 *	@param boolean|'no_html'|'pReFs' $mod [optional]. 
+	 *			The 'pReFs' value is for internal use only, when saving prefs, to prevent sanitisation of HTML.
+	 */
 	function toDB($data, $nostrip = false, $no_encode = false, $mod = false)
 	{
 		global $pref;
-		if (is_array($data)) {
+		if (is_array($data)) 
+		{
 			// recursively run toDB (for arrays)
-			foreach ($data as $key => $var) {
+			foreach ($data as $key => $var) 
+			{
 				$ret[$key] = $this -> toDB($var, $nostrip, $no_encode, $mod);
 			}
-		} else {
-			if (MAGIC_QUOTES_GPC == TRUE && $nostrip == false) {
+		} 
+		else 
+		{
+			if (MAGIC_QUOTES_GPC == TRUE && $nostrip == false) 
+			{
 				$data = stripslashes($data);
 			}
-			if(isset($pref['post_html']) && check_class($pref['post_html']))
+			if ($mod != 'pReFs')
+			{
+				$data = $this->preFilter($data);
+				if (!check_class(varset($pref['post_html'], e_UC_MAINADMIN)) || !check_class(varset($pref['post_script'], e_UC_MAINADMIN)))
+				{
+					$data = $this->dataFilter($data);
+				}
+			}
+			if (isset($pref['post_html']) && check_class($pref['post_html']))
 			{
 				$no_encode = TRUE;
 			}
@@ -141,7 +164,9 @@ class e_parse
 				$search = array('$', '"', "'", '\\', '<?');
 				$replace = array('&#036;','&quot;','&#039;', '&#092;', '&lt;?');
 				$ret = str_replace($search, $replace, $data);
-			} else {
+			} 
+			else 
+			{
 				$data = htmlspecialchars($data, ENT_QUOTES, CHARSET);
 				$data = str_replace('\\', '&#092;', $data);
 				$ret = preg_replace("/&amp;#(\d*?);/", "&#\\1;", $data);
@@ -151,11 +176,211 @@ class e_parse
 			{
 				$ret = preg_replace("#\[(php)#i", "&#91;\\1", $ret);
 			}
-
 		}
-
 		return $ret;
 	}
+
+
+
+	function dataFilter($data)
+	{
+		$ans = '';
+		$vetWords = array('<applet', '<body', '<embed', '<frame', '<script', '<frameset', '<html', '<iframe', 
+					'<style', '<layer', '<link', '<ilayer', '<meta', '<object', 'javascript:', 'vbscript:');
+
+		$ret = preg_split('#(\[code.*?\[/code.*?])#mis', $data, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE );
+
+		foreach ($ret as $s)
+		{
+			if (substr($s, 0, 5) != '[code')
+			{
+				$vl = array();
+				$t = html_entity_decode(rawurldecode($s), ENT_QUOTES, CHARSET);
+				$t = str_replace(array("\r", "\n", "\t", "\v", "\f", "\0"), '', $t);
+				$t1 = strtolower($t);
+				foreach ($vetWords as $vw)
+				{
+					if (strpos($t1, $vw) !== FALSE)
+					{
+						$vl[] = $vw;		// Add to list of words found
+					}
+					if (substr($vw, 0, 1) == '<')
+					{
+						$vw = '</'.substr($vw, 1);
+						if (strpos($t1, $vw) !== FALSE)
+						{
+							$vl[] = $vw;		// Add to list of words found
+						}
+					}
+				}
+				// More checks here
+				if (count($vl))
+				{	// Do something
+					$s = preg_replace_callback('#('.implode('|', $vl).')#mis', array($this, 'modtag'), $t);
+				}
+			}
+			$ans .= $s;
+		}
+		return $ans;
+	}
+
+
+	function modTag($match)
+	{
+		$ans = '';
+		if (isset($match[1]))
+		{
+			$chop = intval(strlen($match[1]) / 2);
+			$ans = substr($match[1], 0, $chop).'##xss##'.substr($match[1], $chop);
+		}
+		else
+		{
+			$ans = '?????';
+		}
+		return '[sanitised]'.$ans.'[/sanitised]';
+		
+	}
+
+
+	function preFilter($data)
+	{
+		if (!is_object($this->e_bb)) 
+		{
+			require_once(e_HANDLER.'bbcode_handler.php');
+			$this->e_bb = new e_bbcode;
+		}
+		$ret = $this->e_bb->parseBBCodes($data, 0, 'default', 'PRE');			// $postID zero for now - probably doesn't mater
+		return $ret;
+	}
+
+
+	/**
+	 *
+	 *	@param array $matches:
+	 *		[0] - complete string
+	 *		[1] - bbcode word
+	 *		[2] - '=' or space if parameters passed in bbcode, else empty string
+	 *		[3] - parameters if passed
+	 *		[4] - text between opening and closing bbcode tags
+	 *		[5] - text after the closing tag but before the closing bracket (if any)
+	 *		[6] -
+	 */
+/*	function filtTag($matches)
+	{
+		switch (strtolower($matches[1]))
+		{
+			case 'youtube' :
+				return $this->checkYoutube($matches);
+			default :
+				return $matches[0];
+		}
+	}
+*/
+
+
+	/* Deprecated function - leave in for now for the use of fixyoutube.php */
+	function checkYoutube(&$matches)
+	{
+		$bbpars = array();
+		$widthString = '';
+		$matches[3] = trim($matches[3]);
+		if ($matches[3])
+		{
+			if (strpos($matches[3], '|') !== FALSE)
+			{
+				list($widthString, $matches[3]) = explode('|', $matches[3]);
+			}
+			elseif (in_array($matches[3], array('tiny', 'small', 'medium', 'big', 'huge')) || (strpos($matches[3], ',') !== FALSE))
+			{	// Assume we're just setting a width
+				$widthString = $matches[3];
+				$matches[3] = '';
+			}
+			if ($matches[3])
+			{
+				$bbpars = explode('&', $matches[3]);
+			}
+		}
+		$params = array();										// Accumulator for parameters from youtube code
+		$ok = 0;
+		if (strpos($matches[4], '<') === FALSE)
+		{	// 'Properly defined' bbcode (we hope)
+			$picRef = $matches[4];
+		}
+		else
+		{
+			if (FALSE === ($info = simplexml_load_string($matches[4])))
+			{
+				//print_a($matches);
+				//$xmlErrs = libxml_get_errors();
+				//print_a($xmlErrs);
+				$ok = 1;
+			}
+			else
+			{
+				$info1 = (array)$info;
+				if (!isset($info1['embed']))
+				{
+					$ok = 2;
+				}
+				else
+				{
+					$info2 = (array)$info1['embed'];
+					if (!isset($info2['@attributes']))
+					{
+						$ok = 3;
+					}
+				}
+			}
+			if ($ok != 0)
+			{
+				print_a($info);
+				return '[sanitised]'.$ok.'B'.htmlspecialchars($matches[0]).'B[/sanitised]';
+			}
+			$target =  (array)$info2['@attributes'];
+			unset($info);
+			$ws = varset($target['width'], 0);
+			$hs = varset($target['height'], 0);
+			if (($ws == 0) || ($hs == 0) || !isset($target['src'])) return  '[sanitised]A'.htmlspecialchars($matches[0]).'A[/sanitised]';
+			if (!$widthString)
+			{
+				$widthString = $ws.','.$hs;			// Set size of window
+			}
+			list($url, $query) = explode('?', $target['src']);
+			if (strpos($url, 'youtube-nocookie.com') !== FALSE)
+			{
+				$params[] = 'privacy';
+			}
+			parse_str($query, $vals);		// Various options set here
+			if (varset($vals['allowfullscreen'], 'true') != 'true')
+			{
+				$params[] = 'nofull';
+			}
+			if (varset($vals['border'], 0) != 0)
+			{
+				$params[] = 'border';
+			}
+			if (varset($vals['rel'], 1) == 0)
+			{
+				$params[] = 'norel';
+			}
+			$picRef = substr($url, strrpos($url, '/') + 1);
+		}
+
+
+		$yID = preg_replace('/[^0-9a-z]/i', '', $picRef);
+		if (($yID != $picRef) || (strlen($yID) > 20))
+		{	// Possible hack attempt
+		}
+		$params = array_merge($params, $bbpars);			// Any parameters set in bbcode override those in HTML
+		// Could check for valid array indices here
+		$paramString = implode('&', $params);
+		if ($paramString) $widthString .= '|'.$paramString;
+		$ans = '['.$matches[1].'='.$widthString.']'.$picRef.'[/'.$matches[1].']';
+		return $ans;
+	}
+
+
+
 
 	function toForm($text, $single_quotes = FALSE, $convert_lt_gt = false)
 	{
@@ -176,16 +401,27 @@ class e_parse
 	}
 
 
-	function post_toForm($text) {
-		if (defined("MAGIC_QUOTES_GPC") && (MAGIC_QUOTES_GPC == TRUE)) {
+
+	function post_toForm($text) 
+	{
+		global $pref;
+		if (defined("MAGIC_QUOTES_GPC") && (MAGIC_QUOTES_GPC == TRUE)) 
+		{
 			$text = stripslashes($text);
+		}
+		//If user is not allowed to use [php] change to entities
+		if ((!defined('USERCLASS')) ||(!check_class($pref['php_bbcode'])))
+		{
+			$text = preg_replace("#\[(php)#i", "&#91;\\1", $text);
 		}
 		// ensure apostrophes are properly converted, or else the form item could break
 		return str_replace(array( "'", '"'), array("&#039;", "&quot;"), $text);
 	}
 
 
-	function post_toHTML($text, $modifier = true, $extra = '') {
+
+	function post_toHTML($text, $modifier = true, $extra = '') 
+	{
 		/*
 		changes by jalist 30/01/2005:
 		description had to add modifier to /not/ send formatted text on to this->toHTML at end of method, this was causing problems when MAGIC_QUOTES_GPC == TRUE.
@@ -193,11 +429,13 @@ class e_parse
 		global $pref;
 
 		$no_encode = FALSE;
-		if(isset($pref['post_html']) && check_class($pref['post_html'])) {
+		if(isset($pref['post_html']) && check_class($pref['post_html'])) 
+		{
 			$no_encode = true;
 		}
 
-		if (ADMIN === true || $no_encode === true) {
+		if (ADMIN === true || $no_encode === true) 
+		{
 			$search = array('$', '"', "'", '\\', "'&#092;'");
 			$replace = array('&#036;','&quot;','&#039;','&#092;','&#039;');
 			$text = str_replace($search, $replace, $text);
@@ -210,9 +448,11 @@ class e_parse
 				$replace = array('&#092;&#092;','&#039;', '&quot;');
 				$text = str_replace($search, $replace, $text);
 			}
-		} else {
-
-			if (MAGIC_QUOTES_GPC) {
+		} 
+		else 
+		{
+			if (MAGIC_QUOTES_GPC) 
+			{
 				$text = stripslashes($text);
 			}
 		  	$text = htmlentities($text, ENT_QUOTES, CHARSET);
@@ -229,7 +469,10 @@ class e_parse
 		return ($modifier ? $this->toHTML($text, true, $extra) : $text);
 	}
 
-	function parseTemplate($text, $parseSCFiles = TRUE, $extraCodes = "") {
+
+
+	function parseTemplate($text, $parseSCFiles = TRUE, $extraCodes = "") 
+	{
 		// Start parse {XXX} codes
 		if (!is_object($this->e_sc))
 		{
@@ -241,125 +484,228 @@ class e_parse
 	}
 
 
-
-	function htmlwrap($str, $width, $break = "\n", $nobreak = "", $nobr = "pre", $utf = false)
+	function simpleParse(&$template, $vars=false, $replaceUnset=true)
 	{
-		/*
-		* Parts of code from  htmlwrap() function - v1.6
-		* Copyright (c) 2004 Brian Huisman AKA GreyWyvern
-		* http://www.greywyvern.com/code/php/htmlwrap_1.1.php.txt
-		*
-		* This program may be distributed under the terms of the GPL
-		*   - http://www.gnu.org/licenses/gpl.txt
-		*
-		* Other mods by steved
-		*/
-
-  // Transform protected element lists into arrays
-  $nobreak = explode(" ", strtolower($nobreak));
-
-  // Variable setup
-  $intag = false;
-  $innbk = array();
-  $drain = "";
-
-  // List of characters it is "safe" to insert line-breaks at
-  // It is not necessary to add < and > as they are automatically implied
-  $lbrks = "/?!%)-}]\\\"':;&";
-
-  // Is $str a UTF8 string?
-	$utf8 = ($utf || CHARSET == 'utf-8') ? "u" : "";
-
-
-// Start of the serious stuff - split into HTML tags and text between
-	  $content = preg_split('#(<.*?>)#mis', $str, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE );
-	  foreach($content as $value)
-	  {
-		if ($value[0] == "<")
-		{  // We are within an HTML tag
-          // Create a lowercase copy of this tag's contents
-          $lvalue = strtolower(substr($value,1,-1));
-		  if ($lvalue)
-		  {	// Tag of non-zero length
-			// If the first character is not a / then this is an opening tag
-            if ($lvalue[0] != "/") 
-			{            // Collect the tag name   
-              preg_match("/^(\w*?)(\s|$)/", $lvalue, $t);
-
-              // If this is a protected element, activate the associated protection flag
-              if (in_array($t[1], $nobreak)) array_unshift($innbk, $t[1]);
-            }
-		    else 
-		    {  // Otherwise this is a closing tag
-              // If this is a closing tag for a protected element, unset the flag
-              if (in_array(substr($lvalue, 1), $nobreak)) 
-			  {
-                reset($innbk);
-                while (list($key, $tag) = each($innbk)) 
-				{
-                  if (substr($lvalue, 1) == $tag) 
-				  {
-                    unset($innbk[$key]);
-                    break;
-                  }
-                }
-                $innbk = array_values($innbk);
-              }
-            }
-		  }
-		  else
-		  {
-		    $value = '';		// Eliminate any empty tags altogether
-		  }
-        // Else if we're outside any tags, and with non-zero length string...
-        } 
-		elseif ($value) 
+		if($vars==false)
 		{
-          // If unprotected...
-          if (!count($innbk)) 
-		  {
-            // Use the ACK (006) ASCII symbol to replace all HTML entities temporarily
-            $value = str_replace("\x06", "", $value);
-            preg_match_all("/&([a-z\d]{2,7}|#\d{2,5});/i", $value, $ents);
-            $value = preg_replace("/&([a-z\d]{2,7}|#\d{2,5});/i", "\x06", $value);
-
-            // Enter the line-break loop
-            do 
-			{
-              $store = $value;
-
-              // Find the first stretch of characters over the $width limit
-              if (preg_match("/^(.*?\s)?(\S{".$width."})(?!(".preg_quote($break, "/")."|\s))(.*)$/s".(($utf8) ? "u" : ""), $value, $match)) 
-			  {
-                if (strlen($match[2])) 
-				{
-                  // Determine the last "safe line-break" character within this match
-                  for ($x = 0, $ledge = 0; $x < strlen($lbrks); $x++) $ledge = max($ledge, strrpos($match[2], $lbrks{$x}));
-                  if (!$ledge) $ledge = strlen($match[2]) - 1;
-
-                  // Insert the modified string
-                  $value = $match[1].substr($match[2], 0, $ledge + 1).$break.substr($match[2], $ledge + 1).$match[4];
-                }
-              }
-            // Loop while overlimit strings are still being found
-            } while ($store != $value);
-
-            // Put captured HTML entities back into the string
-            foreach ($ents[0] as $ent) $value = preg_replace("/\x06/", $ent, $value, 1);
-          }
-        }
-
-        // Send the modified segment down the drain
-        $drain .= $value;
-	  }
-
-	  // Return contents of the drain
-	  return $drain;
+			$this->replaceVars = &$GLOBALS;
+		}
+		else
+		{
+			$this->replaceVars = &$vars;
+		}
+		$this->replaceUnset = $replaceUnset;
+		return preg_replace_callback("#\{([a-zA-Z0-9_]+)\}#", array($this, 'simpleReplace'), $template);
+	}
+	
+	function simpleReplace($tmp) {
+		$unset = ($this->replaceUnset ? '' : $tmp[0]);
+		return (isset($this->replaceVars[$tmp[1]]) ? $this->replaceVars[$tmp[1]] : $unset);
+//		return (isset($this->replaceVars[$tmp[1]]) && is_string($this->replaceVars[$tmp[1]]) ? $this->replaceVars[$tmp[1]] : '');
 	}
 
 
 
-	function html_truncate ($text, $len = 200, $more = "[more]")
+	function htmlwrap($str, $width, $break = "\n", $nobreak = "a", $nobr = "pre", $utf = false)
+	{
+		/*
+		Pretty well complete rewrite to try and handle utf-8 properly.
+		Breaks each utf-8 'word' every $width characters max. If possible, breaks after 'safe' characters.
+		$break is the character inserted to flag the break.
+		$nobreak is a list of tags within which word wrap is to be inactive
+		*/
+
+		// Don't wrap if non-numeric width
+		$width = intval($width);
+		// And trap stupid wrap counts
+		if ($width < 6)
+			return $str;
+
+		// Transform protected element lists into arrays
+		$nobreak = explode(" ", strtolower($nobreak));
+
+		// Variable setup
+		$intag = false;
+		$innbk = array();
+		$drain = "";
+
+		// List of characters it is "safe" to insert line-breaks at
+		// It is not necessary to add < and > as they are automatically implied
+		$lbrks = "/?!%)-}]\\\"':;&";
+
+		// Is $str a UTF8 string?
+		if ($utf || strtolower(CHARSET) == 'utf-8')
+		{
+			// 0x1680, 0x180e, 0x2000-0x200a, 0x2028, 0x205f, 0x3000 are 'non-ASCII' Unicode UCS-4 codepoints - see http://www.unicode.org/Public/UNIDATA/UnicodeData.txt
+			// All convert to 3-byte utf-8 sequences:
+			// 0x1680	0xe1	0x9a	0x80
+			// 0x180e	0xe1	0xa0	0x8e
+			// 0x2000	0xe2	0x80	0x80
+			//   -
+			// 0x200a	0xe2	0x80	0x8a
+			// 0x2028	0xe2	0x80	0xa8
+			// 0x205f	0xe2	0x81	0x9f
+			// 0x3000	0xe3	0x80	0x80
+			$utf8 = 'u';
+			$whiteSpace = '#([\x20|\x0c]|[\xe1][\x9a][\x80]|[\xe1][\xa0][\x8e]|[\xe2][\x80][\x80-\x8a,\xa8]|[\xe2][\x81][\x9f]|[\xe3][\x80][\x80]+)#';
+			// Have to explicitly enumerate the whitespace chars, and use non-utf-8 mode, otherwise regex fails on badly formed utf-8
+		}
+		else
+		{
+			$utf8 = '';
+			// For non-utf-8, can use a simple match string
+			$whiteSpace = '#(\s+)#';
+		}
+		
+
+		// Start of the serious stuff - split into HTML tags and text between
+		$content = preg_split('#(<.*?'.'>)#mis', $str, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE );
+		foreach($content as $value)
+		{
+			if ($value[0] == "<")
+			{
+				// We are within an HTML tag
+				// Create a lowercase copy of this tag's contents
+				$lvalue = strtolower(substr($value,1,-1));
+				if ($lvalue)
+				{	// Tag of non-zero length
+					// If the first character is not a / then this is an opening tag
+					if ($lvalue[0] != "/")
+					{
+						// Collect the tag name
+						preg_match("/^(\w*?)(\s|$)/", $lvalue, $t);
+
+						// If this is a protected element, activate the associated protection flag
+						if (in_array($t[1], $nobreak)) array_unshift($innbk, $t[1]);
+					}
+					else
+					{  // Otherwise this is a closing tag
+						// If this is a closing tag for a protected element, unset the flag
+						if (in_array(substr($lvalue, 1), $nobreak))
+						{
+							reset($innbk);
+							while (list($key, $tag) = each($innbk))
+							{
+								if (substr($lvalue, 1) == $tag)
+								{
+									unset($innbk[$key]);
+									break;
+								}
+							}
+							$innbk = array_values($innbk);
+						}
+					}
+				}
+				else
+				{
+					// Eliminate any empty tags altogether
+					$value = '';
+				}
+				// Else if we're outside any tags, and with non-zero length string...
+			}
+			elseif ($value)
+			{
+				// If unprotected...
+				if (!count($innbk))
+				{
+					// Use the ACK (006) ASCII symbol to replace all HTML entities temporarily
+					$value = str_replace("\x06", "", $value);
+					preg_match_all("/&([a-z\d]{2,7}|#\d{2,5});/i", $value, $ents);
+					$value = preg_replace("/&([a-z\d]{2,7}|#\d{2,5});/i", "\x06", $value);
+					//			echo "Found block length ".strlen($value).': '.substr($value,20).'<br />';
+					// Split at spaces - note that this will fail if presented with invalid utf-8 when doing the regex whitespace search
+					//			$split = preg_split('#(\s)#'.$utf8, $value, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE );
+					$split = preg_split($whiteSpace, $value, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE );
+					$value = '';
+					foreach ($split as $sp)
+					{
+						//			echo "Split length ".strlen($sp).': '.substr($sp,20).'<br />';
+						$loopCount = 0;
+						while (strlen($sp) > $width)
+						{
+							// Enough characters that we may need to do something.
+							$pulled = '';
+							if ($utf8)
+							{
+								// Pull out a piece of the maximum permissible length
+								if (preg_match('#^((?:[\x00-\x7F]|[\xC0-\xFF][\x80-\xBF]+){0,'.$width.'})(.{0,1}).*#s',$sp,$matches) == 0)
+								{
+									// Make any problems obvious for now
+									$value .= '[!<b>invalid utf-8: '.$sp.'<b>!]';
+									$sp = '';
+								}
+								elseif (empty($matches[2]))
+								{  // utf-8 length is less than specified - treat as a special case
+									$value .= $sp;
+									$sp = '';
+								}
+								else
+								{		// Need to find somewhere to break the string
+									for ($i = strlen($matches[1])-1; $i >= 0; $i--)
+									{
+										if (strpos($lbrks,$matches[1][$i]) !== FALSE) break;
+									}
+									if ($i < 0)
+									{	// No 'special' break character found - break at the word boundary
+										$pulled = $matches[1];
+									}
+									else
+									{
+										$pulled = substr($sp,0,$i+1);
+									}
+								}
+								$loopCount++;
+								if ($loopCount > 20)
+								{
+									// Make any problems obvious for now
+									$value .= '[!<b>loop count exceeded: '.$sp.'</b>!]';
+									$sp = '';
+								}
+							}
+							else
+							{
+								for ($i = min($width,strlen($sp)); $i > 0; $i--)
+								{
+									// No speed advantage to defining match character
+									if (strpos($lbrks,$sp[$i-1]) !== FALSE)
+										break;
+								}
+								if ($i == 0)
+								{
+									// No 'special' break boundary character found - break at the word boundary
+									$pulled = substr($sp,0,$width);
+								}
+								else
+								{
+									$pulled = substr($sp,0,$i);
+								}
+							}
+							if ($pulled)
+							{
+								$value .= $pulled.$break;
+								// Shorten $sp by whatever we've processed (will work even for utf-8)
+								$sp = substr($sp,strlen($pulled));
+							}
+						}
+						// Add in any residue
+						$value .= $sp;
+					}
+					// Put captured HTML entities back into the string
+					foreach ($ents[0] as $ent) $value = preg_replace("/\x06/", $ent, $value, 1);
+				}
+			}
+			// Send the modified segment down the drain
+			$drain .= $value;
+		}
+		// Return contents of the drain
+		return $drain;
+	}
+
+
+
+
+
+	function html_truncate ($text, $len = 200, $more = ' ... ')
 	{
 		$pos = 0;
 		$curlen = 0;
@@ -416,7 +762,7 @@ class e_parse
 				break;
 			}
 		}
-		$ret = ($tmp_pos > 0 ? substr($text, 0, $tmp_pos) : substr($text, 0, $pos));
+		$ret = ($tmp_pos > 0 ? substr($text, 0, $tmp_pos+1) : substr($text, 0, $pos));
 		if($pos < strlen($text))
 		{
 			$ret = $ret.$more;
@@ -427,18 +773,27 @@ class e_parse
 
 	// Truncate a string to a maximum length $len - append the string $more if it was truncated
 	// Uses current CHARSET - for utf-8, returns $len characters rather than $len bytes
-	function text_truncate($text, $len = 200, $more = "[more]") 
+	function text_truncate($text, $len = 200, $more = ' ... ')
 	{
 	  if (strlen($text) <= $len) return $text; 		// Always valid
-	  if (CHARSET !== 'utf-8') return substr($text,0,$len).$more;	// Non-utf-8 - one byte per character - simple
-  
-	  // Its a utf-8 string here - don't know whether its longer than allowed length yet
-	  preg_match('#^(?:[\x00-\x7F]|[\xC0-\xFF][\x80-\xBF]+){0,0}'.
+	  if (strtolower(CHARSET) !== 'utf-8')
+	  {
+		$ret = substr($text,0,$len);	// Non-utf-8 - one byte per character - simple (unless there's an entity involved)
+	  }
+	  else
+	  {	  // Its a utf-8 string here - don't know whether its longer than allowed length yet
+		preg_match('#^(?:[\x00-\x7F]|[\xC0-\xFF][\x80-\xBF]+){0,0}'.
 				'((?:[\x00-\x7F]|[\xC0-\xFF][\x80-\xBF]+){0,'.$len.'})(.{0,1}).*#s',$text,$matches);
 
-	  $ret = $matches[1];
-	  if (!empty($matches[2])) $ret .= $more;
-	  return $ret;
+		if (empty($matches[2])) return $text;			// return if utf-8 length is less than max as well
+		$ret = $matches[1];
+	  }
+	  // search for possible broken html entities
+      // - if an & is in the last 8 chars, removing it and whatever follows shouldn't hurt
+      // it should work for any characters encoding
+      $leftAmp = strrpos(substr($ret,-8), '&');
+      if($leftAmp) $ret = substr($ret,0,strlen($ret)-8+$leftAmp);
+	  return $ret.$more;
 	}
 
 
@@ -590,24 +945,24 @@ class e_parse
             if ($pref['link_replace'] && !$opts['no_replace'])
 			{
               $_ext = ($pref['links_new_window'] ? " rel=\"external\"" : "");
-              $text = preg_replace("#(^|[\n ])([\w]+?://[^ \"\n\r\t<]*)#is", "\\1<a href=\"\\2\" {$_ext}>".$pref['link_text']."</a>", $text);
-			  $text = preg_replace("#(^|[\n \]])((www|ftp)\.[\w+-]+?\.[\w+\-.]*(?(?=/)(/.+?(?=\s|,\s))|(?=\W)))#is", "\\1<a href=\"http://\\2\" {$_ext}>".$pref['link_text']."</a>", $text);
-              if(CHARSET != "utf-8" && CHARSET != "UTF-8")
-			  {
-                $email_text = ($pref['email_text']) ? $this->replaceConstants($pref['email_text']) : "\\1\\2&copy;\\3";
-              }
-			  else
-			  {
-                $email_text = ($pref['email_text']) ? $this->replaceConstants($pref['email_text']) : "\\1\\2©\\3";
-              }
+// 			  $text = preg_replace("#(^|[\n ])([\w]+?://[^ \"\n\r\t<,]*)#is", "\\1<a href=\"\\2\" {$_ext}>".$pref['link_text']."</a>", $text);
+              $text = preg_replace("#(^|[\s])([\w]+?://(?:[\w-%]+?)(?:\.[\w-%]+?)+.*?)(?=$|[\s()[\]<]|\.\s|\.$|,\s|,$)#is", "\\1<a href=\"\\2\" {$_ext}>".$pref['link_text']."</a>", $text);
+//			  $text = preg_replace("#(^|[\n \]])((www|ftp)\.[\w+-]+?\.[\w+\-.]*(?(?=/)(/.+?(?=\s|,\s))|(?=\W)))#is", "\\1<a href=\"http://\\2\" {$_ext}>".$pref['link_text']."</a>", $text);
+			  $text = preg_replace("#(^|[\s])((?:www|ftp)(?:\.[\w-%]+?){2}.*?)(?=$|[\s()[\]<]|\.\s|\.$|,\s|,$)#is", "\\1<a href=\"http://\\2\" {$_ext}>".$pref['link_text']."</a>", $text);
+
+			  $email_text = ($pref['email_text']) ? $this->replaceConstants($pref['email_text']) : LAN_EMAIL_SUBS;
               $text = preg_replace("#([\n ])([a-z0-9\-_.]+?)@([\w\-]+\.([\w\-\.]+\.)*[\w]+)#i", "\\1<a rel='external' href='javascript:window.location=\"mai\"+\"lto:\"+\"\\2\"+\"@\"+\"\\3\";self.close();' onmouseover='window.status=\"mai\"+\"lto:\"+\"\\2\"+\"@\"+\"\\3\"; return true;' onmouseout='window.status=\"\";return true;'>".$email_text."</a>", $text);
-            }
+
+			}
 			else
 			{
-              $text = preg_replace("#(^|[\n ])([\w]+?://[^ \"\n\r\t<,]*)#is", "\\1<a href=\"\\2\" rel=\"external\">\\2</a>", $text);
-			  $text = preg_replace("#(^|[\n \]])((www|ftp)\.[\w+-]+?\.[\w+\-.]*(?(?=/)(/.+?(?=\s|,\s))|(?=\W)))#is", "\\1<a href=\"http://\\2\" rel=\"external\">\\2</a>", $text);
-              $text = preg_replace("#([\n ])([a-z0-9\-_.]+?)@([\w\-]+\.([\w\-\.]+\.)*[\w]+)#i", "\\1<a rel='external' href='javascript:window.location=\"mai\"+\"lto:\"+\"\\2\"+\"@\"+\"\\3\";self.close();' onmouseover='window.status=\"mai\"+\"lto:\"+\"\\2\"+\"@\"+\"\\3\"; return true;' onmouseout='window.status=\"\";return true;'>".LAN_EMAIL_SUBS."</a>", $text);
-            }
+	           	$email_text = (CHARSET != "utf-8" && CHARSET != "UTF-8") ? "\\1\\2&copy;\\3" : "\\1\\2©\\3";
+	//          $text = preg_replace("#(^|[\n ])([\w]+?://[^ \"\n\r\t<,]*)#is", "\\1<a href=\"\\2\" rel=\"external\">\\2</a>", $text);
+				$text = preg_replace("#(^|[\s])([\w]+?://(?:[\w-%]+?)(?:\.[\w-%]+?)+.*?)(?=$|[\s()[\]<]|\.\s|\.$|,\s|,$)#is", "\\1<a href=\"\\2\" rel=\"external\">\\2</a>", $text);
+	//			$text = preg_replace("#(^|[\n \]])((www|ftp)\.[\w+-]+?\.[\w+\-.]*(?(?=/)(/.+?(?=\s|,\s))|(?=\W)))#is", "\\1<a href=\"http://\\2\" rel=\"external\">\\2</a>", $text);
+				$text = preg_replace("#(^|[\s])((?:www|ftp)(?:\.[\w-%]+?){2}.*?)(?=$|[\s()[\]<]|\.\s|\.$|,\s|,$)#is", "\\1<a href=\"http://\\2\" rel=\"external\">\\2</a>", $text);
+				$text = preg_replace("#([\n ])([a-z0-9\-_.]+?)@([\w\-]+\.([\w\-\.]+\.)*[\w]+)#i", "\\1<a rel='external' href='javascript:window.location=\"mai\"+\"lto:\"+\"\\2\"+\"@\"+\"\\3\";self.close();' onmouseover='window.status=\"mai\"+\"lto:\"+\"\\2\"+\"@\"+\"\\3\"; return true;' onmouseout='window.status=\"\";return true;'>".$email_text."</a>", $text);
+			}
         }
 
 
@@ -651,7 +1006,8 @@ class e_parse
         // Start parse [bb][/bb] codes
         if ($parseBB === TRUE)
 		{
-            if (!is_object($this->e_bb)) {
+			if (!is_object($this->e_bb)) 
+			{
                 require_once(e_HANDLER.'bbcode_handler.php');
                 $this->e_bb = new e_bbcode;
             }
@@ -733,7 +1089,7 @@ class e_parse
 	function toAttribute($text) {
 		$text = str_replace("&amp;","&",$text); // URLs posted without HTML access may have an &amp; in them.
 		$text = htmlspecialchars($text, ENT_QUOTES, CHARSET); // Xhtml compliance.
-		if (!preg_match('/&#|\'|"|\(|\)|<|>/s', $text)) 
+		if (!preg_match('/&#|\'|"|\(|\)|<|>/s', $text))
 		{
 		  $text = $this->replaceConstants($text);
 		  return $text;
@@ -907,11 +1263,15 @@ class e_parse
 	}
 
 
-    function toEmail($text,$posted="",$mods="parse_sc, no_make_clickable")
+    function toEmail($text, $posted = TRUE, $mods="parse_sc, no_make_clickable")
 	{
-		if ($posted === TRUE && MAGIC_QUOTES_GPC)
+		if ($posted === TRUE)
 		{
-			$text = stripslashes($text);
+			if (MAGIC_QUOTES_GPC)
+			{
+				$text = stripslashes($text);
+			}
+			$text = preg_replace("#\[(php)#i", "&#91;\\1", $text);
 		}
 
 	  	$text = (strtolower($mods) != "rawtext") ? $this->replaceConstants($text,"full") : $text;

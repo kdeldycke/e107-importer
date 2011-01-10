@@ -1,4 +1,5 @@
 global $pref;
+if (trim($code_text) == "") return ""; 						// Do nothing on empty file
 if (preg_match("#\.php\?.*#",$code_text)){return "";}
 global $IMAGES_DIRECTORY, $FILES_DIRECTORY, $e107;
 $search = array('"', '{E_IMAGE}', '{E_FILE}', '{e_IMAGE}', '{e_FILE}');
@@ -26,50 +27,20 @@ foreach($imgParms as $k => $v)
     $parmStr .= $tp -> toAttribute($k)."='".$tp -> toAttribute($v)."' ";
 }
 
-
-if((strpos($code_text,'../') === FALSE) && file_exists(e_IMAGE."newspost_images/".$code_text))
+// Only look for file if not a url - suspected bug in PHP 5.2.5 on XP
+if((strpos($code_text,'../') === FALSE) && (strpos($code_text,'://') === FALSE) && file_exists(e_IMAGE."newspost_images/".$code_text))
 {
-    $code_text = e_IMAGE."newspost_images/".$code_text;
+    $code_text = e_IMAGE_ABS."newspost_images/".$code_text;
 }
-
-if (!$postID || $postID == 'admin')
+if (varsettrue($pref['image_post']) && check_class($pref['image_post_class']))
 {
-    return "<img src='".$code_text."' {$parmStr} />";
+	return "<img src='".$code_text."' {$parmStr} />";
 }
-else
+switch ($pref['image_post_disabled_method'])
 {
-    if(strstr($postID,'class:'))
-	{
-        $uc = substr($postID,6);
-    }
-    if ($pref['image_post'])
-	{
-        if(!isset($uc) || ($uc == ''))
-		{
-            if (!function_exists('e107_userGetuserclass'))
-			{
-                require_once(e_HANDLER.'user_func.php');
-            }
-            $uc = e107_userGetuserclass($postID);
-        }
-        if (check_class($pref['image_post_class'],$uc))
-		{
-            return "<img src='".$code_text."' {$parmStr} />";
-        }
-        else
-        {
-            return ($pref['image_post_disabled_method'] ? "[ image disabled ]" : "Image: $code_text");
-        }
-    }
-    else
-    {
-        if ($pref['image_post_disabled_method'])
-		{
-            return '[ image disabled ]';
-        }
-		else
-		{
-            return "Image: $code_text";
-        }
-    }
+	case '1' :
+		return CORE_LAN17;
+	case '2' :
+		return '';
 }
+return CORE_LAN18.$code_text;
