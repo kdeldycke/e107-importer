@@ -15,14 +15,27 @@
 +---------------------------------------------------------------+
 */
 
+if ( !defined('WP_LOAD_IMPORTERS') )
+  return;
+
+// Load Importer API
+require_once ABSPATH . 'wp-admin/includes/import.php';
+
+if ( !class_exists( 'WP_Importer' ) ) {
+  $class_wp_importer = ABSPATH . 'wp-admin/includes/class-wp-importer.php';
+  if ( file_exists( $class_wp_importer ) )
+    require_once $class_wp_importer;
+}
+
+
 // Constant
 define("IMPORT_PATH"         , 'wp-admin/import/');
 define("E107_INCLUDES_PATH"  , IMPORT_PATH . 'e107-includes/');
 define("E107_REDIRECT_PLUGIN", 'e107-to-wordpress-redirect.php');
 
 
-class e107_Import {
-
+if ( class_exists( 'WP_Importer' ) ) {
+class e107_Import extends WP_Importer {
   // Class wide variables
   var $e107_db;
 
@@ -1482,13 +1495,17 @@ class e107_Import {
   }
 }
 
+}
+
+// Add e107 importer in the list of default Wordpress import filter
+$e107_import = new e107_Import();
+
 // Show all database errors
 global $wpdb;
 $wpdb->show_errors();
 
-
-// Add e107 importer in the list of default Wordpress import filter
-$e107_import = new e107_Import();
 register_importer('e107', __('e107'), __("Import e107 news, categories, users, custom pages, comments, images and preferences to Wordpress. Also take care of URL redirections, but don't make coffee (yet <img src='".get_option('siteurl')."/wp-includes/images/smilies/icon_wink.gif' alt=';)' class='wp-smiley'/>)."), array ($e107_import, 'start'));
+
+} // class_exists( 'WP_Importer' )
 
 ?>
