@@ -1,18 +1,13 @@
- <?php
+<?php
 /*
-+---------------------------------------------------------------+
-|   Wordpress filter to import e107 website.
-|
-|   Version: 0.10-wip
-|   Date: 12 jan 2008
-|
-|   (c) Kevin Deldycke 2006-2008
-|   http://kevin.deldycke.com
-|   kevin@deldycke.com
-|
-|   Released under the terms and conditions of the
-|   GNU General Public License (http://gnu.org).
-+---------------------------------------------------------------+
+Plugin Name: e107 Importer
+Plugin URI: https://github.com/kdeldycke/kev-code/tree/master/e107-importer
+Description: Import posts and comments from an e107 CMS.
+Author: coolkevman
+Author URI: http://kevin.deldycke.com
+Version: 0.10.dev
+Stable tag: 0.10.dev
+License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 */
 
 if ( !defined('WP_LOAD_IMPORTERS') )
