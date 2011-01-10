@@ -1,6 +1,6 @@
 === Plugin Name ===
 Contributors: coolkevman
-Tags: importer, e107
+Tags: importer, e107, cms, migration
 Requires at least: 3.0
 Tested up to: 3.1
 Stable tag: 0.10.dev
