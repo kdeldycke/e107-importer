@@ -1264,28 +1264,9 @@ class e107_Import extends WP_Importer {
   function printWelcomeScreen(){
     echo '<div class="wrap">';
 
-    echo '<h2>'.__('Import e107: Introduction').'</h2>';
-    echo '<p>'.__('This tool allows you to extract the most important content and data from a e107 database and import them into your WordPress blog.').'</p>';
+    echo '<h2>'.__('e107 Importer').'</h2>';
 
-    echo '<p>'.__('Features:').'<ul><li>';
-    echo __('Import news and categories,').'</li><li>';
-    echo __('Take care of news extended part,').'</li><li>';
-    echo __('Import custom pages,').'</li><li>';
-    echo __('Take care of page visibility (private / public),').'</li><li>';
-    echo __('Import comments (both from news and custom pages),').'</li><li>';
-    echo __('Import images from news and pages,').'</li><li>';
-    echo __('Let you choose which kind of images you want to upload to WordPress (external or not),').'</li><li>';
-    echo __('Import preferences (like site name, description, ...),').'</li><li>';
-    echo __('Convert embedded bbcode to plain HTML,').'</li><li>';
-    echo __('Import users and their profile (or try to update the profile if user already exist),').'</li><li>';
-    echo __('Try to map users to appropriate roles,').'</li><li>';
-    echo __('Send mails to users to inform them about their new credentials,').'</li><li>';
-    echo __('Redirect old e107 URLs to new permalinks via an integrated plugin (for SEO).');
-    echo '</li></ul></p>';
-
-    echo '<p>'.'<strong>'.__('Warning').'</strong>: '.__("Your e107 site <u>must</u> be fully encoded in UTF-8. If it's not the case, please look at <a href='http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8'>Upgrading database content to UTF-8</a> article on e107 wiki.").'</p>';
-
-    echo '<p>'.__('This tool was tested with <a href="http://e107.org/news.php?item.877">e107 0.7.24</a> and <a href="http://wordpress.org/news/2011/01/wordpress-3-1-release-candidate-2/">WordPress 3.1.0</a>. If you have older versions, please upgrade.').'</p>';
+    // TODO: get the description from the readme.txt and display it here
 
     // TODO: use AJAX to validate the form ?
 
@@ -1498,7 +1479,7 @@ $e107_import = new e107_Import();
 global $wpdb;
 $wpdb->show_errors();
 
-register_importer('e107', __('e107'), __("Import news, categories, users, custom pages, comments, images and preferences from e107."), array ($e107_import, 'start'));
+register_importer('e107', __('e107'), __("Import news, categories, users, custom pages, comments, images and preferences from e107. Also takes care of redirections."), array ($e107_import, 'start'));
 
 } // class_exists( 'WP_Importer' )
 

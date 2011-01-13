@@ -1,6 +1,6 @@
 === e107 Importer ===
 Contributors: coolkevman
-Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XEXREDEHXSQUJ 
+Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XEXREDEHXSQUJ
 Tags: importer, e107, cms, migration
 Requires at least: 3.1.0
 Tested up to: 3.1.0
@@ -13,18 +13,24 @@ e107 import plugin for WordPress.
 
 This plugin allows you to extract the most important content and data from an e107 CMS instance and import them into your WordPress blog.
 
-Features:
+**Features**:
 
 * Import news and their categories,
 * Handle extended part of news nicely,
-* Import preferences (like site name and description),
 * Import custom pages (and take care of their private / public visibility),
-* Import images from news and pages,
 * Import comments (both from news and custom pages),
+* Import images from news and pages,
+* Let you choose which kind of images you want to upload to WordPress (external or not),
+* Import preferences (site name, description, ...),
 * Convert embedded bbcode to plain HTML,
 * Import users and their profile (or try to update the profile if user already exist),
 * Try to map users to an appropriate role,
-* Mails can be sent to each user to warn them about their new password.
+* Send mails to users to inform them about their new credentials,
+* Redirect old e107 URLs to new permalinks via an integrated plugin (for SEO).
+
+**Warning**: Your e107 site must be fully encoded in UTF-8. If it's not the case, please have a look at the [*Upgrading database content to UTF-8*](http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8) on e107 wiki.
+
+This tool was tested with [e107 0.7.24](http://e107.org/news.php?item.877) and [WordPress 3.1.0](http://wordpress.org/news/2011/01/wordpress-3-1-release-candidate-2/). If you have older versions, please upgrade first.
 
 == Installation ==
 
