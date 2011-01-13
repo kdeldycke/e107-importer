@@ -1,4 +1,4 @@
-=== Plugin Name ===
+=== e107 Importer ===
 Contributors: coolkevman
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XEXREDEHXSQUJ 
 Tags: importer, e107, cms, migration
