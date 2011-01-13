@@ -1285,7 +1285,7 @@ class e107_Import extends WP_Importer {
 
     echo '<p>'.'<strong>'.__('Warning').'</strong>: '.__("Your e107 site <u>must</u> be fully encoded in UTF-8. If it's not the case, please look at <a href='http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8'>Upgrading database content to UTF-8</a> article on e107 wiki.").'</p>';
 
-    echo '<p>'.__('This tool was tested with <a href="http://e107.org/news.php?item.824">e107 v0.7.11</a> and <a href="http://wordpress.org/development/2007/12/wordpress-232/">Wordpress v2.3.2</a>. If you have older versions, please upgrade.').'</p>';
+    echo '<p>'.__('This tool was tested with <a href="http://e107.org/news.php?item.877">e107 0.7.24</a> and <a href="http://wordpress.org/news/2011/01/wordpress-3-1-release-candidate-2/">WordPress 3.1.0</a>. If you have older versions, please upgrade.').'</p>';
 
     // TODO: use AJAX to validate the form ?
 
