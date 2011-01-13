@@ -1490,7 +1490,6 @@ class e107_Import extends WP_Importer {
   }
 }
 
-}
 
 // Add e107 importer in the list of default Wordpress import filter
 $e107_import = new e107_Import();
