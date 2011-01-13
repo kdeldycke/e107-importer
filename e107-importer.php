@@ -24,8 +24,8 @@ if ( !class_exists( 'WP_Importer' ) ) {
 
 
 // Constant
-define("PLUGIN_PATH"         , 'wp-content/plugins/');
-define("E107_INCLUDES_PATH"  , PLUGIN_PATH . 'e107-includes/');
+define("IMPORTER_PATH"       , 'wp-content/plugins/e107-importer/');
+define("E107_INCLUDES_PATH"  , IMPORTER_PATH . 'e107-includes/');
 define("E107_REDIRECT_PLUGIN", 'e107-redirector.php');
 
 
@@ -168,7 +168,7 @@ class e107_Import extends WP_Importer {
     // Redifine some globals to match wordpress importer file hierarchy
     define("e_BASE"   , ABSPATH);
     define("e_PLUGIN" , e_BASE);
-    define("e_FILE"   , e_BASE . PLUGIN_PATH);
+    define("e_FILE"   , e_BASE . IMPORTER_PATH);
     define("e_HANDLER", e_BASE . E107_INCLUDES_PATH);
 
     // CHARSET is normally set in e107_languages/English/English.php file
@@ -617,7 +617,7 @@ class e107_Import extends WP_Importer {
   // Install the redirections plugin
   function installRedirectionPlugin() {
     global $wpdb;
-    $source = ABSPATH . E107_REDIRECT_PLUGIN;
+    $source = ABSPATH . PLUGINDIR . E107_REDIRECT_PLUGIN;
     $dest   = ABSPATH . PLUGINDIR . '/custom-' . E107_REDIRECT_PLUGIN;
 
     // Get current active plugins
