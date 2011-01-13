@@ -1498,7 +1498,7 @@ $e107_import = new e107_Import();
 global $wpdb;
 $wpdb->show_errors();
 
-register_importer('e107', __('e107'), __("Import e107 news, categories, users, custom pages, comments, images and preferences to WordPress. Also take care of URL redirections, but don't make coffee (yet <img src='".get_option('siteurl')."/wp-includes/images/smilies/icon_wink.gif' alt=';)' class='wp-smiley'/>)."), array ($e107_import, 'start'));
+register_importer('e107', __('e107'), __("Import news, categories, users, custom pages, comments, images and preferences from e107."), array ($e107_import, 'start'));
 
 } // class_exists( 'WP_Importer' )
 
