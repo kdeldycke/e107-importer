@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: e107 Importer
-Plugin URI: https://github.com/kdeldycke/e107-importer
+Plugin URI: http://github.com/kdeldycke/e107-importer
 Description: e107 import plugin for WordPress.
 Author: Kevin Deldycke
 Author URI: http://kevin.deldycke.com
