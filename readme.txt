@@ -35,7 +35,7 @@ Feel free to send me patches and code by mail. Or better yet, use GitHub fork/me
 
 = Where can I find the source code ? =
 
-Development of this plugin happened in a dedicated GitHub repository: http://github.com/kdeldycke/kev-code/tree/master/e107-importer
+Development of this plugin happened in a dedicated GitHub repository: http://github.com/kdeldycke/e107-importer
 
 == Screenshots ==
 
