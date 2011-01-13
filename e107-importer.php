@@ -42,7 +42,6 @@ class e107_Import extends WP_Importer {
 
   var $e107_mail_user;
   var $e107_extended_news;
-  var $e107_patch_theme;
   var $e107_bbcode_parser;
   var $e107_import_images;
 
@@ -882,34 +881,6 @@ class e107_Import extends WP_Importer {
       extract($page);
       $page_id = (int) $page_id;
 
-      if ($this->e107_patch_theme == 'patch_theme') {
-        // Auto-patch kubrick Page Template file to show comments by default
-        // Switch to default kubrick theme
-        $ct = current_theme_info();
-        if ($ct->name != 'default') {
-          update_option('template', 'default');
-          update_option('stylesheet', 'default');
-        }
-        // Patch sent to WordPress: http://trac.wordpress.org/ticket/3753 -> Wait and see...
-        $real_file = get_real_file_to_edit("wp-content/themes/default/page.php");
-        $f = fopen($real_file, 'r');
-        $content = fread($f, filesize($real_file));
-        fclose($f);
-        // Check if patch already applied
-        if (!strpos($content, "comments_template()")) {
-          // Look at the last "</div>" tag
-          require_once(ABSPATH . E107_INCLUDES_PATH . 'strripos.php');
-          $cut_position = strripos($content, "</div>");
-          $patched_content  = substr($content, 0, $cut_position);
-          $patched_content .= "<?php comments_template(); ?>";
-          $patched_content .= substr($content, $cut_position, strlen($content)-1);
-          $f = fopen($real_file, 'w+');
-          fwrite($f, $patched_content);
-          fclose($f);
-        }
-        // TODO: support K2 theme ? In this case, just add "$page_template = 'page-comments.php';" when inserting static page to WordPress
-      }
-
       // Set the status of the post to 'publish' or 'private'.
       // There is no 'draft' in e107.
       $post_status = 'publish';
@@ -1342,18 +1313,6 @@ class e107_Import extends WP_Importer {
         </tr>
       </table>
 
-      <h3><?php _e('Comments on Custom Pages', 'e107-importer'); ?></h3>
-      <p><?php _e('WordPress <a href="http://trac.wordpress.org/ticket/3753">doesn\'t display comments on pages</a> by default. However, this tool can fix this by patching the default WordPress theme (Kubrick).', 'e107-importer'); ?></p>
-      <table class="form-table">
-        <tr valign="top">
-          <th scope="row"><?php _e('Do you want to patch Kubrick ?', 'e107-importer'); ?></th>
-          <td>
-            <label for="patch-theme"><input name="e107_patch_theme" type="radio" id="patch-theme" value="patch_theme"/> <?php _e('Yes: I want to let this import tool patch the Kubrick theme and set it as the current one.', 'e107-importer'); ?></label><br/>
-            <label for="no-patch-theme"><input name="e107_patch_theme" type="radio" id="no-patch-theme" value="no_patch_theme" checked="checked"/> <?php _e('No: I don\'t want to patch the default theme.', 'e107-importer'); ?></label><br/>
-          </td>
-        </tr>
-      </table>
-
       <h3><?php _e('BBCode', 'e107-importer'); ?></h3>
       <table class="form-table">
         <tr valign="top">
@@ -1394,7 +1353,6 @@ class e107_Import extends WP_Importer {
     $e107_option_names = array( 'e107_db_host', 'e107_db_user', 'e107_db_pass', 'e107_db_name', 'e107_db_prefix'
                               , 'e107_mail_user'
                               , 'e107_extended_news'
-                              , 'e107_patch_theme'
                               , 'e107_bbcode_parser'
                               , 'e107_import_images'
                               );
