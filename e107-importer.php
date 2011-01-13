@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: e107 Importer
-Plugin URI: https://github.com/kdeldycke/kev-code/tree/master/e107-importer
+Plugin URI: https://github.com/kdeldycke/kev-code/e107-importer
 Description: Import posts and comments from an e107 CMS.
 Author: coolkevman
 Author URI: http://kevin.deldycke.com
