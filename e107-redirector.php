@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: e107 Redirector
-Plugin URI: http://github.com/kdeldycke/e107-importer/blob/master/e107-includes/e107-redirector.php
+Plugin URI: http://github.com/kdeldycke/e107-importer/blob/master/e107-redirector.php
 Description: Redirect URLs from previous e107 website to new WordPress blog after a migration. This plugin is designed to be used with e107 Importer plugin only and is a subproject of it.
 Author: Kevin Deldycke
 Author URI: http://kevin.deldycke.com
