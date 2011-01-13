@@ -26,7 +26,7 @@ if ( !class_exists( 'WP_Importer' ) ) {
 // Constant
 define("IMPORT_PATH"         , 'wp-admin/import/');
 define("E107_INCLUDES_PATH"  , IMPORT_PATH . 'e107-includes/');
-define("E107_REDIRECT_PLUGIN", 'e107-to-wordpress-redirect.php');
+define("E107_REDIRECT_PLUGIN", 'e107-redirector.php');
 
 
 if ( class_exists( 'WP_Importer' ) ) {
@@ -618,8 +618,8 @@ class e107_Import extends WP_Importer {
   // Install the redirections plugin
   function installRedirectionPlugin() {
     global $wpdb;
-    $source = ABSPATH . E107_INCLUDES_PATH . E107_REDIRECT_PLUGIN;
-    $dest   = ABSPATH . PLUGINDIR . '/' . E107_REDIRECT_PLUGIN;
+    $source = ABSPATH . E107_REDIRECT_PLUGIN;
+    $dest   = ABSPATH . PLUGINDIR . '/custom-' . E107_REDIRECT_PLUGIN;
 
     // Get current active plugins
     $current = get_option('active_plugins');
@@ -1073,7 +1073,7 @@ class e107_Import extends WP_Importer {
   function replaceWithPermalinks() {
     global $wpdb;
     // Associate each mapping with their related regexp
-    // TODO: Load mappings from the e107-to-wordpress-redirect.php plugin
+    // TODO: Load mappings from the e107-redirector.php plugin
     $redirect_rules = array(
       array( 'mapping' => $this->news_mapping
            , 'rules'   => array( '/^\/*comment\.php(?:%3F|\?)comment\.news\.(\d+)(.*)$/i'
