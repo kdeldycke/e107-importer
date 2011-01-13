@@ -10,7 +10,19 @@ Import posts and comments from an e107 CMS.
 
 == Description ==
 
-Import posts and comments from an e107 CMS.
+This plugin allows you to extract the most important content and data from an e107 CMS instance and import them into your WordPress blog.
+
+Features:
+* Import news and their categories,
+* Handle extended part of news nicely,
+* Import preferences (like site name and description),
+* Import custom pages (and take care of their private / public visibility),
+* Import images from news and pages,
+* Import comments (both from news and custom pages),
+* Convert embedded bbcode to plain HTML,
+* Import users and their profile (or try to update the profile if user already exist),
+* Try to map users to an appropriate role,
+* Mails can be sent to each user to warn them about their new password.
 
 == Installation ==
 
