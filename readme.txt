@@ -3,7 +3,7 @@ Contributors: coolkevman
 Tags: importer, e107, cms, migration
 Requires at least: 3.1.0
 Tested up to: 3.1.0
-Stable tag: 0.9
+Stable tag: 1.0
 License: GPLv2
 
 Import posts and comments from an e107 CMS.
@@ -60,7 +60,7 @@ Development of this plugin happened in a dedicated GitHub repository: http://git
 
 Here is a list of e107 and WordPress versions I tested my plugin with:
 
-* e107-importer 0.10.dev : e107 0.7.24 / WordPress 3.1.0
+* e107-importer 1.0 : e107 0.7.24 / WordPress 3.1.0
 * e107-importer 0.9 : e107 0.7.11 / WordPress 2.3.2
 * e107-importer 0.8 : e107 0.7.8  / WordPress 2.1.3
 * e107-importer 0.7 : e107 0.7.8  / WordPress 2.1.2
@@ -71,10 +71,10 @@ Here is a list of e107 and WordPress versions I tested my plugin with:
 
 == Changelog ==
 
-= 0.10.dev =
+= 1.0 =
 * current revision
 
 == Upgrade Notice ==
 
-= 0.10.dev =
+= 1.0 =
 First release compatible with latest WordPress 3.x.

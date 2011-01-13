@@ -5,8 +5,8 @@ Plugin URI: https://github.com/kdeldycke/kev-code/tree/master/e107-importer
 Description: Import posts and comments from an e107 CMS.
 Author: coolkevman
 Author URI: http://kevin.deldycke.com
-Version: 0.10.dev
-Stable tag: 0.10.dev
+Version: 1.0.dev
+Stable tag: 1.0
 License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 */
 
