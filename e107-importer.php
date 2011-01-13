@@ -1261,106 +1261,130 @@ class e107_Import extends WP_Importer {
   }
 
 
-  function printWelcomeScreen(){
+  function header() {
     echo '<div class="wrap">';
+    screen_icon();
+    echo '<h2>'.__('e107 Importer', 'e107-importer').'</h2>';
+  }
 
-    echo '<h2>'.__('e107 Importer').'</h2>';
 
-    // TODO: get the description from the readme.txt and display it here
-
-    // TODO: use AJAX to validate the form ?
-
-    echo '<h2>'.__('e107 database connexion').'</h2>';
-
-    echo '<p>'.__('Parameters below must match your actual e107 MySQL database connexion settings.').'</p>';
-    echo '<form action="admin.php?import=e107&amp;action=import" method="post">';
-    wp_nonce_field('import-e107');
-    echo '<table class="optiontable">';
-    printf( '<tr valign="top"><th scope="row">%s</th><td><input type="text" name="e107_db_host" id="e107_db_host" value="%s" size="40"/></td></tr>'
-          , __('e107 Database Host:')
-          , DB_HOST
-          );
-    printf( '<tr valign="top"><th scope="row">%s</th><td><input type="text" name="e107_db_user" id="e107_db_user" value="%s" size="40"/></td></tr>'
-          , __('e107 Database User:')
-          , DB_USER
-          );
-    printf( '<tr valign="top"><th scope="row">%s</th><td><input type="password" name="e107_db_pass" id="e107_db_pass" value="" size="40"/></td></tr>'
-          , __('e107 Database Password:')
-          );
-    printf( '<tr valign="top"><th scope="row">%s</th><td><input type="text" name="e107_db_name" id="e107_db_name" value="%s" size="40"/></td></tr>'
-          , __('e107 Database Name:')
-          , DB_NAME
-          );
-    printf( '<tr valign="top"><th scope="row">%s</th><td><input type="text" name="e107_db_prefix" id="e107_db_prefix" value="e107_" size="40"/></td></tr>'
-          , __('e107 Table prefix:')
-          );
-    echo '</table>';
-
-    echo '<h2>'.__('Import options').'</h2>';
-
-    echo '<fieldset class="options"><legend>'.__('Users').'</legend>';
-    printf(__('<p>All users will be imported in the WordPress database with the <code>%s</code> role. You can change the default role in the <a href="'.get_option('siteurl').'/wp-admin/options-general.php"><code>Options</code> &gt; <code>General</code> panel</a>. If a user is the author of at least one post or static page, its level will be raised to <code>contributor</code>.').'</p>'
-          , __(get_settings('default_role'))
-          );
-    echo __("<p><strong>Warning 1</strong>: e107 users' password are encrypted. All passwords will be resetted.</p>");
-    echo __("<p>Do you want to inform each user of their new password ?");
-    echo '<ul><li>';
-    echo __('<label><input name="e107_mail_user" type="radio" value="send_mail"/> Yes: reset each password and send each user a mail to inform them.</label>');
-    echo '</li><li>';
-    echo __('<label><input name="e107_mail_user" type="radio" value="no_mail" checked="checked"/> No: reset each password but don\'t send a mail to users.</label>');
-    echo '</li></ul>';
-    echo '</p>';
-    echo __("<p><strong>Warning 2</strong>: Unlike e107, WordPress don't accept strange char (like accents, etc) in login. When a user will be added to WP, all non-ascii chars will be deleted from the login string.</p>");
-    echo '</fieldset>';
-
-    echo '<fieldset class="options"><legend>'.__('News Extends').'</legend>';
-    echo '<p>WordPress doesn\'t support extended news.</p>';
-    echo '<p>Do you want to import the extended part of all e107 news ?';
-    echo '<ul><li>';
-    echo '<label><input name="e107_extended_news" type="radio" value="import_all"/> Yes: import both extended part and body and merge them.</label>';
-    echo '</li><li>';
-    echo '<label><input name="e107_extended_news" type="radio" value="ignore_body"/> Yes, but: ignore body and import extended part only.</label>';
-    echo '</li><li>';
-    echo '<label><input name="e107_extended_news" type="radio" value="ignore_extended" checked="checked"/> No: ignore extended part of news, import the body only.</label>';
-    echo '</li></ul></p>';
-    echo '</fieldset>';
-
-    echo '<fieldset class="options"><legend>'.__('Comments on Custom Pages').'</legend>';
-    echo '<p>'.__("WordPress <a href='http://trac.wordpress.org/ticket/3753'>doesn't display comments on pages</a> by default. However, this tool can fix this by patching the default WordPress theme (Kubrick).").'</p>';
-    echo '<p>Do you want to patch Kubrick ?';
-    echo '<ul><li>';
-    echo '<label><input name="e107_patch_theme" type="radio" value="patch_theme"/> Yes: I want to let this import tool patch the Kubrick theme and set it as the current one.</label>';
-    echo '</li><li>';
-    echo '<label><input name="e107_patch_theme" type="radio" value="no_patch_theme" checked="checked"/> No: I don\'t want to patch the default theme</label>';
-    echo '</li></ul></p>';
-    echo '</fieldset>';
-
-    echo '<fieldset class="options"><legend>'.__('BBcode').'</legend>';
-    echo '<p>Which kind of <a href="http://en.wikipedia.org/wiki/Bbcode">bbcode</a> parser you want to use ?';
-    echo '<ul><li>';
-    echo '<label><input name="e107_bbcode_parser" type="radio" value="original" checked="checked"/> e107 parser (content will be rendered exactly as they appear in e107).</label>';
-    echo '</li><li>';
-    echo '<label><input name="e107_bbcode_parser" type="radio" value="semantic"/> WordPress-like (enhance semantics and output html code very similar to what WP produce by default).</label>';
-    echo '</li><li>';
-    echo '<label><input name="e107_bbcode_parser" type="radio" value="none"/> Do not translate bbcode to html and let them appear as is.</label>';
-    echo '</li></ul></p>';
-    echo '</fieldset>';
-
-    echo '<fieldset class="options"><legend>'.__('Images upload').'</legend>';
-    echo '<p>This tool can find images URLs embedded in news and pages and upload them to this blog autommaticcaly.</p>';
-    echo '<p>Do you want to upload image files ?';
-    echo '<ul><li>';
-    echo '<label><input name="e107_import_images" type="radio" value="upload_all"/> Yes: upload all images, even those located on external sites.</label>';
-    echo '</li><li>';
-    echo '<label><input name="e107_import_images" type="radio" value="site_upload" checked="checked"/> Yes, but: upload files from the e107 site only, not external images.</label>';
-    echo '</li><li>';
-    echo '<label><input name="e107_import_images" type="radio" value="no_upload"/> No: do not upload image files to WordPress.</label>';
-    echo '</li></ul></p>';
-    echo '</fieldset>';
-
-    echo '<input type="submit" name="submit" value="'.__('Import e107 to WordPress').' &raquo;" />';
-    echo '</form>';
+  function footer() {
     echo '</div>';
+  }
+
+
+  function printWelcomeScreen(){
+    $this->header();
+    // TODO: get the description from the readme.txt and display it here
+    // TODO: use AJAX to validate the form ?
+    ?>
+
+    <form action="admin.php?import=e107&amp;action=import" method="post">
+      <?php wp_nonce_field('import-e107'); ?>
+
+      <h3><?php _e('e107 Database Connexion', 'e107-importer'); ?></h3>
+      <p><?php _e('Parameters below must match your actual e107 MySQL database connexion settings.', 'e107-importer'); ?></p>
+      <table class="form-table">
+        <tr valign="top">
+          <th scope="row"><label for="e107-db-host"><?php _e('e107 Database Host', 'e107-importer'); ?></label></th>
+          <td><input type="text" name="e107_db_host" id="e107-db-host" value="<?php echo esc_attr(DB_HOST); ?>" size="40"/></td>
+        </tr>
+        <tr valign="top">
+          <th scope="row"><label for="e107-db-user"><?php _e('e107 Database User', 'e107-importer'); ?></label></th>
+          <td><input type="text" name="e107_db_user" id="e107-db-user" value="<?php echo esc_attr(DB_USER); ?>" size="40"/></td>
+        </tr>
+        <tr valign="top">
+          <th scope="row"><label for="e107-db-pass"><?php _e('e107 Database Password', 'e107-importer'); ?></label></th>
+          <td><input type="password" name="e107_db_pass" id="e107-db-pass" value="" size="40"/></td>
+        </tr>
+        <tr valign="top">
+          <th scope="row"><label for="e107-db-name"><?php _e('e107 Database Name', 'e107-importer'); ?></label></th>
+          <td><input type="text" name="e107_db_name" id="e107-db-name" value="<?php echo esc_attr(DB_NAME); ?>" size="40"/></td>
+        </tr>
+        <tr valign="top">
+          <th scope="row"><label for="e107-db-prefix"><?php _e('e107 Table Prefix', 'e107-importer'); ?></label></th>
+          <td><input type="text" name="e107_db_prefix" id="e107-db-prefix" value="e107_" size="40"/></td>
+        </tr>
+      </table>
+
+      <h3><?php _e('Users', 'e107-importer'); ?></h3>
+      <table class="form-table">
+        <tr valign="top">
+          <th scope="row"><?php _e('Do you want to inform each user of their new credentials ?', 'e107-importer'); ?></th>
+          <td>
+            <label for="send-mail"><input name="e107_mail_user" type="radio" id="send-mail" value="send_mail"/> <?php _e('Yes: reset each password and send each user a mail to inform them.', 'e107-importer'); ?></label><br/>
+            <label for="no-mail"><input name="e107_mail_user" type="radio" id="no-mail" value="no_mail" checked="checked"/> <?php _e('No: reset each password but don\'t send a mail to users.', 'e107-importer'); ?></label><br/>
+          </td>
+        </tr>
+      </table>
+      <p><?php _e('Notes:', 'e107-importer'); ?></p>
+      <ul class="ul-square">
+        <li><?php _e('e107 users\' password are encrypted. All passwords will be resetted.', 'e107-importer'); ?></li>
+        <li><?php _e('Unlike e107, WordPress don\'t accept strange characters (like accents, etc.) in login. When a user will be added to WordPress, all non-ascii chars will be deleted from the login string.', 'e107-importer'); ?></li>
+        <li><?php
+          printf( _e('All users will be imported in the WordPress database with the <code>%s</code> role. You can change the default role in the <a href="%s/wp-admin/options-general.php"><code>Options</code> &gt; <code>General</code> panel</a>. If a user is the author of at least one post or static page, its level will be raised to <code>contributor</code>.', 'e107-importer')
+                , __(get_settings('default_role'))
+                , get_option('siteurl')
+                );
+        ?></li>
+      </ul>
+
+      <h3><?php _e('News Extends', 'e107-importer'); ?></h3>
+      <p><?php _e('WordPress doesn\'t support extended news.', 'e107-importer'); ?></p>
+      <table class="form-table">
+        <tr valign="top">
+          <th scope="row"><?php _e('Do you want to import the extended part of all e107 news ?', 'e107-importer'); ?></th>
+          <td>
+            <label for="import-all"><input name="e107_extended_news" type="radio" id="import-all" value="import_all"/> <?php _e('Yes: import both extended part and body and merge them.', 'e107-importer'); ?></label><br/>
+            <label for="ignore-body"><input name="e107_extended_news" type="radio" id="ignore-body" value="ignore_body"/> <?php _e('Yes, but: ignore body and import extended part only.', 'e107-importer'); ?></label><br/>
+            <label for="ignore-extended"><input name="e107_extended_news" type="radio" id="ignore-extended" value="ignore_extended" checked="checked"/> <?php _e('No: ignore extended part of news, import the body only.', 'e107-importer'); ?></label><br/>
+          </td>
+        </tr>
+      </table>
+
+      <h3><?php _e('Comments on Custom Pages', 'e107-importer'); ?></h3>
+      <p><?php _e('WordPress <a href="http://trac.wordpress.org/ticket/3753">doesn\'t display comments on pages</a> by default. However, this tool can fix this by patching the default WordPress theme (Kubrick).', 'e107-importer'); ?></p>
+      <table class="form-table">
+        <tr valign="top">
+          <th scope="row"><?php _e('Do you want to patch Kubrick ?', 'e107-importer'); ?></th>
+          <td>
+            <label for="patch-theme"><input name="e107_patch_theme" type="radio" id="patch-theme" value="patch_theme"/> <?php _e('Yes: I want to let this import tool patch the Kubrick theme and set it as the current one.', 'e107-importer'); ?></label><br/>
+            <label for="no-patch-theme"><input name="e107_patch_theme" type="radio" id="no-patch-theme" value="no_patch_theme" checked="checked"/> <?php _e('No: I don\'t want to patch the default theme.', 'e107-importer'); ?></label><br/>
+          </td>
+        </tr>
+      </table>
+
+      <h3><?php _e('BBCode', 'e107-importer'); ?></h3>
+      <table class="form-table">
+        <tr valign="top">
+          <th scope="row"><?php _e('Which kind of <a href="http://wikipedia.org/wiki/Bbcode">BBCode</a> parser you want to use ?', 'e107-importer'); ?></th>
+          <td>
+            <label for="original"><input name="e107_bbcode_parser" type="radio" id="original" value="original" checked="checked"/> <?php _e('e107\'s parser (content will be rendered exactly as they appear in e107).', 'e107-importer'); ?></label><br/>
+            <label for="semantic"><input name="e107_bbcode_parser" type="radio" id="semantic" value="semantic"/> <?php _e('WordPress-like (enhance semantics and output HTML code very similar to what WordPress produce by default).', 'e107-importer'); ?></label><br/>
+            <label for="none"><input name="e107_bbcode_parser" type="radio" id="none" value="none"/> <?php _e('Do not translate BBCode to HTML and let them appear as is.', 'e107-importer'); ?></label><br/>
+          </td>
+        </tr>
+      </table>
+
+      <h3><?php _e('Images Upload', 'e107-importer'); ?></h3>
+      <p><?php _e('This tool can find image URLs embedded in news and pages, then upload them to this blog autommaticcaly.', 'e107-importer'); ?></p>
+      <table class="form-table">
+        <tr valign="top">
+          <th scope="row"><?php _e('Do you want to upload image files ?', 'e107-importer'); ?></th>
+          <td>
+            <label for="upload-all"><input name="e107_import_images" type="radio" id="upload-all" value="upload_all"/> <?php _e('Yes: upload all images, even those located on external sites.', 'e107-importer'); ?></label><br/>
+            <label for="site-upload"><input name="e107_import_images" type="radio" id="site-upload" value="site_upload" checked="checked"/> <?php _e('Yes, but: upload files from the e107 site only, not external images.', 'e107-importer'); ?></label><br/>
+            <label for="no-upload"><input name="e107_import_images" type="radio" id="no-upload" value="no_upload"/> <?php _e('No: do not upload image files to WordPress.', 'e107-importer'); ?></label><br/>
+          </td>
+        </tr>
+      </table>
+
+      <p class="submit">
+        <input type="submit" class="button-primary" id="submit" name="submit" value="<?php esc_attr_e('Import e107 to WordPress', 'e107-importer'); ?>"/>
+      </p>
+    </form>
+    <?php
+    $this->footer();
   }
 
 
@@ -1381,9 +1405,7 @@ class e107_Import extends WP_Importer {
         $this->$o = $_POST[$o];
 
     // TODO: use AJAX to display a progress bar http://wordpress.com/blog/2007/02/06/new-blogger-importer/
-    echo '<div class="wrap">';
-
-    echo '<h2>'.__('Import e107: Report').'</h2>';
+    $this->header();
 
     echo '<h3>'.__('Connect to e107 database').'</h3>';
     $this->connectToE107DB();
@@ -1460,14 +1482,14 @@ class e107_Import extends WP_Importer {
       echo '<p>'.__('Image upload skipped.').'</p>';
     }
 
-    echo '<h3>'.__('Activate the redirection plugin').'</h3>';
+    echo '<h3>'.__('Activate e107 Redirector plugin').'</h3>';
     $this->activateRedirectionPlugin();
     echo '<p>'.__('Plugin active !').'</p>';
 
-    echo '<h2>'.__('Import e107: Finished !').'</h2>';
+    echo '<h3>'.__('Finished !').'</h3>';
     printf('<p><a href="%s">'.__('Have fun !').'</a></p>', get_option('siteurl'));
 
-    echo '</div>';
+    $this->footer();
   }
 }
 
