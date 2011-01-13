@@ -60,14 +60,14 @@ Development of this plugin happened in a dedicated GitHub repository: http://git
 
 Here is a list of e107 and WordPress versions I tested my plugin with:
 
-* e107-importer 0.10.dev : e107 0.7.24 / Wordpress 3.1.0
-* e107-importer 0.9 : e107 0.7.11 / Wordpress 2.3.2
-* e107-importer 0.8 : e107 0.7.8  / Wordpress 2.1.3
-* e107-importer 0.7 : e107 0.7.8  / Wordpress 2.1.2
-* e107-importer 0.6 : e107 0.7.6  / Wordpress 2.0.5
-* e107-importer 0.5 : e107 0.7.5  / Wordpress 2.0.5
-* e107-importer 0.4 : e107 0.7.5  / Wordpress 2.0.4
-* e107-importer 0.3 : e107 0.7.5  / Wordpress 2.0.4
+* e107-importer 0.10.dev : e107 0.7.24 / WordPress 3.1.0
+* e107-importer 0.9 : e107 0.7.11 / WordPress 2.3.2
+* e107-importer 0.8 : e107 0.7.8  / WordPress 2.1.3
+* e107-importer 0.7 : e107 0.7.8  / WordPress 2.1.2
+* e107-importer 0.6 : e107 0.7.6  / WordPress 2.0.5
+* e107-importer 0.5 : e107 0.7.5  / WordPress 2.0.5
+* e107-importer 0.4 : e107 0.7.5  / WordPress 2.0.4
+* e107-importer 0.3 : e107 0.7.5  / WordPress 2.0.4
 
 == Changelog ==
 
