@@ -1,12 +1,14 @@
 <?php
 /*
-** Plugin Name: e107 to WordPress redirections
-** Plugin URI: http://kev.coolcavemen.com
-** Description: Redirect URLs from previous e107 website to new WordPress blog after a migration. This plugin is designed to be used with e107 to WordPress import tool only.
-** Version: 0.1
-** Author: Kevin Deldycke
-** Author URI: http://kev.coolcavemen.com
-**/
+Plugin Name: e107 redirections
+Plugin URI: http://github.com/kdeldycke/e107-importer/blob/master/e107-includes/e107-to-wordpress-redirect.php
+Description: Redirect URLs from previous e107 website to new WordPress blog after a migration. This plugin is designed to be used with e107 Importer plugin only.
+Author: Kevin Deldycke
+Author URI: http://kevin.deldycke.com
+Version: 1.0.dev
+Stable tag: 1.0
+License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+*/
 
 
 class e107_Redirections {
