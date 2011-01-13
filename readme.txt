@@ -52,6 +52,10 @@ Development of this plugin happened in a dedicated GitHub repository: http://git
 
 == Screenshots ==
 
+1. News and categories imported. Custom pages import options displayed. (e107-importer 0.7)
+2. User import completed. Plugin ask about news import options. (e107-importer 0.6)
+3. News imported. Plugin show page import options. (e107-importer 0.5)
+
 == Tested with... ==
 
 Here is a list of e107 and WordPress versions I tested my plugin with:
