@@ -51,15 +51,15 @@ That's nice from you to propose a donation but quite frankly, money is not the k
 
 = Can I update the plugin ? =
 
-That's nice from you to propose to update it. All contributions are welcome ! I'll be happy to apply all your patches in the original code to let anyone benefits your work.
+That's nice from you to propose to update it. All contributions are welcome ! I'll be happy to apply all your patches in the original code to let anyone benefits your work. Even after I will declare this plugin dead.
 
 = How can I contribute code ? =
 
-Feel free to send me patches and code by mail. Or better yet, use GitHub fork/merge requests.
+Feel free to send me patches and code by mail. Or better yet, use GitHub fork/merge features.
 
 = Where can I find the source code ? =
 
-Development of this plugin happened in a dedicated GitHub repository: http://github.com/kdeldycke/e107-importer
+Development of this plugin happen in a dedicated GitHub repository: http://github.com/kdeldycke/e107-importer
 
 == Screenshots ==
 
