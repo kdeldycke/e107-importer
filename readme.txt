@@ -7,7 +7,7 @@ Tested up to: 3.1.0
 Stable tag: 1.0
 License: GPLv2
 
-Import posts and comments from an e107 CMS.
+e107 import plugin for WordPress.
 
 == Description ==
 

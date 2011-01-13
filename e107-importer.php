@@ -2,7 +2,7 @@
 /*
 Plugin Name: e107 Importer
 Plugin URI: https://github.com/kdeldycke/e107-importer
-Description: Import posts and comments from an e107 CMS.
+Description: e107 import plugin for WordPress.
 Author: Kevin Deldycke
 Author URI: http://kevin.deldycke.com
 Version: 1.0.dev
