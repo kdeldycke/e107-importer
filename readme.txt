@@ -22,7 +22,7 @@ This plugin allows you to extract the most important content and data from an e1
 * Import images from news and pages,
 * Let you choose which kind of images you want to upload to WordPress (external or not),
 * Import preferences (site name, description, ...),
-* Convert embedded bbcode to plain HTML,
+* Convert embedded BBCode to plain HTML,
 * Import users and their profile (or try to update the profile if user already exist),
 * Try to map users to an appropriate role,
 * Send mails to users to inform them about their new credentials,
@@ -80,11 +80,12 @@ Here is a list of e107 and WordPress versions I tested my plugin with:
 
 = 1.0 =
 * Upgrade e107 code from e107 v0.7.24.
+* Minimal requirement set to WordPress 3.1.0.
 * Use new WordPress importer framework.
 * Add a beta e107 to WordPress 301 redirector plugin.
 * Make image import optionnal.
-* Upload images from allowed domains only.
-* Add a custom BBcode parser.
+* Add an option to upload images from allowed domains only.
+* Add a custom BBCode parser.
 * Align naming conventions with other WordPress importer.
 * Add a complete WordPress plugin hosting compatible readme file with full metadatas.
 * Add screenshots.
@@ -93,6 +94,7 @@ Here is a list of e107 and WordPress versions I tested my plugin with:
 * Add a minimal FAQ.
 * Add an overview of features in description.
 * Update source code repository location.
+* Remove patching of Kubrick theme to support comments on static pages.
 
 = 0.9 =
 * "One-click migration" instead of multiple step process (more user-friendly).
@@ -130,7 +132,7 @@ Here is a list of e107 and WordPress versions I tested my plugin with:
 * Import all users and associate them with their posts.
 
 = 0.2 =
-* Add bbcode support to news content.
+* Add BBCode support to news content.
 
 = 0.1 =
 * First draft of e107 to Wordpress importer.
