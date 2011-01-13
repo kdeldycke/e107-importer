@@ -45,6 +45,10 @@ This tool was tested with [e107 0.7.24](http://e107.org/news.php?item.877) and [
 I plan to update this plugin in the future as I still have old e107 sites to migrate. As long as I have these migrations to do, I will not officially declare my plugin dead and
 unmaintained. But this future can be quite distant as I currently have much higher priority work to do.
 
+= Can I give you money to fix my problem ? =
+
+That's nice from you to propose a donation but quite frankly, money is not the kind of incentives that will push the development of my plugins. But code, bug reports and testing is the kind of contributions I'm looking for. In fact getting rid of my old e107 instances is the best motivator I have. But by popular demand, here is my [donation link](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XEXREDEHXSQUJ) anyway...
+
 = Can I update the plugin ? =
 
 That's nice from you to propose to update it. All contributions are welcome ! I'll be happy to apply all your patches in the original code to let anyone benefits your work.
