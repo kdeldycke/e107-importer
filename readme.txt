@@ -1,5 +1,6 @@
 === Plugin Name ===
 Contributors: coolkevman
+Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XEXREDEHXSQUJ 
 Tags: importer, e107, cms, migration
 Requires at least: 3.1.0
 Tested up to: 3.1.0
@@ -72,7 +73,61 @@ Here is a list of e107 and WordPress versions I tested my plugin with:
 == Changelog ==
 
 = 1.0 =
-* current revision
+* Upgrade e107 code from e107 v0.7.24.
+* Use new WordPress importer framework.
+* Add a beta e107 to WordPress 301 redirector plugin.
+* Make image import optionnal.
+* Upload images from allowed domains only.
+* Add a custom BBcode parser.
+* Align naming conventions with other WordPress importer.
+* Add a complete WordPress plugin hosting compatible readme file with full metadatas.
+* Add screenshots.
+* List all versions of e107 and WordPress I tested this plugin with.
+* Add a PayPal donation link.
+* Add a minimal FAQ.
+* Add an overview of features in description.
+* Update source code repository location.
+
+= 0.9 =
+* "One-click migration" instead of multiple step process (more user-friendly).
+* Better error management (a must-have for precise bug reports).
+* Replace all links to old content with permalinks (increased SEO).
+* Better database management.
+* Code cleaned up.
+
+= 0.8 =
+* Import images embedded in e107 news and custom pages.
+* Import e107 site preferences.
+* Better import of user profile data.
+* An existing user on the blog can be detected and updated automatically.
+* Fix the profanity filter bug.
+
+= 0.7 =
+* Import e107 news categories.
+* Mails can be sent to each user to warn them about their new password.
+* Static pages can be set as private.
+* Simplify the import process.
+* Some little UI imporvements.
+
+= 0.6 =
+* Render content according user's preferences.
+* Take care of extended news.
+
+= 0.5 =
+* Add import of static pages.
+
+= 0.4 =
+* Fix lots of bugs, especially due to non-escaped SQL queries.
+* Import news comments and link them to users.
+
+= 0.3 =
+* Import all users and associate them with their posts.
+
+= 0.2 =
+* Add bbcode support to news content.
+
+= 0.1 =
+* First draft of e107 to Wordpress importer.
 
 == Upgrade Notice ==
 
