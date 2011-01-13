@@ -252,11 +252,11 @@ class e107_Import extends WP_Importer {
 
     unset($this->e107_pref['image_post']);
 
-    // Don't transform smileys to <img>, Wordpress will do it automaticcaly
+    // Don't transform smileys to <img>, WordPress will do it automaticcaly
     $this->e107_pref['smiley_activate'] = False;
 
     // Turn-off profanity filter: if profanities must be hidden in content,
-    //   it should be done by a dedicated Wordpress plug-in,
+    //   it should be done by a dedicated WordPress plug-in,
     //   not by a direct alteration of original content.
     // As suggested by Jon Freger ( http://kevin.deldycke.com/2006/11/wordpress-to-e107-v06-better-content-rendering-and-extended-news-support/#comment-2937 ), use  WebPurify WP Plugin ( http://www.webpurify.com/wp-plugin.php ).
     // TODO: show this suggestion in the UI if profanity_filter is activated on e107.
@@ -273,11 +273,11 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // wp_handle_upload_2() function below is a slightly modified original wp_handle_upload() function from Wordpress 2.1.3 (wp-admin/admin-functions.php).
+  // wp_handle_upload_2() function below is a slightly modified original wp_handle_upload() function from WordPress 2.1.3 (wp-admin/admin-functions.php).
   // Modifications:
   //   * is_uploaded_file() block is commented.
   //   * move_uploaded_file() function is replaced by rename().
-  // TODO: try to find a solution to use the standard wp_handle_upload() method (maybe submit a patch to Wordpress ?)
+  // TODO: try to find a solution to use the standard wp_handle_upload() method (maybe submit a patch to WordPress ?)
   function wp_handle_upload_2( &$file, $overrides = false ) {
     global $wpdb;
 
@@ -395,7 +395,7 @@ class e107_Import extends WP_Importer {
     $post = get_post($post_id);
     $html_content = $post->post_content;
 
-    // Locate all <img/> tags and import them into Wordpress
+    // Locate all <img/> tags and import them into WordPress
     // Look at http://kevin.deldycke.com/2007/03/ultimate-regular-expression-for-html-tag-parsing-with-php/ for details about this regex
     $img_regex = "/<\s*img((\s+\w+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>/i";
     preg_match_all($img_regex, $html_content, $matches, PREG_SET_ORDER);
@@ -640,7 +640,7 @@ class e107_Import extends WP_Importer {
 
 
   // Update the redirection plugin with data related to this import
-  // Mainly used to add the mapping of old e107 content to their Wordpress equivalent
+  // Mainly used to add the mapping of old e107 content to their WordPress equivalent
   function updateRedirectionPlugin($keyword, $data) {
     global $wpdb;
     // Get plugin file path
@@ -685,7 +685,7 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Import e107 users to Wordpress
+  // Import e107 users to WordPress
   function importUsers() {
     // Get user list
     $user_list = $this->getE107UserList();
@@ -791,7 +791,7 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Get e107 news and save them as Wordpress posts
+  // Get e107 news and save them as WordPress posts
   function importNewsAndCategories() {
     // Phase 1: import categories
 
@@ -840,7 +840,7 @@ class e107_Import extends WP_Importer {
       if (! $author->has_cap('edit_posts'))
         $author->set_role('contributor');
 
-      // Save e107 news in Wordpress database
+      // Save e107 news in WordPress database
       $post_id = wp_insert_post(array(
           'post_author'    => $author_id                          // use the new wordpress user ID
         , 'post_date'      => $this->mysql_date($news_datestamp)
@@ -867,7 +867,7 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Convert static pages to Wordpress pages
+  // Convert static pages to WordPress pages
   function importPages() {
     // Get static pages list
     $page_list = $this->getE107PageList();
@@ -890,7 +890,7 @@ class e107_Import extends WP_Importer {
           update_option('template', 'default');
           update_option('stylesheet', 'default');
         }
-        // Patch sent to Wordpress: http://trac.wordpress.org/ticket/3753 -> Wait and see...
+        // Patch sent to WordPress: http://trac.wordpress.org/ticket/3753 -> Wait and see...
         $real_file = get_real_file_to_edit("wp-content/themes/default/page.php");
         $f = fopen($real_file, 'r');
         $content = fread($f, filesize($real_file));
@@ -907,7 +907,7 @@ class e107_Import extends WP_Importer {
           fwrite($f, $patched_content);
           fclose($f);
         }
-        // TODO: support K2 theme ? In this case, just add "$page_template = 'page-comments.php';" when inserting static page to Wordpress
+        // TODO: support K2 theme ? In this case, just add "$page_template = 'page-comments.php';" when inserting static page to WordPress
       }
 
       // Set the status of the post to 'publish' or 'private'.
@@ -936,7 +936,7 @@ class e107_Import extends WP_Importer {
         $comment_status = 'open';
       }
 
-      // Save e107 static page in Wordpress database
+      // Save e107 static page in WordPress database
       $ret_id = wp_insert_post(array(
           'post_author'    => $author_id                           // use the new wordpress user ID
         , 'post_date'      => $this->mysql_date($page_datestamp)
@@ -956,7 +956,7 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Import e107 comments as Wordpress comments
+  // Import e107 comments as WordPress comments
   function importComments() {
     // Get News list
     $comment_list = $this->getE107CommentList();
@@ -982,7 +982,7 @@ class e107_Import extends WP_Importer {
       $post_status = get_post_status($post_id);
       if ($post_status != False) {
 
-        // Get author details from Wordpress if registered.
+        // Get author details from WordPress if registered.
         $author_name  = substr($comment_author, strpos($comment_author, '.') + 1);
         $author_id    = (int) strrev(substr(strrev($comment_author), strpos(strrev($comment_author), '.') + 1));
         $author_ip    = $this->ip_hex2dec($comment_ip);
@@ -1006,7 +1006,7 @@ class e107_Import extends WP_Importer {
           }
         }
 
-        // Save e107 comment in Wordpress database
+        // Save e107 comment in WordPress database
         $ret_id = wp_insert_comment(array(
             'comment_post_ID'      => $post_id
           , 'comment_author'       => $wpdb->escape($author_name)
@@ -1265,7 +1265,7 @@ class e107_Import extends WP_Importer {
     echo '<div class="wrap">';
 
     echo '<h2>'.__('Import e107: Introduction').'</h2>';
-    echo '<p>'.__('This tool allows you to extract the most important content and data from a e107 database and import them into your Wordpress blog.').'</p>';
+    echo '<p>'.__('This tool allows you to extract the most important content and data from a e107 database and import them into your WordPress blog.').'</p>';
 
     echo '<p>'.__('Features:').'<ul><li>';
     echo __('Import news and categories,').'</li><li>';
@@ -1274,7 +1274,7 @@ class e107_Import extends WP_Importer {
     echo __('Take care of page visibility (private / public),').'</li><li>';
     echo __('Import comments (both from news and custom pages),').'</li><li>';
     echo __('Import images from news and pages,').'</li><li>';
-    echo __('Let you choose which kind of images you want to upload to Wordpress (external or not),').'</li><li>';
+    echo __('Let you choose which kind of images you want to upload to WordPress (external or not),').'</li><li>';
     echo __('Import preferences (like site name, description, ...),').'</li><li>';
     echo __('Convert embedded bbcode to plain HTML,').'</li><li>';
     echo __('Import users and their profile (or try to update the profile if user already exist),').'</li><li>';
@@ -1318,7 +1318,7 @@ class e107_Import extends WP_Importer {
     echo '<h2>'.__('Import options').'</h2>';
 
     echo '<fieldset class="options"><legend>'.__('Users').'</legend>';
-    printf(__('<p>All users will be imported in the Wordpress database with the <code>%s</code> role. You can change the default role in the <a href="'.get_option('siteurl').'/wp-admin/options-general.php"><code>Options</code> &gt; <code>General</code> panel</a>. If a user is the author of at least one post or static page, its level will be raised to <code>contributor</code>.').'</p>'
+    printf(__('<p>All users will be imported in the WordPress database with the <code>%s</code> role. You can change the default role in the <a href="'.get_option('siteurl').'/wp-admin/options-general.php"><code>Options</code> &gt; <code>General</code> panel</a>. If a user is the author of at least one post or static page, its level will be raised to <code>contributor</code>.').'</p>'
           , __(get_settings('default_role'))
           );
     echo __("<p><strong>Warning 1</strong>: e107 users' password are encrypted. All passwords will be resetted.</p>");
@@ -1329,11 +1329,11 @@ class e107_Import extends WP_Importer {
     echo __('<label><input name="e107_mail_user" type="radio" value="no_mail" checked="checked"/> No: reset each password but don\'t send a mail to users.</label>');
     echo '</li></ul>';
     echo '</p>';
-    echo __("<p><strong>Warning 2</strong>: Unlike e107, Wordpress don't accept strange char (like accents, etc) in login. When a user will be added to WP, all non-ascii chars will be deleted from the login string.</p>");
+    echo __("<p><strong>Warning 2</strong>: Unlike e107, WordPress don't accept strange char (like accents, etc) in login. When a user will be added to WP, all non-ascii chars will be deleted from the login string.</p>");
     echo '</fieldset>';
 
     echo '<fieldset class="options"><legend>'.__('News Extends').'</legend>';
-    echo '<p>Wordpress doesn\'t support extended news.</p>';
+    echo '<p>WordPress doesn\'t support extended news.</p>';
     echo '<p>Do you want to import the extended part of all e107 news ?';
     echo '<ul><li>';
     echo '<label><input name="e107_extended_news" type="radio" value="import_all"/> Yes: import both extended part and body and merge them.</label>';
@@ -1345,7 +1345,7 @@ class e107_Import extends WP_Importer {
     echo '</fieldset>';
 
     echo '<fieldset class="options"><legend>'.__('Comments on Custom Pages').'</legend>';
-    echo '<p>'.__("Wordpress <a href='http://trac.wordpress.org/ticket/3753'>doesn't display comments on pages</a> by default. However, this tool can fix this by patching the default Wordpress theme (Kubrick).").'</p>';
+    echo '<p>'.__("WordPress <a href='http://trac.wordpress.org/ticket/3753'>doesn't display comments on pages</a> by default. However, this tool can fix this by patching the default WordPress theme (Kubrick).").'</p>';
     echo '<p>Do you want to patch Kubrick ?';
     echo '<ul><li>';
     echo '<label><input name="e107_patch_theme" type="radio" value="patch_theme"/> Yes: I want to let this import tool patch the Kubrick theme and set it as the current one.</label>';
@@ -1373,11 +1373,11 @@ class e107_Import extends WP_Importer {
     echo '</li><li>';
     echo '<label><input name="e107_import_images" type="radio" value="site_upload" checked="checked"/> Yes, but: upload files from the e107 site only, not external images.</label>';
     echo '</li><li>';
-    echo '<label><input name="e107_import_images" type="radio" value="no_upload"/> No: do not upload image files to Wordpress.</label>';
+    echo '<label><input name="e107_import_images" type="radio" value="no_upload"/> No: do not upload image files to WordPress.</label>';
     echo '</li></ul></p>';
     echo '</fieldset>';
 
-    echo '<input type="submit" name="submit" value="'.__('Import e107 to Wordpress').' &raquo;" />';
+    echo '<input type="submit" name="submit" value="'.__('Import e107 to WordPress').' &raquo;" />';
     echo '</form>';
     echo '</div>';
   }
@@ -1471,10 +1471,10 @@ class e107_Import extends WP_Importer {
     echo '<h3>'.__('Upload images').'</h3>';
     if ($this->e107_import_images == 'upload_all') {
       $this->importImages();
-      echo '<p>'.__('All image embedded in news and pages uploaded to Wordpress.').'</p>';
+      echo '<p>'.__('All image embedded in news and pages uploaded to WordPress.').'</p>';
     } elseif ($this->e107_import_images == 'site_upload') {
       $this->importImages(true);
-      printf('<p>'.__('All image files from %s domain and which are used in news and pages were uploaded to Wordpress.').'</p>', '<a href="'.$this->e107_pref['siteurl'].'">'.$this->e107_pref['siteurl'].'</a>');
+      printf('<p>'.__('All image files from %s domain and which are used in news and pages were uploaded to WordPress.').'</p>', '<a href="'.$this->e107_pref['siteurl'].'">'.$this->e107_pref['siteurl'].'</a>');
     } else {
       echo '<p>'.__('Image upload skipped.').'</p>';
     }
@@ -1491,14 +1491,14 @@ class e107_Import extends WP_Importer {
 }
 
 
-// Add e107 importer in the list of default Wordpress import filter
+// Add e107 importer in the list of default WordPress import filter
 $e107_import = new e107_Import();
 
 // Show all database errors
 global $wpdb;
 $wpdb->show_errors();
 
-register_importer('e107', __('e107'), __("Import e107 news, categories, users, custom pages, comments, images and preferences to Wordpress. Also take care of URL redirections, but don't make coffee (yet <img src='".get_option('siteurl')."/wp-includes/images/smilies/icon_wink.gif' alt=';)' class='wp-smiley'/>)."), array ($e107_import, 'start'));
+register_importer('e107', __('e107'), __("Import e107 news, categories, users, custom pages, comments, images and preferences to WordPress. Also take care of URL redirections, but don't make coffee (yet <img src='".get_option('siteurl')."/wp-includes/images/smilies/icon_wink.gif' alt=';)' class='wp-smiley'/>)."), array ($e107_import, 'start'));
 
 } // class_exists( 'WP_Importer' )
 

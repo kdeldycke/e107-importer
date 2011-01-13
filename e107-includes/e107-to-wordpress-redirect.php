@@ -1,8 +1,8 @@
 <?php
 /*
-** Plugin Name: e107 to Wordpress redirections
+** Plugin Name: e107 to WordPress redirections
 ** Plugin URI: http://kev.coolcavemen.com
-** Description: Redirect URLs from previous e107 website to new Wordpress blog after a migration. This plugin is designed to be used with e107 to Wordpress import tool only.
+** Description: Redirect URLs from previous e107 website to new WordPress blog after a migration. This plugin is designed to be used with e107 to WordPress import tool only.
 ** Version: 0.1
 ** Author: Kevin Deldycke
 ** Author URI: http://kev.coolcavemen.com
@@ -18,7 +18,7 @@ class e107_Redirections {
     // Final destination
     $link = '';
 
-    // Comments line below will be replaced dynamically by php code by the e107 to Wordpress import script
+    // Comments line below will be replaced dynamically by php code by the e107 to WordPress import script
 
     // XXX NEWS MAPPING XXX
 
