@@ -24,7 +24,7 @@ if ( !class_exists( 'WP_Importer' ) ) {
 
 
 // Constant
-define("IMPORTER_PATH"         , WP_PLUGIN_DIR . 'e107-importer/');
+define("IMPORTER_PATH"         , WP_PLUGIN_DIR . '/e107-importer/');
 define("E107_INCLUDES_PATH"    , IMPORTER_PATH . 'e107-includes/');
 define("E107_REDIRECTOR_PLUGIN", 'e107-redirector.php');
 
@@ -110,8 +110,8 @@ class e107_Import extends WP_Importer {
     // Redifine some globals to match wordpress importer file hierarchy
     define("e_BASE"   , ABSPATH);
     define("e_PLUGIN" , e_BASE);
-    define("e_FILE"   , e_BASE . IMPORTER_PATH);
-    define("e_HANDLER", e_BASE . E107_INCLUDES_PATH);
+    define("e_FILE"   , IMPORTER_PATH);
+    define("e_HANDLER", E107_INCLUDES_PATH);
 
     // CHARSET is normally set in e107_languages/English/English.php file
     define("CHARSET", "utf-8");
