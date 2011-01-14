@@ -878,7 +878,7 @@ class e107_Import extends WP_Importer {
     global $wpdb;
     // Get the list of WP news and page IDs
     $news_and_pages_ids = array_merge(array_values($this->news_mapping), array_values($this->page_mapping));
-    // Parse BBcode in each news and page
+    // Parse BBCode in each news and page
     foreach ($news_and_pages_ids as $post_id) {
       // Get post content
       $post = get_post($post_id);
@@ -896,7 +896,7 @@ class e107_Import extends WP_Importer {
 
     // Get the list of all WP comments IDs
     $comments_ids = array_values($this->comment_mapping);
-    // Parse BBcode in each news and page
+    // Parse BBCode in each news and page
     foreach ($comments_ids as $comment_id) {
       // Get comment content
       $comment = get_comment($comment_id);
@@ -998,16 +998,16 @@ class e107_Import extends WP_Importer {
   // Transform BBCode to HTML using original e107 parser
   // TODO: parse bbcode in post and page title !
   // TODO: factorize with replaceConstants() -> less code & less database IO
-  function parseBBcodeWithE107() {
+  function parseBBCodeWithE107() {
     global $wpdb;
     // Get the list of WP news and page IDs
     $news_and_pages_ids = array_merge(array_values($this->news_mapping), array_values($this->page_mapping));
-    // Parse BBcode in each news and page
+    // Parse BBCode in each news and page
     foreach ($news_and_pages_ids as $post_id) {
       // Get post content
       $post = get_post($post_id);
       $content = $post->post_content;
-      // Apply BBcode transformation
+      // Apply BBCode transformation
       $new_content = $this->e107_parser->toHTML($content, $parseBB = TRUE);
       // Update post content if necessary
       if ($new_content != $content)
@@ -1019,12 +1019,12 @@ class e107_Import extends WP_Importer {
 
     // Get the list of all WP comments IDs
     $comments_ids = array_values($this->comment_mapping);
-    // Parse BBcode in each news and page
+    // Parse BBCode in each news and page
     foreach ($comments_ids as $comment_id) {
       // Get comment content
       $comment = get_comment($comment_id);
       $content = $comment->comment_content;
-      // Apply BBcode transformation
+      // Apply BBCode transformation
       $new_content = $this->e107_parser->toHTML($content, $parseBB = TRUE);
       // Update comment content if necessary
       if ($new_content != $content)
@@ -1037,7 +1037,7 @@ class e107_Import extends WP_Importer {
 
 
   // Transform BBCode to HTML using Kevin's custom parser
-  function parseBBcodeWithCustomParser() {
+  function parseBBCodeWithCustomParser() {
     /*
     // cleanup html and semantics enhancements
 
@@ -1311,15 +1311,15 @@ class e107_Import extends WP_Importer {
     $this->replaceWithPermalinks();
     echo '<p>'.__('All migrated content use permalinks now.').'</p>';
 
-    echo '<h3>'.__('Parse BBcode').'</h3>';
+    echo '<h3>'.__('Parse BBCode').'</h3>';
     if ($this->e107_bbcode_parser == 'semantic') {
-      $this->parseBBcodeWithCustomParser();
-      echo '<p>'.__("BBcode converted to pure html using kevin's custom parser.").'</p>';
+      $this->parseBBCodeWithCustomParser();
+      echo '<p>'.__("BBCode converted to pure html using kevin's custom parser.").'</p>';
     } elseif ($this->e107_bbcode_parser == 'original') {
-      $this->parseBBcodeWithE107();
-      echo '<p>'.__('BBcode converted to pure html using original e107 parser.').'</p>';
+      $this->parseBBCodeWithE107();
+      echo '<p>'.__('BBCode converted to pure html using original e107 parser.').'</p>';
     } else {
-      echo '<p>'.__('BBcode tags left as-is.').'</p>';
+      echo '<p>'.__('BBCode tags left as-is.').'</p>';
     }
 
     echo '<h3>'.__('Upload images').'</h3>';
