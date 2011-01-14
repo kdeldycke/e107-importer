@@ -701,7 +701,7 @@ class e107_Import extends WP_Importer {
       // Create a new user
       if (!$wp_user_ID) {
         // New password is required because we can't decrypt e107 password
-        $new_password = substr(md5(uniqid(microtime())), 0, 6);
+        $new_password = wp_generate_password( 12, false);
         $user_data['user_pass'] = $wpdb->escape($new_password);
         // Don't reset login name on user update
         $user_data['user_login'] = $wpdb->escape($user_loginname);
