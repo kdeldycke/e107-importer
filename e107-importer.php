@@ -1122,7 +1122,7 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Transform BBcode to html using original e107 parser
+  // Transform BBCode to HTML using original e107 parser
   // TODO: parse bbcode in post and page title !
   // TODO: factorize with replaceConstants() -> less code & less database IO
   function parseBBcodeWithE107() {
@@ -1163,7 +1163,7 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Transform BBcode to html using Kevin's custom parser
+  // Transform BBCode to HTML using Kevin's custom parser
   function parseBBcodeWithCustomParser() {
     /*
     // cleanup html and semantics enhancements
@@ -1278,6 +1278,18 @@ class e107_Import extends WP_Importer {
         </tr>
       </table>
 
+      <h3><?php _e('Site Preferences', 'e107-importer'); ?></h3>
+      <p><?php _e('This importer can read the preferences set for e107 and apply them to this current blog. Supported preferences are: site title, site description, admin e-mail address, open user registration, users registration for comment, emoticons graphical convertion, number of posts per pages, GZip compression and timezone offset.', 'e107-importer'); ?></p>
+      <table class="form-table">
+        <tr valign="top">
+          <th scope="row"><?php _e('Do you want to import e107 preferences ?', 'e107-importer'); ?></th>
+          <td>
+            <label for="import-pref"><input name="e107_preferences" type="radio" id="import-pref" value="import_pref" checked="checked"/> <?php _e('Yes: get preferences from e107 and apply them to the current blog.', 'e107-importer'); ?></label><br/>
+            <label for="ignore-pref"><input name="e107_preferences" type="radio" id="ignore-pref" value="ignore_pref"/> <?php _e('No: don\'t mess the configuration of this blog with e107 preferences.', 'e107-importer'); ?></label><br/>
+          </td>
+        </tr>
+      </table>
+
       <h3><?php _e('Users', 'e107-importer'); ?></h3>
       <table class="form-table">
         <tr valign="top">
@@ -1351,6 +1363,7 @@ class e107_Import extends WP_Importer {
   function import() {
     // Collect parameters and options from the welcome screen
     $e107_option_names = array( 'e107_db_host', 'e107_db_user', 'e107_db_pass', 'e107_db_name', 'e107_db_prefix'
+                              , 'e107_preferences'
                               , 'e107_mail_user'
                               , 'e107_extended_news'
                               , 'e107_bbcode_parser'
@@ -1374,8 +1387,12 @@ class e107_Import extends WP_Importer {
     echo '<p>'.__('Preferences loaded.').'</p>';
 
     echo '<h3>'.__('Import preferences').'</h3>';
-    $this->importPreferences();
-    echo '<p>'.__('All e107 preferences imported.').'</p>';
+    if ($this->e107_preferences == 'import_pref') {
+      $this->importPreferences();
+      echo '<p>'.__('All e107 preferences imported.').'</p>';
+    } else {
+      echo '<p>'.__('Preferences not imported.').'</p>';
+    }
 
     echo '<h3>'.__('Install the redirection plugin').'</h3>';
     $this->installRedirectionPlugin();
