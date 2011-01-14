@@ -24,8 +24,8 @@ if ( !class_exists( 'WP_Importer' ) ) {
 
 
 // Constant
-define("IMPORTER_PATH"       , PLUGDIR . 'e107-importer/');
-define("E107_INCLUDES_PATH"  , IMPORTER_PATH . 'e107-includes/');
+define("IMPORTER_PATH"         , WP_PLUGIN_DIR . 'e107-importer/');
+define("E107_INCLUDES_PATH"    , IMPORTER_PATH . 'e107-includes/');
 define("E107_REDIRECTOR_PLUGIN", 'e107-redirector.php');
 
 
