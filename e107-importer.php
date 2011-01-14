@@ -373,7 +373,7 @@ class e107_Import extends WP_Importer {
       if (!$domain_ok)
         continue;
 
-      // The fopen() function in wp_remote_fopen() don't like URLs with space chars not translated to html entities
+      // The fopen() function in wp_remote_fopen() don't like URLs with space chars not translated to HTML entities
       $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
 
       // Upload remote image if exist
@@ -1039,7 +1039,7 @@ class e107_Import extends WP_Importer {
   // Transform BBCode to HTML using Kevin's custom parser
   function parseBBCodeWithCustomParser() {
     /*
-    // cleanup html and semantics enhancements
+    // cleanup HTML and semantics enhancements
 
     "<br />" -> "\n"
     "<br /><br />" -> "\n\n"
@@ -1314,10 +1314,10 @@ class e107_Import extends WP_Importer {
     echo '<h3>'.__('Parse BBCode').'</h3>';
     if ($this->e107_bbcode_parser == 'semantic') {
       $this->parseBBCodeWithCustomParser();
-      echo '<p>'.__("BBCode converted to pure html using kevin's custom parser.").'</p>';
+      echo '<p>'.__("BBCode converted to pure HTML using Kevin's custom parser.").'</p>';
     } elseif ($this->e107_bbcode_parser == 'original') {
       $this->parseBBCodeWithE107();
-      echo '<p>'.__('BBCode converted to pure html using original e107 parser.').'</p>';
+      echo '<p>'.__('BBCode converted to pure HTML using original e107 parser.').'</p>';
     } else {
       echo '<p>'.__('BBCode tags left as-is.').'</p>';
     }
