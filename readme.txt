@@ -80,6 +80,10 @@ Here is a list of e107 and WordPress versions I tested my plugin with:
 * e107-importer 0.4 : e107 0.7.5  / WordPress 2.0.4
 * e107-importer 0.3 : e107 0.7.5  / WordPress 2.0.4
 
+== Copyright notice ==
+
+This plugin contain original code from the e107 project, licensed under the GPL.
+
 == Changelog ==
 
 = 1.0 =
