@@ -562,6 +562,7 @@ class e107_Import extends WP_Importer {
     return $this->queryE107DB($sql);
   }
 
+
   function getE107NewsList() {
     // Prepare the SQL request
     $e107_newsTable  = $this->e107_db_prefix."news";
