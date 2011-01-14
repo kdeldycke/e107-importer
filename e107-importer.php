@@ -1319,7 +1319,7 @@ class e107_Import extends WP_Importer {
           <th scope="row"><?php _e('Which kind of <a href="http://wikipedia.org/wiki/Bbcode">BBCode</a> parser you want to use ?', 'e107-importer'); ?></th>
           <td>
             <label for="original"><input name="e107_bbcode_parser" type="radio" id="original" value="original" checked="checked"/> <?php _e('e107\'s parser (content will be rendered exactly as they appear in e107).', 'e107-importer'); ?></label><br/>
-            <label for="semantic"><input name="e107_bbcode_parser" type="radio" id="semantic" value="semantic"/> <?php _e('WordPress-like (enhance semantics and output HTML code very similar to what WordPress produce by default).', 'e107-importer'); ?></label><br/>
+            <!--label for="semantic"><input name="e107_bbcode_parser" type="radio" id="semantic" value="semantic"/--> <!--?php _e('WordPress-like (enhance semantics and output HTML code very similar to what WordPress produce by default).', 'e107-importer'); ?></label><br/-->
             <label for="none"><input name="e107_bbcode_parser" type="radio" id="none" value="none"/> <?php _e('Do not translate BBCode to HTML and let them appear as is.', 'e107-importer'); ?></label><br/>
           </td>
         </tr>

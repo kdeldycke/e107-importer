@@ -89,7 +89,6 @@ Here is a list of e107 and WordPress versions I tested my plugin with:
 * Add a beta e107 to WordPress 301 redirector plugin.
 * Make image import optionnal.
 * Add an option to upload images from allowed domains only.
-* Add a custom BBCode parser.
 * Align naming conventions with other WordPress importer.
 * Add a complete WordPress plugin hosting compatible readme file with full metadatas.
 * Add screenshots.
