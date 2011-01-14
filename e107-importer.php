@@ -71,7 +71,7 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Convert hexadecimal IP adresse string to decimal
+  // Convert hexadecimal IP address string to decimal
   function ip_hex2dec($hex_ip) {
     if (strlen($hex_ip) != 8)
       return '';
