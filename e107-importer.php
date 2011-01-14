@@ -106,8 +106,6 @@ class e107_Import extends WP_Importer {
     $HELP_DIRECTORY      = "e107_docs/help/";
     $DOWNLOADS_DIRECTORY = "e107_files/downloads/";
 
-    define("e_IMAGE", "/".$IMAGES_DIRECTORY);
-
     // Redifine some globals to match WordPress file hierarchy
     define("e_BASE"   , ABSPATH);
     define("e_PLUGIN" , e_BASE);
@@ -805,7 +803,7 @@ class e107_Import extends WP_Importer {
 
     global $wpdb;
 
-    // This array contain the mapping between old e107 comments and newly inserted wordpress comments
+    // This array contain the mapping between old e107 comments and newly inserted WordPress comments
     $this->comment_mapping = array();
 
     foreach ($comment_list as $comment) {
@@ -871,10 +869,10 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // This method parse content of news, pages and comments to replace all {e_SOMTHING} e107 constants
+  // This method parse content of news, pages and comments to replace all {e_SOMETHING} e107's constants
   function replaceConstants() {
     global $wpdb;
-    // Get the list of WP news and page IDs
+    // Get the list of WordPress news and page IDs
     $news_and_pages_ids = array_merge(array_values($this->news_mapping), array_values($this->page_mapping));
     // Parse BBCode in each news and page
     foreach ($news_and_pages_ids as $post_id) {
