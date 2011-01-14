@@ -24,9 +24,9 @@ if ( !class_exists( 'WP_Importer' ) ) {
 
 
 // Constant
-define("IMPORTER_PATH"       , 'wp-content/plugins/e107-importer/');
+define("IMPORTER_PATH"       , PLUGDIR . 'e107-importer/');
 define("E107_INCLUDES_PATH"  , IMPORTER_PATH . 'e107-includes/');
-define("E107_REDIRECT_PLUGIN", 'e107-redirector.php');
+define("E107_REDIRECTOR_PLUGIN", 'e107-redirector.php');
 
 
 if ( class_exists( 'WP_Importer' ) ) {
@@ -614,76 +614,6 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Install the redirections plugin
-  function installRedirectionPlugin() {
-    global $wpdb;
-    $source = ABSPATH . PLUGINDIR . E107_REDIRECT_PLUGIN;
-    $dest   = ABSPATH . PLUGINDIR . '/custom-' . E107_REDIRECT_PLUGIN;
-
-    // Get current active plugins
-    $current = get_option('active_plugins');
-
-    // Remove previous plugin if exist
-    if (is_file($dest))
-      // Desactivate the plugin before removing it
-      if (in_array(E107_REDIRECT_PLUGIN, $current)) {
-        array_splice($current, array_search(E107_REDIRECT_PLUGIN, $current), 1 ); // Array-fu!
-        update_option('active_plugins', $current);
-        do_action('deactivate_' . E107_REDIRECT_PLUGIN);
-      }
-      // No need to unlink() here: copy() will overwrite the $dest file
-
-    // Copy the plugin to plugin directory
-    copy($source, $dest);
-  }
-
-
-  // Update the redirection plugin with data related to this import
-  // Mainly used to add the mapping of old e107 content to their WordPress equivalent
-  function updateRedirectionPlugin($keyword, $data) {
-    global $wpdb;
-    // Get plugin file path
-    $real_file = get_real_file_to_edit(PLUGINDIR . '/' . E107_REDIRECT_PLUGIN);
-
-    // Extract plugin content
-    $f = fopen($real_file, 'r+');
-    $content = fread($f, filesize($real_file));
-    //fclose($f);
-
-    // Create the tag
-    $tag = '// XXX '.strtoupper(str_replace('_', ' ', trim($keyword))).' XXX';
-
-    // Generate the PHP code
-    $data_code = '$'.$keyword.' = '.var_export($data, true).';';
-
-    // Replace the tag by the php code in the plugin
-    $updated_content = str_replace($tag, $data_code, $content);
-
-    // Save modifications in the plugin
-    rewind($f);
-    //$f = fopen($real_file, 'w+');
-    fwrite($f, $updated_content);
-    fclose($f);
-  }
-
-
-  // Validate and activate the redirection plugin
-  function activateRedirectionPlugin() {
-    global $wpdb;
-    // Get current active plugins
-    $current = get_option('active_plugins');
-
-    // Validate the plugin
-    if (validate_file(E107_REDIRECT_PLUGIN))
-      wp_die(__('Invalid plugin.'));
-
-    // Activate the plugin
-    $current[] = E107_REDIRECT_PLUGIN;
-    update_option('active_plugins', $current);
-    do_action('activate_' . E107_REDIRECT_PLUGIN);
-  }
-
-
   // Import e107 users to WordPress
   function importUsers() {
     // Get user list
@@ -1220,6 +1150,13 @@ class e107_Import extends WP_Importer {
   }
 
 
+  // Update the e107 Redirector plugin with content mapping
+  function updateRedirections($keyword, $data) {
+    global $wpdb;
+    // TODO: update redirection mapping in WordPress database.
+  }
+
+
   function start() {
     // Get requested action
     if (!empty($_GET['action']))
@@ -1394,10 +1331,6 @@ class e107_Import extends WP_Importer {
       echo '<p>'.__('Preferences not imported.').'</p>';
     }
 
-    echo '<h3>'.__('Install the redirection plugin').'</h3>';
-    $this->installRedirectionPlugin();
-    echo '<p>'.__('Plugin installed.').'</p>';
-
     echo '<h3>'.__('Import users').'</h3>';
     $this->importUsers();
     echo '<p><strong>'.sizeof($this->user_mapping).'</strong>'.__(' users imported.').'</p>';
@@ -1409,7 +1342,7 @@ class e107_Import extends WP_Importer {
     // TODO: echo '<p><strong>'.sizeof($images).'</strong>'.__(' images uploaded.').'</p>';
 
     echo '<h3>'.__('Update redirection plugin').'</h3>';
-    $this->updateRedirectionPlugin('news_mapping', $this->news_mapping);
+    $this->updateRedirections('news_mapping', $this->news_mapping);
     echo '<p>'.__('Old news URLs are now redirected to permalinks.').'</p>';
 
     echo '<h3>'.__('Import custom pages').'</h3>';
@@ -1418,7 +1351,7 @@ class e107_Import extends WP_Importer {
     // TODO: echo '<p><strong>'.sizeof($images).'</strong>'.__(' images uploaded.').'</p>';
 
     echo '<h3>'.__('Update redirection plugin').'</h3>';
-    $this->updateRedirectionPlugin('page_mapping', $this->page_mapping);
+    $this->updateRedirections('page_mapping', $this->page_mapping);
     echo '<p>'.__('Old static pages URLs are now redirected to permalinks.').'</p>';
 
     echo '<h3>'.__('Import comments').'</h3>';
@@ -1457,8 +1390,8 @@ class e107_Import extends WP_Importer {
       echo '<p>'.__('Image upload skipped.').'</p>';
     }
 
-    echo '<h3>'.__('Activate e107 Redirector plugin').'</h3>';
-    $this->activateRedirectionPlugin();
+    echo '<h3>'.__('Activate the e107 Redirector plugin').'</h3>';
+    activate_plugin(E107_REDIRECTOR_PLUGIN, '', false, true);
     echo '<p>'.__('Plugin active !').'</p>';
 
     echo '<h3>'.__('Finished !').'</h3>';

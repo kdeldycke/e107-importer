@@ -2,7 +2,7 @@
 /*
 Plugin Name: e107 Redirector
 Plugin URI: http://github.com/kdeldycke/e107-importer/blob/master/e107-redirector.php
-Description: Redirect URLs from previous e107 website to new WordPress blog after a migration. This plugin is designed to be used with e107 Importer plugin only and is a subproject of it.
+Description: Redirect URLs from previous e107 website to new WordPress blog after a migration. This plugin is only designed to be used with e107 Importer plugin and is a subproject of it.
 Author: Kevin Deldycke
 Author URI: http://kevin.deldycke.com
 Version: 1.0.dev
@@ -20,13 +20,14 @@ class e107_Redirections {
     // Final destination
     $link = '';
 
-    // Comments line below will be replaced dynamically by php code by the e107 to WordPress import script
+    // TODO Get news mapping from WordPress database
+    // $news_mapping =
 
-    // XXX NEWS MAPPING XXX
+    // TODO Get page mapping from WordPress database
+    // $page_mapping =
 
-    // XXX PAGE MAPPING XXX
-
-    // XXX COMMENT MAPPING XXX
+    // TODO Get comment mapping from WordPress database
+    // $comment_mapping =
 
     // Associate each mapping with their related regexp
     $redirect_rules = array(
@@ -87,9 +88,4 @@ class e107_Redirections {
 }
 
 
-add_action('template_redirect',  array('e107_Redirections', 'execute'));
-
-
-
-
-
+add_action('template_redirect', array('e107_Redirections', 'execute'));
