@@ -94,6 +94,7 @@ class e107_Import extends WP_Importer {
 
     // Global variables used in replaceConstants() method
     global $ADMIN_DIRECTORY, $FILES_DIRECTORY, $IMAGES_DIRECTORY, $THEMES_DIRECTORY, $PLUGINS_DIRECTORY, $HANDLERS_DIRECTORY, $LANGUAGES_DIRECTORY, $HELP_DIRECTORY, $DOWNLOADS_DIRECTORY;
+
     // Define e107 original path structure
     $ADMIN_DIRECTORY     = "e107_admin/";
     $FILES_DIRECTORY     = "e107_files/";
@@ -105,9 +106,9 @@ class e107_Import extends WP_Importer {
     $HELP_DIRECTORY      = "e107_docs/help/";
     $DOWNLOADS_DIRECTORY = "e107_files/downloads/";
 
-    define("e_IMAGE", "/".$IMAGES_DIRECTORY); // XXX still used ???
+    define("e_IMAGE", "/".$IMAGES_DIRECTORY);
 
-    // Redifine some globals to match wordpress importer file hierarchy
+    // Redifine some globals to match WordPress file hierarchy
     define("e_BASE"   , ABSPATH);
     define("e_PLUGIN" , e_BASE);
     define("e_FILE"   , IMPORTER_PATH);
@@ -120,17 +121,16 @@ class e107_Import extends WP_Importer {
     + ----------------------------------------------------------------------------+
     |     e107 website system
     |
-    |     (c) Steve Dunstan 2001-2002
-    |     http://e107.org
-    |     jalist@e107.org
+    |     Copyright (C) 2001-2002 Steve Dunstan (jalist@e107.org)
+    |     Copyright (C) 2008-2010 e107 Inc (e107.org)
     |
     |     Released under the terms and conditions of the
     |     GNU General Public License (http://gnu.org).
     |
-    |     $Source: /cvsroot/e107/e107_0.7/class2.php,v $
-    |     $Revision: 1.322 $
-    |     $Date: 2006/11/25 03:38:19 $
-    |     $Author: mcfly_e107 $
+    |     $URL: https://e107.svn.sourceforge.net/svnroot/e107/trunk/e107_0.7/class2.php $
+    |     $Revision: 11786 $
+    |     $Id: class2.php 11786 2010-09-15 22:12:49Z e107coders $
+    |     $Author: e107coders $
     +----------------------------------------------------------------------------+
     */
     define("e107_INIT", TRUE);
@@ -175,7 +175,7 @@ class e107_Import extends WP_Importer {
     if (!isset($this->e107_pref) || !is_array($this->e107_pref))
       $this->loadPreferences();
 
-    // Override bbcode definition files configuration
+    // Override BBCode definition files configuration
     $this->e107_pref['bbcode_list'] = array();
     $this->e107_pref['bbcode_list'][E107_INCLUDES_PATH] = array();
     // This $core_bb array come from bbcode_handler.php
@@ -186,8 +186,9 @@ class e107_Import extends WP_Importer {
     'url', 'quote', 'left', 'right',
     'b', 'justify', 'file', 'stream',
     'textarea', 'list', 'php', 'time',
-    'spoiler', 'hide'
+    'spoiler', 'hide', 'youtube', 'sanitised'
     );
+
     foreach ($core_bb as $c)
       $this->e107_pref['bbcode_list'][E107_INCLUDES_PATH][$c] = 'dummy_u_class';
 
@@ -672,7 +673,7 @@ class e107_Import extends WP_Importer {
 
     global $wpdb;
 
-    // This array contain the mapping between old e107 news categories and new wordpress categories
+    // This array contain the mapping between old e107 news categories and new WordPress categories
     $this->category_mapping = array();
     foreach ($category_list as $category) {
       extract($category);
@@ -746,7 +747,7 @@ class e107_Import extends WP_Importer {
 
     global $wpdb;
 
-    // This array contain the mapping between old e107 static pages and newly inserted wordpress pages
+    // This array contain the mapping between old e107 static pages and newly inserted WordPress pages
     $this->page_mapping = array();
 
     foreach ($page_list as $page) {
@@ -762,7 +763,7 @@ class e107_Import extends WP_Importer {
 
       // Update author role if necessary;
       // If the user has the minimum role (aka subscriber) he is not able to post
-      //   news. In this case, we raise is role by 1 level (aka contributor).
+      //   pages. In this case, we raise is role by 1 level (aka contributor).
       $author_id = $this->user_mapping[$page_author];
       $author = new WP_User($author_id);
       if (! $author->has_cap('edit_posts'))
@@ -772,10 +773,8 @@ class e107_Import extends WP_Importer {
         $author->set_role('editor');
 
       // Define comment status
-//      $page_template;
       if (!$page_comment_flag) {
         $comment_status = 'closed';
-//        unset($page_template);
       } else {
         $comment_status = 'open';
       }
@@ -790,8 +789,7 @@ class e107_Import extends WP_Importer {
         , 'post_status'    => $post_status
         , 'post_type'      => 'page'
         , 'comment_status' => $comment_status
-        , 'ping_status'    => 'closed'               // XXX is there a global variable in wordpress or e107 to guess this ?
-//        , 'page_template'  => $page_template
+        , 'ping_status'    => 'closed'               // XXX is there a global variable in WordPress or e107 to guess this ?
         ));
 
       // Update page mapping
