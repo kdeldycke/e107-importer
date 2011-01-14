@@ -1284,8 +1284,8 @@ class e107_Import extends WP_Importer {
         <tr valign="top">
           <th scope="row"><?php _e('Do you want to import e107 preferences ?', 'e107-importer'); ?></th>
           <td>
-            <label for="import-pref"><input name="e107_preferences" type="radio" id="import-pref" value="import_pref" checked="checked"/> <?php _e('Yes: get preferences from e107 and apply them to the current blog.', 'e107-importer'); ?></label><br/>
-            <label for="ignore-pref"><input name="e107_preferences" type="radio" id="ignore-pref" value="ignore_pref"/> <?php _e('No: don\'t mess the configuration of this blog with e107 preferences.', 'e107-importer'); ?></label><br/>
+            <label for="import-pref"><input name="e107_preferences" type="radio" id="import-pref" value="import_pref"/> <?php _e('Yes: get preferences from e107 and apply them to the current blog.', 'e107-importer'); ?></label><br/>
+            <label for="ignore-pref"><input name="e107_preferences" type="radio" id="ignore-pref" value="ignore_pref" checked="checked"/> <?php _e('No: don\'t mess the configuration of this blog with e107 preferences.', 'e107-importer'); ?></label><br/>
           </td>
         </tr>
       </table>
