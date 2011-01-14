@@ -86,64 +86,6 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Below isValidInetAddress() function come from PEAR's Mail package v1.1.14
-  // See http://pear.php.net/package/Mail for details.
-  // +-----------------------------------------------------------------------+
-  // | Copyright (c) 2001-2002, Richard Heyes                                |
-  // | All rights reserved.                                                  |
-  // |                                                                       |
-  // | Redistribution and use in source and binary forms, with or without    |
-  // | modification, are permitted provided that the following conditions    |
-  // | are met:                                                              |
-  // |                                                                       |
-  // | o Redistributions of source code must retain the above copyright      |
-  // |   notice, this list of conditions and the following disclaimer.       |
-  // | o Redistributions in binary form must reproduce the above copyright   |
-  // |   notice, this list of conditions and the following disclaimer in the |
-  // |   documentation and/or other materials provided with the distribution.|
-  // | o The names of the authors may not be used to endorse or promote      |
-  // |   products derived from this software without specific prior written  |
-  // |   permission.                                                         |
-  // |                                                                       |
-  // | THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS   |
-  // | "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT     |
-  // | LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR |
-  // | A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT  |
-  // | OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, |
-  // | SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT      |
-  // | LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, |
-  // | DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY |
-  // | THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT   |
-  // | (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE |
-  // | OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.  |
-  // |                                                                       |
-  // +-----------------------------------------------------------------------+
-  // | Authors: Richard Heyes <richard@phpguru.org>                          |
-  // |          Chuck Hagenbuch <chuck@horde.org>                            |
-  // +-----------------------------------------------------------------------+
-  /**
-    * This is a email validating function separate to the rest of the
-    * class. It simply validates whether an email is of the common
-    * internet form: <user>@<domain>. This can be sufficient for most
-    * people. Optional stricter mode can be utilised which restricts
-    * mailbox characters allowed to alphanumeric, full stop, hyphen
-    * and underscore.
-    *
-    * @param  string  $data   Address to check
-    * @param  boolean $strict Optional stricter mode
-    * @return mixed           False if it fails, an indexed array
-    *                         username/domain if it matches
-    */
-  function isValidInetAddress($data, $strict = false) {
-    $regex = $strict ? '/^([.0-9a-z_+-]+)@(([0-9a-z-]+\.)+[0-9a-z]{2,})$/i' : '/^([*+!.&#$|\'\\%\/0-9a-z^_`{}=?~:-]+)@(([0-9a-z-]+\.)+[0-9a-z]{2,})$/i';
-    if (preg_match($regex, trim($data), $matches)) {
-      return array($matches[1], $matches[2]);
-    } else {
-      return false;
-    }
-  }
-
-
   // Generic code to initialize the e107 context
   function inite107Context() {
     /* Some part of the code below is copy of (and/or inspired by) code from the e107 project, licensed
@@ -902,7 +844,7 @@ class e107_Import extends WP_Importer {
         } else {
           unset($author_id);
           // Sometimes $author_name is of given as email address. In this case, try to guess the user name.
-          if ($author_email == '' and $this->isValidInetAddress($author_name, $strict=True)) {
+          if ($author_email == '' and filter_var($author_name, FILTER_VALIDATE_EMAIL)) {
             $author_email = $author_name;
             $author_name = substr($author_name, 0, strpos($author_name, '@'));
           }
