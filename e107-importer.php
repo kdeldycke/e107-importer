@@ -24,8 +24,8 @@ if ( !class_exists( 'WP_Importer' ) ) {
 
 
 // Constant
-define("IMPORTER_PATH"         , WP_PLUGIN_DIR . '/e107-importer/');
-define("E107_INCLUDES_PATH"    , IMPORTER_PATH . 'e107-includes/');
+define("E107_IMPORTER_PATH"    , WP_PLUGIN_DIR . '/e107-importer/');
+define("E107_INCLUDES_FOLDER"  , 'e107-includes');
 define("E107_REDIRECTOR_PLUGIN", 'e107-redirector.php');
 
 
@@ -108,9 +108,9 @@ class e107_Import extends WP_Importer {
 
     // Redifine some globals to match WordPress file hierarchy
     define("e_BASE"   , ABSPATH);
-    define("e_PLUGIN" , e_BASE);
-    define("e_FILE"   , IMPORTER_PATH);
-    define("e_HANDLER", E107_INCLUDES_PATH);
+    define("e_FILE"   , E107_IMPORTER_PATH);
+    define("e_PLUGIN" , E107_IMPORTER_PATH);
+    define("e_HANDLER", E107_IMPORTER_PATH . E107_INCLUDES_FOLDER . '/');
 
     // CHARSET is normally set in e107_languages/English/English.php file
     define("CHARSET", "utf-8");
@@ -156,16 +156,27 @@ class e107_Import extends WP_Importer {
     // $something = isset(pref) && pref ? pref : default; ==> use varsettrue(pref,default)
     //
     function varset(&$val,$default='') {
-      if (isset($val)) {
-        return $val;
-      }
-      return $default;
+            if (isset($val)) {
+                    return $val;
+            }
+            return $default;
     }
     function defset($str,$default='') {
-      if (defined($str)) {
-        return constant($str);
-      }
-      return $default;
+            if (defined($str)) {
+                    return constant($str);
+            }
+            return $default;
+    }
+    //
+    // These variants are like the above, but only return the value if both set AND 'true'
+    //
+    function varsettrue(&$val,$default='') {
+            if (isset($val) && $val) return $val;
+            return $default;
+    }
+    function defsettrue($str,$default='') {
+            if (defined($str) && constant($str)) return constant($str);
+            return $default;
     }
     /*========== END of code inspired by class2.php file ==========*/
 
@@ -175,7 +186,7 @@ class e107_Import extends WP_Importer {
 
     // Override BBCode definition files configuration
     $this->e107_pref['bbcode_list'] = array();
-    $this->e107_pref['bbcode_list'][E107_INCLUDES_PATH] = array();
+    $this->e107_pref['bbcode_list'][E107_INCLUDES_FOLDER] = array();
     // This $core_bb array come from bbcode_handler.php
     $core_bb = array(
     'blockquote', 'img', 'i', 'u', 'center',
@@ -188,7 +199,7 @@ class e107_Import extends WP_Importer {
     );
 
     foreach ($core_bb as $c)
-      $this->e107_pref['bbcode_list'][E107_INCLUDES_PATH][$c] = 'dummy_u_class';
+      $this->e107_pref['bbcode_list'][E107_INCLUDES_FOLDER][$c] = 'dummy_u_class';
 
     unset($this->e107_pref['image_post']);
 
@@ -992,11 +1003,11 @@ class e107_Import extends WP_Importer {
 
 
   // Transform BBCode to HTML using original e107 parser
-  // TODO: parse bbcode in post and page title !
+  // TODO: parse BBCode in titles (both posts and pages) !
   // TODO: factorize with replaceConstants() -> less code & less database IO
   function parseBBCodeWithE107() {
     global $wpdb;
-    // Get the list of WP news and page IDs
+    // Get the list of WordPress news and page IDs
     $news_and_pages_ids = array_merge(array_values($this->news_mapping), array_values($this->page_mapping));
     // Parse BBCode in each news and page
     foreach ($news_and_pages_ids as $post_id) {
