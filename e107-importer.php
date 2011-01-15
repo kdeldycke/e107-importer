@@ -89,7 +89,7 @@ class e107_Import extends WP_Importer {
   // Generic code to initialize the e107 context
   function inite107Context() {
     /* Some part of the code below is copy of (and/or inspired by) code from the e107 project, licensed
-    ** under the GPL and (c) copyrighted to Steve Dunstan (see copyright headers).
+    ** under the GPL and (c) copyrighted to e107's contributors.
     */
 
     // Global variables used in replaceConstants() method
