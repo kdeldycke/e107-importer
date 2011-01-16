@@ -1101,9 +1101,13 @@ class e107_Import extends WP_Importer {
 
 
   // Update the e107 Redirector plugin with content mapping
-  function updateRedirections($keyword, $data) {
+  function updateRedirectorSettings($keyword, $data) {
     global $wpdb;
     // TODO: update redirection mapping in WordPress database.
+    $option_name = 'e107_redirector_'.$keyword;
+    if (!get_option($option_name))
+      add_option($option_name);
+    update_option($option_name, $data);
   }
 
 
@@ -1292,7 +1296,7 @@ class e107_Import extends WP_Importer {
     // TODO: echo '<p><strong>'.sizeof($images).'</strong>'.__(' images uploaded.').'</p>';
 
     echo '<h3>'.__('Update redirection plugin').'</h3>';
-    $this->updateRedirections('news_mapping', $this->news_mapping);
+    $this->updateRedirectorSettings('news_mapping', $this->news_mapping);
     echo '<p>'.__('Old news URLs are now redirected to permalinks.').'</p>';
 
     echo '<h3>'.__('Import custom pages').'</h3>';
@@ -1301,12 +1305,16 @@ class e107_Import extends WP_Importer {
     // TODO: echo '<p><strong>'.sizeof($images).'</strong>'.__(' images uploaded.').'</p>';
 
     echo '<h3>'.__('Update redirection plugin').'</h3>';
-    $this->updateRedirections('page_mapping', $this->page_mapping);
+    $this->updateRedirectorSettings('page_mapping', $this->page_mapping);
     echo '<p>'.__('Old static pages URLs are now redirected to permalinks.').'</p>';
 
     echo '<h3>'.__('Import comments').'</h3>';
     $this->importComments();
     echo '<p><strong>'.sizeof($this->comment_mapping).'</strong>'.__(' comments imported.').'</p>';
+
+    echo '<h3>'.__('Update redirection plugin').'</h3>';
+    $this->updateRedirectorSettings('comment_mapping', $this->comment_mapping);
+    echo '<p>'.__('Old comments URLs are now redirected to permalinks.').'</p>';
 
     $this->inite107Context(); // e107 context is required by replaceConstants() and some othe method called below
 
