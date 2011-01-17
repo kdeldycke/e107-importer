@@ -21,11 +21,13 @@ class e107_Redirector {
     $news_mapping    = array();
     $page_mapping    = array();
     $comment_mapping = array();
+    $user_mapping = array();
 
     // Load mappings
     if (get_option('e107_redirector_news_mapping'))    $news_mapping    = get_option('e107_redirector_news_mapping');
     if (get_option('e107_redirector_page_mapping'))    $page_mapping    = get_option('e107_redirector_page_mapping');
     if (get_option('e107_redirector_comment_mapping')) $comment_mapping = get_option('e107_redirector_comment_mapping');
+    if (get_option('e107_redirector_user_mapping'))    $user_mapping    = get_option('e107_redirector_user_mapping');
 
     // Final destination
     $link = '';
@@ -57,6 +59,15 @@ class e107_Redirector {
            , 'mapping' => $comment_mapping
            , 'rules'   => array( # XXX Looks like there is no direct link to comments in e107
                                )
+           ),
+      array( 'type'    => 'user'
+           , 'mapping' => $user_mapping
+           , 'rules'   => array( '/^.*\/user\.php(?:%3F|\?)id\.(\d+).*$/i'
+                                   # /user.php?id.29
+                               , '/^.*\/userposts\.php(?:%3F|\?)0\.comments\.(\d+).*$/i'
+                                   # /userposts.php?0.comments.29
+                                   # TODO: /userposts.php?0.forums.29
+                               )
            )
     );
 
@@ -69,9 +80,12 @@ class e107_Redirector {
         foreach ($rules as $regexp) {
           if (preg_match($regexp, $requested, $matches))
             if (array_key_exists($matches[1], $mapping)) {
-              $content_id = $mapping[$matches[1]]
+              $content_id = $mapping[$matches[1]];
               if ($ctype == 'comment') {
                 $link = get_comment_link($content_id);
+              } elseif ($ctype == 'user') {
+                $link = get_author_posts_url($content_id);
+                // TODO: Fallback to gravatar ?
               } else {
                 $link = get_permalink($content_id);
               }
@@ -128,8 +142,6 @@ class e107_Redirector {
       $wordpress_feed = $feed_content.$feed_type.'_url';
       wp_redirect(get_bloginfo($wordpress_feed), $status = 301);
     }
-
-    // TODO: should we redirect user profiles ? Yes, but are user's profiles public ? I don't think so...
 
     // Do nothing: let WordPress do its job (and probably show user a 404 error ;) )
   }

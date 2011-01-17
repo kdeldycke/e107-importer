@@ -1114,6 +1114,10 @@ class e107_Import extends WP_Importer {
     $this->importUsers();
     echo '<p><strong>'.sizeof($this->user_mapping).'</strong>'.__(' users imported.').'</p>';
 
+    echo '<h3>'.__('Update redirection plugin').'</h3>';
+    $this->updateRedirectorSettings('user_mapping', $this->user_mapping);
+    echo '<p>'.__('Old user URLs are now redirected to permalinks.').'</p>';
+
     echo '<h3>'.__('Import news, images and categories').'</h3>';
     $this->importNewsAndCategories();
     echo '<p><strong>'.sizeof($this->news_mapping).'</strong>'.__(' news imported.').'</p>';

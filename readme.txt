@@ -26,7 +26,7 @@ This plugin allows you to extract the most important content and data from an e1
 * Import users and their profile (or try to update the profile if user already exist),
 * Try to map users to an appropriate role,
 * Send mails to users to inform them about their new credentials,
-* Redirect old e107 news, pages and feeds URLs to new WordPress content via an integrated plugin (for SEO).
+* Redirect old e107 news, pages, users and feeds URLs to new WordPress content via an integrated plugin (for SEO).
 
 **Warning**: Your e107 site must be fully encoded in UTF-8. If it's not the case, please have a look at the [*Upgrading database content to UTF-8*](http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8) on e107 wiki.
 
@@ -90,7 +90,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 * Upgrade e107 code from e107 v0.7.24.
 * Minimal requirement set to WordPress 3.1.0.
 * Use new WordPress importer framework.
-* Add an e107 to WordPress 301 redirector plugin.
+* Add an e107 to WordPress 301 redirector plugin (support news, pages, users and feeds).
 * Make image import optionnal.
 * Add an option to upload images from allowed domains only.
 * Align naming conventions with other WordPress importer.
