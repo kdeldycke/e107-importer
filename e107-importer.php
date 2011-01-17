@@ -145,6 +145,11 @@ class e107_Import extends WP_Importer {
     define("E107_DEBUG_LEVEL", FALSE);
     define('E107_DBG_BBSC',    FALSE);    // Show BBCode / Shortcode usage in postings
 
+    function check_class($var, $userclass='', $peer=FALSE, $debug=FALSE) {
+      return TRUE;
+    }
+
+
     // Use these to combine isset() and use of the set value. or defined and use of a constant
     // i.e. to fix  if($pref['foo']) ==> if ( varset($pref['foo']) ) will use the pref, or ''.
     // Can set 2nd param to any other default value you like (e.g. false, 0, or whatever)
@@ -200,8 +205,6 @@ class e107_Import extends WP_Importer {
 
     foreach ($core_bb as $c)
       $this->e107_pref['bbcode_list'][E107_INCLUDES_FOLDER][$c] = 'dummy_u_class';
-
-    unset($this->e107_pref['image_post']);
 
     // Don't transform smileys to <img>, WordPress will do it automaticcaly
     $this->e107_pref['smiley_activate'] = False;
