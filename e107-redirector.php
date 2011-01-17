@@ -32,7 +32,8 @@ class e107_Redirector {
 
     // Associate each mapping with their related regexp
     $redirect_rules = array(
-      array( 'mapping' => $news_mapping
+      array( 'type'    => 'post'
+           , 'mapping' => $news_mapping
            , 'rules'   => array( '/^.*\/comment\.php(?:%3F|\?)comment\.news\.(\d+).*$/i'
                                    # /comment.php?comment.news.138
                                    # /comment.php?comment.news.138&dfsd
@@ -44,30 +45,40 @@ class e107_Redirector {
                                    # /news.php?extend.17
                                )
            ),
-      array( 'mapping' => $page_mapping
+      array( 'type'    => 'post'
+           , 'mapping' => $page_mapping
            , 'rules'   => array( '/^.*\/page\.php(?:%3F|\?)(\d+).*$/i'
                                    # /page.php?16
                                    # /page.php?16&res=1680x1050
                                    # /page.php%3F16
+                               )
+           ),
+      array( 'type'    => 'comment'
+           , 'mapping' => $comment_mapping
+           , 'rules'   => array( # XXX Looks like there is no direct link to comments in e107
                                )
            )
     );
 
     // Try to apply each redirect rule
     foreach ($redirect_rules as $rule_set) {
+      $ctype   = $rule_set['type'];
       $mapping = $rule_set['mapping'];
       $rules   = $rule_set['rules'];
-      if ($mapping && is_array($mapping) && sizeof($mapping) > 0)
+      if (sizeof($rules) > 0 && $mapping && is_array($mapping) && sizeof($mapping) > 0)
         foreach ($rules as $regexp) {
           if (preg_match($regexp, $requested, $matches))
             if (array_key_exists($matches[1], $mapping)) {
-              $link = get_permalink($mapping[$matches[1]]);
+              $content_id = $mapping[$matches[1]]
+              if ($ctype == 'comment') {
+                $link = get_comment_link($content_id);
+              } else {
+                $link = get_permalink($content_id);
+              }
               wp_redirect($link, $status = 301);
             }
         }
     }
-
-    // TODO: redirect comments here
 
     // Is the e107 news page (aka home page) requested ?
     // If so, redirect all http://www.domain.com/anything/news.php* to the WordPress home page
