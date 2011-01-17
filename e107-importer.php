@@ -1086,14 +1086,14 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // This method import all images embedded in news and pages to WP
+  // This method import all images embedded in news and pages to WordPress
   function importImages($local_only = false) {
     // Build the list of authorized domains from which we are allowed to import images
     $allowed_domains = array();
     if ($local_only == true)
       $allowed_domains[] = $this->e107_pref['siteurl'];
 
-    // Get the list of WP news and page IDs
+    // Get the list of WordPress news and page IDs
     $news_and_pages_ids = array_merge(array_values($this->news_mapping), array_values($this->page_mapping));
     foreach ($news_and_pages_ids as $post_id)
       $this->importImagesFromPost($post_id, $allowed_domains);
@@ -1135,7 +1135,7 @@ class e107_Import extends WP_Importer {
   }
 
 
-  function printWelcomeScreen(){
+  function printWelcomeScreen() {
     $this->header();
     // TODO: get the description from the readme.txt and display it here
     // TODO: use AJAX to validate the form ?
@@ -1322,10 +1322,6 @@ class e107_Import extends WP_Importer {
     $this->replaceConstants();
     echo '<p>'.__('All e107 constants replaced in content.').'</p>';
 
-    echo '<h3>'.__('Replace old URLs by permalinks').'</h3>';
-    $this->replaceWithPermalinks();
-    echo '<p>'.__('All migrated content use permalinks now.').'</p>';
-
     echo '<h3>'.__('Parse BBCode').'</h3>';
     if ($this->e107_bbcode_parser == 'semantic') {
       $this->parseBBCodeWithCustomParser();
@@ -1347,6 +1343,10 @@ class e107_Import extends WP_Importer {
     } else {
       echo '<p>'.__('Image upload skipped.').'</p>';
     }
+
+    //echo '<h3>'.__('Replace old URLs by permalinks').'</h3>';
+    //$this->replaceWithPermalinks();
+    //echo '<p>'.__('All migrated content use permalinks now.').'</p>';
 
     echo '<h3>'.__('Activate the e107 Redirector plugin').'</h3>';
     activate_plugin(E107_REDIRECTOR_PLUGIN, '', false, true);
