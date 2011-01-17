@@ -67,6 +67,8 @@ class e107_Redirector {
         }
     }
 
+    // TODO: redirect comments here
+
     // Is the e107 news page (aka home page) requested ?
     // If so, redirect all http://www.domain.com/anything/news.php* to the WordPress home page
     if (empty($link) && preg_match('/^.*\/news\.php.*$/i', $requested))
