@@ -73,13 +73,48 @@ class e107_Redirector {
       wp_redirect(get_option('siteurl'), $status = 301);
 
     // Redirect feeds as explained there: http://kevin.deldycke.com/2007/05/feedburner-and-e107-integration/
-    // TODO: redirect Atom feeds too
-    if (empty($link) && preg_match('/^\/*e107_plugins\/*rss_menu\/*rss\.php.*$/i', $requested, $matches))
-      if(preg_match('/^\?(5|Comments).*$/i', $matches[1])) {
-        wp_redirect(get_bloginfo('comments_rss2_url'), $status = 301);
-      } else {
-        wp_redirect(get_bloginfo('rss2_url'), $status = 301);
-      }
+    if (empty($link) && preg_match('/^.*\/e107_plugins\/rss_menu\/rss\.php(?:%3F|\?)?(.*)$/i', $requested, $matches)) {
+      // Default feed redirections
+      $feed_content = '';
+      $feed_type    = 'rss2';
+      // Analyze feed parameters
+      $feed_params = explode('.', $matches[1]);
+      if (sizeof($feed_params) > 0)
+        switch (strtolower($feed_params[0])) {
+          case 'news':
+          case '1':
+            $feed_content = '';
+            break;
+          case 'comments':
+          case '5':
+            $feed_content = 'comments_';
+            break;
+        }
+      if (sizeof($feed_params) > 1)
+        switch (strtolower($feed_params[1])) {
+          case '1':
+            $feed_type = 'rss';
+            // Comments are not served as RSS, fall back to RSS2
+            if ($feed_content == 'comments_')
+              $feed_type = 'rss2';
+            break;
+          case '2':
+            $feed_type = 'rss2';
+            break;
+          case '3':
+            $feed_type = 'rdf';
+            // Comments are not served as RDF, fall back to Atom
+            if ($feed_content == 'comments_')
+              $feed_type = 'atom';
+            break;
+          case '4':
+            $feed_type = 'atom';
+            break;
+        }
+      // Redirect to proper WordPress feed
+      $wordpress_feed = $feed_content.$feed_type.'_url';
+      wp_redirect(get_bloginfo($wordpress_feed), $status = 301);
+    }
 
     // TODO: should we redirect user profiles ? Yes, but are user's profiles public ? I don't think so...
 
