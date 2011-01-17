@@ -85,7 +85,6 @@ class e107_Redirector {
                 $link = get_comment_link($content_id);
               } elseif ($ctype == 'user') {
                 $link = get_author_posts_url($content_id);
-                // TODO: Fallback to gravatar ?
               } else {
                 $link = get_permalink($content_id);
               }

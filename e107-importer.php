@@ -446,8 +446,6 @@ class e107_Import extends WP_Importer {
       if (!empty($user_birthday) && $user_birthday != '0000-00-00')
         $desc .= __("Birthday: ").$user_birthday.".\n";
 
-      // $user_image // XXX how to handle this ? export to gravatar ???
-
       $user_data = array(
           'first_name'      => $wpdb->escape($first_name)
         , 'last_name'       => $wpdb->escape($last_name)
