@@ -2,8 +2,8 @@
 Contributors: coolkevman
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XEXREDEHXSQUJ
 Tags: importer, e107, cms, migration
-Requires at least: 3.1.0
-Tested up to: 3.1.0
+Requires at least: 3.0.0
+Tested up to: 3.1-RC2
 Stable tag: 1.0
 License: GPLv2
 
@@ -30,7 +30,7 @@ This plugin allows you to extract the most important content and data from an e1
 
 **Warning**: Your e107 site must be fully encoded in UTF-8. If it's not the case, please have a look at the [*Upgrading database content to UTF-8*](http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8) on e107 wiki.
 
-This tool was tested with [e107 0.7.24](http://e107.org/news.php?item.877) and [WordPress 3.1.0](http://wordpress.org/news/2011/01/wordpress-3-1-release-candidate-2/). If you have older versions, please upgrade first.
+This tool was tested with [e107 0.7.24](http://e107.org/news.php?item.877) and [WordPress 3.1-RC2](http://wordpress.org/news/2011/01/wordpress-3-1-release-candidate-2/). If you have older versions, please upgrade first.
 
 == Installation ==
 
@@ -42,8 +42,7 @@ This tool was tested with [e107 0.7.24](http://e107.org/news.php?item.877) and [
 
 = What is the status of this plugin ? =
 
-I plan to update this plugin in the future as I still have old e107 sites to migrate. As long as I have these migrations to do, I will not officially declare my plugin dead and
-unmaintained. But this future can be quite distant as I currently have much higher priority work to do.
+I plan to update this plugin in the future as I still have old e107 sites to migrate. As long as I have these migrations to do, I will not officially declare my plugin dead and unmaintained. But this future can be quite distant as I currently have much higher priority work to do.
 
 = Can I give you money to fix my problem ? =
 
@@ -77,7 +76,7 @@ FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugin
 
 Here is a list of e107 and WordPress versions I tested my plugin with:
 
-* e107-importer 1.0 : e107 0.7.24 / WordPress 3.1.0
+* e107-importer 1.0 : e107 0.7.24 / WordPress 3.1-RC2
 * e107-importer 0.9 : e107 0.7.11 / WordPress 2.3.2
 * e107-importer 0.8 : e107 0.7.8  / WordPress 2.1.3
 * e107-importer 0.7 : e107 0.7.8  / WordPress 2.1.2
@@ -94,7 +93,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 
 = 1.0 =
 * Upgrade e107 code from e107 v0.7.24.
-* Minimal requirement set to WordPress 3.1.0.
+* Minimal requirement set to WordPress 3.0.0.
 * Use new WordPress importer framework.
 * Add an e107 to WordPress 301 redirector plugin (support news, pages, users and feeds).
 * Make image import optional.
@@ -153,4 +152,4 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 == Upgrade Notice ==
 
 = 1.0 =
-First release compatible with latest WordPress 3.x.
+First release compatible with the WordPress 3.x series.
