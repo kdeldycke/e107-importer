@@ -97,7 +97,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 * Minimal requirement set to WordPress 3.1.0.
 * Use new WordPress importer framework.
 * Add an e107 to WordPress 301 redirector plugin (support news, pages, users and feeds).
-* Make image import optionnal.
+* Make image import optional.
 * Add an option to upload images from allowed domains only.
 * Align naming conventions with other WordPress importer.
 * Add a complete WordPress plugin hosting compatible readme file with full metadatas.
@@ -128,7 +128,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 * Mails can be sent to each user to warn them about their new password.
 * Static pages can be set as private.
 * Simplify the import process.
-* Some little UI imporvements.
+* Some little UI improvements.
 
 = 0.6 =
 * Render content according user's preferences.
@@ -148,7 +148,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 * Add BBCode support to news content.
 
 = 0.1 =
-* First draft of e107 to Wordpress importer.
+* First draft of e107 to WordPress importer.
 
 == Upgrade Notice ==
 
