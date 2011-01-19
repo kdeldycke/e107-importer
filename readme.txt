@@ -49,6 +49,10 @@ unmaintained. But this future can be quite distant as I currently have much high
 
 That's nice from you to propose a donation but quite frankly, money is not the kind of incentives that will push the development of my plugins. But code, bug reports and testing is the kind of contributions I'm looking for. In fact getting rid of my old e107 instances is the best motivator I have. But by popular demand, here is my [donation link](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XEXREDEHXSQUJ) anyway...
 
+= Where can I report bugs ? =
+
+Bug reports and feature requests must be done via [GitHub's ticket system](http://github.com/kdeldycke/e107-importer/issues).
+
 = Can I update the plugin ? =
 
 That's nice from you to propose to update it. All contributions are welcome ! I'll be happy to apply all your patches in the original code to let anyone benefits your work. Even after I will declare this plugin dead.
@@ -59,7 +63,9 @@ Feel free to send me patches and code by mail. Or better yet, use GitHub fork/me
 
 = Where can I find the source code ? =
 
-Development of this plugin happen in a dedicated GitHub repository: http://github.com/kdeldycke/e107-importer
+Development of this plugin happen in a [dedicated GitHub repository](http://github.com/kdeldycke/e107-importer). The latter is the official repository of this plugin. All developments are done there. This repository is the reference repository.
+
+FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugins.svn.wordpress.org/e107-importer), but this repository is just a copy of GitHub's. **No original development should be performed in the Subversion repository**.
 
 == Screenshots ==
 
