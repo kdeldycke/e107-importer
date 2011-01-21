@@ -282,7 +282,7 @@ class e107_Import extends WP_Importer {
         ?>
         <li>
           <?php printf(__('Error while trying to upload image <code>%s</code>:', 'e107-importer'), $img_url); ?><br/>
-          <?php printf(__('<pre>%s</pre>:', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
+          <?php printf(__('<pre>%s</pre>', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
           <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
         </li>
         <?php
