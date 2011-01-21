@@ -209,11 +209,7 @@ class e107_Import extends WP_Importer {
     // Don't transform smileys to <img>, WordPress will do it automaticcaly
     $this->e107_pref['smiley_activate'] = False;
 
-    // Turn-off profanity filter: if profanities must be hidden in content,
-    //   it should be done by a dedicated WordPress plug-in,
-    //   not by a direct alteration of original content.
-    // As suggested by Jon Freger ( http://kevin.deldycke.com/2006/11/wordpress-to-e107-v06-better-content-rendering-and-extended-news-support/#comment-2937 ), use  WebPurify WP Plugin ( http://www.webpurify.com/wp-plugin.php ).
-    // TODO: show this suggestion in the UI if profanity_filter is activated on e107.
+    // Turn-off profanity filter
     $this->e107_pref['profanity_filter'] = False;
 
     // Set global SITEURL as it's used by replaceConstants() method

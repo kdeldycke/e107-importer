@@ -42,6 +42,10 @@ This tool was tested with [e107 0.7.24](http://e107.org/news.php?item.877) and [
 
 Looks like you have some kind of Unicode transcoding errors. Before running e107 Importer, your e107 site must be fully encoded in UTF-8. If it's not the case, please have a look at the [*Upgrading database content to UTF-8*](http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8) article on e107 wiki.
 
+= Why profanities show up in imported content ? =
+
+This plugin ignore the configuration of the profanity filter from e107. If you want to hide words, it should be done by a dedicated WordPress plug-in. As [suggested by Jon Freger](http://kevin.deldycke.com/2006/11/wordpress-to-e107-v06-better-content-rendering-and-extended-news-support/#comment-2937), you can use the [WebPurify plugin](http://www.webpurify.com/wp-plugin.php).
+
 = What is the status of this plugin ? =
 
 I plan to update this plugin in the future as I still have old e107 sites to migrate. As long as I have these migrations to do, I will not officially declare my plugin dead and unmaintained. But this future can be quite distant as I currently have much higher priority work to do.
