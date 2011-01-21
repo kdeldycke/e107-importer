@@ -96,6 +96,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 * Minimal requirement set to WordPress 3.0.0.
 * Use new WordPress importer framework.
 * Add an e107 to WordPress 301 redirector plugin (support news, pages, users and feeds).
+* Disable the URL rewrting feature introduced in v0.9.
 * Make image import optional.
 * Add an option to upload images from allowed domains only.
 * Align naming conventions with other WordPress importer.
