@@ -279,9 +279,13 @@ class e107_Import extends WP_Importer {
       $image_counter++;
 
       if (is_wp_error($new_tag)) {
-        echo '<p>Error while trying to upload image <code>'.$img_url.'</code>:</p>';
-        echo '<pre>'.$new_tag->get_error_message().'</pre>';
-        echo '<p>Let\'s ignore this error and proceed with next image...</p>';
+        ?>
+        <li>
+          <?php printf(_e('Error while trying to upload image <code>%s</code>:', 'e107-importer'), $img_url); ?><br/>
+          <?php printf(_e('<pre>%s</pre>:', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
+          <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
+        </li>
+        <?php
       } else {
         // Update post content with the new image tag pointing to the local image
         $html_content = str_replace($img_tag, $new_tag, $html_content);
@@ -878,8 +882,8 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Transform BBCode to HTML using Kevin's custom parser
-  function parseBBCodeWithCustomParser() {
+  // Transform BBCode to HTML using enhanced parser
+  function parseBBCodeWithEnhancedParser() {
     /*
     // cleanup HTML and semantics enhancements
 
@@ -981,7 +985,7 @@ class e107_Import extends WP_Importer {
     <form action="admin.php?import=e107&amp;action=import" method="post">
       <?php wp_nonce_field('import-e107'); ?>
 
-      <h3><?php _e('e107 Database Connexion', 'e107-importer'); ?></h3>
+      <h3><?php _e('e107 Database', 'e107-importer'); ?></h3>
       <p><?php _e('Parameters below must match your actual e107 MySQL database connexion settings.', 'e107-importer'); ?></p>
       <table class="form-table">
         <tr valign="top">
@@ -1059,7 +1063,7 @@ class e107_Import extends WP_Importer {
           <th scope="row"><?php _e('Which kind of <a href="http://wikipedia.org/wiki/Bbcode">BBCode</a> parser you want to use ?', 'e107-importer'); ?></th>
           <td>
             <label for="original"><input name="e107_bbcode_parser" type="radio" id="original" value="original" checked="checked"/> <?php _e('e107\'s parser (content will be rendered exactly as they appear in e107).', 'e107-importer'); ?></label><br/>
-            <!--label for="semantic"><input name="e107_bbcode_parser" type="radio" id="semantic" value="semantic"/--> <!--?php _e('WordPress-like (enhance semantics and output HTML code very similar to what WordPress produce by default).', 'e107-importer'); ?></label><br/-->
+            <!--label for="semantic"><input name="e107_bbcode_parser" type="radio" id="enhanced" value="enhanced"/--> <!--?php _e('Enhanced parser (try to create HTML code similar to what WordPress produce by default).', 'e107-importer'); ?></label><br/-->
             <label for="none"><input name="e107_bbcode_parser" type="radio" id="none" value="none"/> <?php _e('Do not translate BBCode to HTML and let them appear as is.', 'e107-importer'); ?></label><br/>
           </td>
         </tr>
@@ -1105,96 +1109,126 @@ class e107_Import extends WP_Importer {
 
     // TODO: use AJAX to display a progress bar http://wordpress.com/blog/2007/02/06/new-blogger-importer/
     $this->header();
+    ?>
 
-    echo '<h3>'.__('Connect to e107 database').'</h3>';
-    $this->connectToE107DB();
-    echo '<p>'.__('Connected.').'</p>';
+    <h3><?php _e('e107 Database', 'e107-importer'); ?></h3>
+    <ul class="ul-disc">
+      <li><?php _e('Connecting...', 'e107-importer'); ?></li>
+      <?php $this->connectToE107DB(); ?>
+      <li><?php _e('Connected.', 'e107-importer'); ?></li>
+    </ul>
 
-    echo '<h3>'.__('Load e107 preferences').'</h3>';
-    $this->loadPreferences();
-    echo '<p>'.__('Preferences loaded.').'</p>';
+    <h3><?php _e('Site Preferences', 'e107-importer'); ?></h3>
+    <ul class="ul-disc">
+      <li><?php _e('Load preferences...', 'e107-importer'); ?></li>
+      <?php $this->loadPreferences(); ?>
+      <li><?php _e('Preferences loaded.', 'e107-importer'); ?></li>
+      <li><?php _e('Import preferences...', 'e107-importer'); ?></li>
+      <?php if ($this->e107_preferences == 'import_pref') { ?>
+        <?php $this->importPreferences(); ?>
+        <li><?php _e('All preferences imported.', 'e107-importer'); ?></li>
+      <?php } else { ?>
+        <li><?php _e('Do not import preferences.', 'e107-importer'); ?></li>
+      <?php } ?>
+    </ul>
 
-    echo '<h3>'.__('Import preferences').'</h3>';
-    if ($this->e107_preferences == 'import_pref') {
-      $this->importPreferences();
-      echo '<p>'.__('All e107 preferences imported.').'</p>';
-    } else {
-      echo '<p>'.__('Preferences not imported.').'</p>';
-    }
+    <h3><?php _e('Users', 'e107-importer'); ?></h3>
+    <ul class="ul-disc">
+      <li><?php _e('Import users...', 'e107-importer'); ?></li>
+      <?php $this->importUsers(); ?>
+      <li><?php printf(_e('%s users imported.', 'e107-importer'), sizeof($this->user_mapping)); ?></li>
+      <li><?php _e('Update redirection plugin with user mapping...', 'e107-importer'); ?></li>
+      <?php $this->updateRedirectorSettings('user_mapping', $this->user_mapping); ?>
+      <li><?php _e('Old user URLs are now redirected.', 'e107-importer'); ?></li>
+    </ul>
 
-    echo '<h3>'.__('Import users').'</h3>';
-    $this->importUsers();
-    echo '<p><strong>'.sizeof($this->user_mapping).'</strong>'.__(' users imported.').'</p>';
+    <h3><?php _e('News and Categories', 'e107-importer'); ?></h3>
+    <ul class="ul-disc">
+      <li><?php _e('Import news and categories...', 'e107-importer'); ?></li>
+      <?php $this->importNewsAndCategories(); ?>
+      <li><?php printf(_e('%s news imported.', 'e107-importer'), sizeof($this->news_mapping)); ?></li>
+      <li><?php printf(_e('%s categories imported.', 'e107-importer'), sizeof($this->category_mapping)); ?></li>
+      <li><?php _e('Update redirection plugin with news mapping...', 'e107-importer'); ?></li>
+      <?php $this->updateRedirectorSettings('news_mapping', $this->news_mapping); ?>
+      <li><?php _e('Old news URLs are now redirected to permalinks.', 'e107-importer'); ?></li>
+    </ul>
 
-    echo '<h3>'.__('Update redirection plugin').'</h3>';
-    $this->updateRedirectorSettings('user_mapping', $this->user_mapping);
-    echo '<p>'.__('Old user URLs are now redirected to permalinks.').'</p>';
+    <h3><?php _e('Pages', 'e107-importer'); ?></h3>
+    <ul class="ul-disc">
+      <li><?php _e('Import pages...', 'e107-importer'); ?></li>
+      <?php $this->importPages(); ?>
+      <li><?php printf(_e('%s pages imported.', 'e107-importer'), sizeof($this->page_mapping)); ?></li>
+      <li><?php _e('Update redirection plugin with page mapping...', 'e107-importer'); ?></li>
+      <?php $this->updateRedirectorSettings('page_mapping', $this->page_mapping); ?>
+      <li><?php _e('Old page URLs are now redirected to permalinks.', 'e107-importer'); ?></li>
+    </ul>
 
-    echo '<h3>'.__('Import news, images and categories').'</h3>';
-    $this->importNewsAndCategories();
-    echo '<p><strong>'.sizeof($this->news_mapping).'</strong>'.__(' news imported.').'</p>';
-    echo '<p><strong>'.sizeof($this->category_mapping).'</strong>'.__(' categories imported.').'</p>';
+    <h3><?php _e('Comments', 'e107-importer'); ?></h3>
+    <ul class="ul-disc">
+      <li><?php _e('Import comments...', 'e107-importer'); ?></li>
+      <?php $this->importComments(); ?>
+      <li><?php printf(_e('%s comments imported.', 'e107-importer'), sizeof($this->comment_mapping)); ?></li>
+      <li><?php _e('Update redirection plugin with comment mapping...', 'e107-importer'); ?></li>
+      <?php $this->updateRedirectorSettings('comment_mapping', $this->comment_mapping); ?>
+      <li><?php _e('Old comments URLs are now redirected.', 'e107-importer'); ?></li>
+    </ul>
 
-    echo '<h3>'.__('Update redirection plugin').'</h3>';
-    $this->updateRedirectorSettings('news_mapping', $this->news_mapping);
-    echo '<p>'.__('Old news URLs are now redirected to permalinks.').'</p>';
+    <h3><?php _e('Content Parsing', 'e107-importer'); ?></h3>
+    <ul class="ul-disc">
+      <li><?php _e('Initialize e107 context...', 'e107-importer'); ?></li>
+      <?php $this->inite107Context(); ?>
+      <li><?php _e('e107 context initialized.', 'e107-importer'); ?></li>
+      <li><?php _e('Replace e107 constants...', 'e107-importer'); ?></li>
+      <?php $this->replaceConstants(); ?>
+      <li><?php _e('All e107 constants replaced by proper URLs.', 'e107-importer'); ?></li>
+      <li><?php _e('Parse BBCode...', 'e107-importer'); ?></li>
+      <?php if ($this->e107_bbcode_parser == 'enhanced') { ?>
+        <?php $this->parseBBCodeWithEnhancedParser(); ?>
+        <li><?php _e('BBCode converted to HTML using e107 Importer\'s enhanced parser.', 'e107-importer'); ?></li>
+      <?php } elseif ($this->e107_bbcode_parser == 'original') { ?>
+        <?php $this->parseBBCodeWithE107(); ?>
+        <li><?php _e('BBCode converted to HTML using the original e107 parser.', 'e107-importer'); ?></li>
+      <?php } else { ?>
+        <li><?php _e('BBCode tags left as-is.', 'e107-importer'); ?></li>
+      <?php } ?>
+    </ul>
 
-    echo '<h3>'.__('Import custom pages').'</h3>';
-    $this->importPages();
-    echo '<p><strong>'.sizeof($this->page_mapping).'</strong>'.__(' custom pages imported.').'</p>';
+    <h3><?php _e('Images', 'e107-importer'); ?></h3>
+    <ul class="ul-disc">
+      <li><?php _e('Upload images...', 'e107-importer'); ?></li>
+      <?php $images = 0; ?>
+      <?php if ($this->e107_import_images == 'upload_all') { ?>
+        <?php $images = $this->importImages(); ?>
+        <li><?php printf(_e('%s images from news and pages uploaded.', 'e107-importer'), $images); ?></li>
+      <?php } elseif ($this->e107_import_images == 'site_upload') { ?>
+        <li><?php printf(_e('Only upload images from <code>%s</code>.', 'e107-importer'), $this->e107_pref['siteurl']); ?></li>
+        <?php $images = $this->importImages(true); ?>
+        <li><?php printf(_e('%s images from news and pages uploaded.', 'e107-importer'), $images); ?></li>
+      <?php } else { ?>
+        <li><?php _e('Image upload skipped.', 'e107-importer'); ?></li>
+      <?php } ?>
+    </ul>
 
-    echo '<h3>'.__('Update redirection plugin').'</h3>';
-    $this->updateRedirectorSettings('page_mapping', $this->page_mapping);
-    echo '<p>'.__('Old static pages URLs are now redirected to permalinks.').'</p>';
+    <h3><?php _e('Internal links', 'e107-importer'); ?></h3>
+    <ul class="ul-disc">
+      <li><?php _e('Update internal links...', 'e107-importer'); ?></li>
+      <!--?php $this->replaceWithPermalinks(); ?-->
+      <li><?php _e('Not implemented yet.', 'e107-importer'); ?><!--?php _e('All internal links updated.', 'e107-importer'); ?--></li>
+    </ul>
 
-    echo '<h3>'.__('Import comments').'</h3>';
-    $this->importComments();
-    echo '<p><strong>'.sizeof($this->comment_mapping).'</strong>'.__(' comments imported.').'</p>';
+    <h3><?php _e('e107 Redirector', 'e107-importer'); ?></h3>
+    <ul class="ul-disc">
+      <li><?php _e('Activate plugin...', 'e107-importer'); ?></li>
+      <?php activate_plugin(E107_REDIRECTOR_PLUGIN, '', false, true); ?>
+      <li><?php _e('Plugin active.', 'e107-importer'); ?></li>
+    </ul>
 
-    echo '<h3>'.__('Update redirection plugin').'</h3>';
-    $this->updateRedirectorSettings('comment_mapping', $this->comment_mapping);
-    echo '<p>'.__('Old comments URLs are now redirected to permalinks.').'</p>';
+    <h3><?php _e('Finished !', 'e107-importer'); ?></h3>
+    <ul class="ul-disc">
+      <li><?php printf(_e('<a href="%s">Have fun !</a>', 'e107-importer'), get_option('siteurl')); ?></li>
+    </ul>
 
-    $this->inite107Context(); // e107 context is required by replaceConstants() and some other methods called below
-
-    echo '<h3>'.__('Replace e107 constants by proper URLs').'</h3>';
-    $this->replaceConstants();
-    echo '<p>'.__('All e107 constants replaced in content.').'</p>';
-
-    echo '<h3>'.__('Parse BBCode').'</h3>';
-    if ($this->e107_bbcode_parser == 'semantic') {
-      $this->parseBBCodeWithCustomParser();
-      echo '<p>'.__("BBCode converted to pure HTML using Kevin's custom parser.").'</p>';
-    } elseif ($this->e107_bbcode_parser == 'original') {
-      $this->parseBBCodeWithE107();
-      echo '<p>'.__('BBCode converted to pure HTML using original e107 parser.').'</p>';
-    } else {
-      echo '<p>'.__('BBCode tags left as-is.').'</p>';
-    }
-
-    echo '<h3>'.__('Upload images').'</h3>';
-    $images = 0;
-    if ($this->e107_import_images == 'upload_all') {
-      $images = $this->importImages();
-      echo '<p><strong>'.$images.'</strong> '.__('images embedded in news and pages uploaded to WordPress.').'</p>';
-    } elseif ($this->e107_import_images == 'site_upload') {
-      $images = $this->importImages(true);
-      printf('<p><strong>'.$images.'</strong> '.__('images from %s domain and which are used in news and pages were uploaded to WordPress.').'</p>', '<a href="'.$this->e107_pref['siteurl'].'">'.$this->e107_pref['siteurl'].'</a>');
-    } else {
-      echo '<p>'.__('Image upload skipped.').'</p>';
-    }
-
-    //echo '<h3>'.__('Replace old URLs by permalinks').'</h3>';
-    //$this->replaceWithPermalinks();
-    //echo '<p>'.__('All migrated content use permalinks now.').'</p>';
-
-    echo '<h3>'.__('Activate the e107 Redirector plugin').'</h3>';
-    activate_plugin(E107_REDIRECTOR_PLUGIN, '', false, true);
-    echo '<p>'.__('Plugin active !').'</p>';
-
-    echo '<h3>'.__('Finished !').'</h3>';
-    printf('<p><a href="%s">'.__('Have fun !').'</a></p>', get_option('siteurl'));
-
+    <?php
     $this->footer();
   }
 }
