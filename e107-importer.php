@@ -278,13 +278,19 @@ class e107_Import extends WP_Importer {
       $new_tag = media_sideload_image($img_url, $post_id);
       $image_counter++;
 
-      // Update post content with the new image tag pointing to the local image
-      $html_content = str_replace($img_tag, $new_tag, $html_content);
-      wp_update_post(array(
-          'ID'           => $post_id
-        , 'post_content' => $wpdb->escape($html_content)
-        ));
-      // TODO: save image original path and its final permalink to not upload file twice
+      if (is_wp_error($new_tag)) {
+        echo '<p>Error while trying to upload image <code>'.$img_url.'</code>:</p>';
+        echo '<pre>'.$new_tag->get_error_message().'</pre>';
+        echo '<p>Let\'s ignore this error and proceed with next image...</p>';
+      } else {
+        // Update post content with the new image tag pointing to the local image
+        $html_content = str_replace($img_tag, $new_tag, $html_content);
+        wp_update_post(array(
+            'ID'           => $post_id
+          , 'post_content' => $wpdb->escape($html_content)
+          ));
+        // TODO: save image original path and its final permalink to not upload file twice
+      }
     }
     return $image_counter;
   }
