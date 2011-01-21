@@ -64,7 +64,7 @@ Feel free to send me patches and code by mail. Or better yet, use GitHub fork/me
 
 Development of this plugin happen in a [dedicated GitHub repository](http://github.com/kdeldycke/e107-importer). The latter is the official repository of this plugin. All developments are done there. This repository is the reference repository.
 
-FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugins.svn.wordpress.org/e107-importer), but this repository is just a copy of GitHub's. **No original development should be performed in the Subversion repository**.
+FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugins.svn.wordpress.org/e107-importer), but this repository is just a copy of GitHub's. **No original development should be performed in the Subversion repository**: changes made there will be ignored and deleted if not mirrored in the GitHub repository.
 
 == Screenshots ==
 
