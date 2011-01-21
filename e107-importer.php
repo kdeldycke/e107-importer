@@ -929,7 +929,6 @@ class e107_Import extends WP_Importer {
   // Update the e107 Redirector plugin with content mapping
   function updateRedirectorSettings($keyword, $data) {
     global $wpdb;
-    // TODO: update redirection mapping in WordPress database.
     $option_name = 'e107_redirector_'.$keyword;
     if (!get_option($option_name))
       add_option($option_name);
