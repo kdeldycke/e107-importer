@@ -28,8 +28,6 @@ This plugin allows you to extract the most important content and data from an e1
 * Send mails to users to inform them about their new credentials,
 * Redirect old e107 news, pages, users and feeds URLs to new WordPress content via an integrated plugin (for SEO).
 
-**Warning**: Your e107 site must be fully encoded in UTF-8. If it's not the case, please have a look at the [*Upgrading database content to UTF-8*](http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8) on e107 wiki.
-
 This tool was tested with [e107 0.7.24](http://e107.org/news.php?item.877) and [WordPress 3.1-RC2](http://wordpress.org/news/2011/01/wordpress-3-1-release-candidate-2/). If you have older versions, please upgrade first.
 
 == Installation ==
@@ -39,6 +37,10 @@ This tool was tested with [e107 0.7.24](http://e107.org/news.php?item.877) and [
 1. Go to the Tools -> Import screen, Click on e107
 
 == Frequently Asked Questions ==
+
+= Why accents in my imported content are replaced by strange characters ? =
+
+Looks like you have some kind of Unicode transcoding errors. Before running e107 Importer, your e107 site must be fully encoded in UTF-8. If it's not the case, please have a look at the [*Upgrading database content to UTF-8*](http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8) article on e107 wiki.
 
 = What is the status of this plugin ? =
 
