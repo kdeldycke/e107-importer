@@ -1148,7 +1148,7 @@ class e107_Import extends WP_Importer {
 
     $this->inite107Context(); // e107 context is required by replaceConstants() and some othe method called below
 
-    echo '<h3>'.__('Replace e107 constants').'</h3>';
+    echo '<h3>'.__('Replace e107 constants by proper URLs').'</h3>';
     $this->replaceConstants();
     echo '<p>'.__('All e107 constants replaced in content.').'</p>';
 
