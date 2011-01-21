@@ -281,8 +281,8 @@ class e107_Import extends WP_Importer {
       if (is_wp_error($new_tag)) {
         ?>
         <li>
-          <?php printf(_e('Error while trying to upload image <code>%s</code>:', 'e107-importer'), $img_url); ?><br/>
-          <?php printf(_e('<pre>%s</pre>:', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
+          <?php printf(__('Error while trying to upload image <code>%s</code>:', 'e107-importer'), $img_url); ?><br/>
+          <?php printf(__('<pre>%s</pre>:', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
           <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
         </li>
         <?php
@@ -1037,10 +1037,10 @@ class e107_Import extends WP_Importer {
         <li><?php _e('e107 users\' password are encrypted. All passwords will be resetted.', 'e107-importer'); ?></li>
         <li><?php _e('Unlike e107, WordPress don\'t accept strange characters (like accents, etc.) in login. When a user will be added to WordPress, all non-ascii chars will be deleted from the login string.', 'e107-importer'); ?></li>
         <li><?php
-          printf( _e('All users will be imported in the WordPress database with the <code>%s</code> role. You can change the default role in the <a href="%s/wp-admin/options-general.php"><code>Options</code> &gt; <code>General</code> panel</a>. If a user is the author of at least one post or static page, its level will be raised to <code>contributor</code>.', 'e107-importer')
-                , __(get_settings('default_role'))
-                , get_option('siteurl')
-                );
+          printf( __('All users will be imported in the WordPress database with the <code>%s</code> role. You can change the default role in the <a href="%s/wp-admin/options-general.php"><code>Options</code> &gt; <code>General</code> panel</a>. If a user is the author of at least one post or static page, its level will be raised to <code>contributor</code>.', 'e107-importer')
+                 , __(get_settings('default_role'))
+                 , get_option('siteurl')
+                 );
         ?></li>
       </ul>
 
@@ -1136,7 +1136,7 @@ class e107_Import extends WP_Importer {
     <ul class="ul-disc">
       <li><?php _e('Import users...', 'e107-importer'); ?></li>
       <?php $this->importUsers(); ?>
-      <li><?php printf(_e('%s users imported.', 'e107-importer'), sizeof($this->user_mapping)); ?></li>
+      <li><?php printf(__('%s users imported.', 'e107-importer'), sizeof($this->user_mapping)); ?></li>
       <li><?php _e('Update redirection plugin with user mapping...', 'e107-importer'); ?></li>
       <?php $this->updateRedirectorSettings('user_mapping', $this->user_mapping); ?>
       <li><?php _e('Old user URLs are now redirected.', 'e107-importer'); ?></li>
@@ -1146,8 +1146,8 @@ class e107_Import extends WP_Importer {
     <ul class="ul-disc">
       <li><?php _e('Import news and categories...', 'e107-importer'); ?></li>
       <?php $this->importNewsAndCategories(); ?>
-      <li><?php printf(_e('%s news imported.', 'e107-importer'), sizeof($this->news_mapping)); ?></li>
-      <li><?php printf(_e('%s categories imported.', 'e107-importer'), sizeof($this->category_mapping)); ?></li>
+      <li><?php printf(__('%s news imported.', 'e107-importer'), sizeof($this->news_mapping)); ?></li>
+      <li><?php printf(__('%s categories imported.', 'e107-importer'), sizeof($this->category_mapping)); ?></li>
       <li><?php _e('Update redirection plugin with news mapping...', 'e107-importer'); ?></li>
       <?php $this->updateRedirectorSettings('news_mapping', $this->news_mapping); ?>
       <li><?php _e('Old news URLs are now redirected to permalinks.', 'e107-importer'); ?></li>
@@ -1157,7 +1157,7 @@ class e107_Import extends WP_Importer {
     <ul class="ul-disc">
       <li><?php _e('Import pages...', 'e107-importer'); ?></li>
       <?php $this->importPages(); ?>
-      <li><?php printf(_e('%s pages imported.', 'e107-importer'), sizeof($this->page_mapping)); ?></li>
+      <li><?php printf(__('%s pages imported.', 'e107-importer'), sizeof($this->page_mapping)); ?></li>
       <li><?php _e('Update redirection plugin with page mapping...', 'e107-importer'); ?></li>
       <?php $this->updateRedirectorSettings('page_mapping', $this->page_mapping); ?>
       <li><?php _e('Old page URLs are now redirected to permalinks.', 'e107-importer'); ?></li>
@@ -1167,7 +1167,7 @@ class e107_Import extends WP_Importer {
     <ul class="ul-disc">
       <li><?php _e('Import comments...', 'e107-importer'); ?></li>
       <?php $this->importComments(); ?>
-      <li><?php printf(_e('%s comments imported.', 'e107-importer'), sizeof($this->comment_mapping)); ?></li>
+      <li><?php printf(__('%s comments imported.', 'e107-importer'), sizeof($this->comment_mapping)); ?></li>
       <li><?php _e('Update redirection plugin with comment mapping...', 'e107-importer'); ?></li>
       <?php $this->updateRedirectorSettings('comment_mapping', $this->comment_mapping); ?>
       <li><?php _e('Old comments URLs are now redirected.', 'e107-importer'); ?></li>
@@ -1199,11 +1199,11 @@ class e107_Import extends WP_Importer {
       <?php $images = 0; ?>
       <?php if ($this->e107_import_images == 'upload_all') { ?>
         <?php $images = $this->importImages(); ?>
-        <li><?php printf(_e('%s images from news and pages uploaded.', 'e107-importer'), $images); ?></li>
+        <li><?php printf(__('%s images from news and pages uploaded.', 'e107-importer'), $images); ?></li>
       <?php } elseif ($this->e107_import_images == 'site_upload') { ?>
-        <li><?php printf(_e('Only upload images from <code>%s</code>.', 'e107-importer'), $this->e107_pref['siteurl']); ?></li>
+        <li><?php printf(__('Only upload images from <code>%s</code>.', 'e107-importer'), $this->e107_pref['siteurl']); ?></li>
         <?php $images = $this->importImages(true); ?>
-        <li><?php printf(_e('%s images from news and pages uploaded.', 'e107-importer'), $images); ?></li>
+        <li><?php printf(__('%s images from news and pages uploaded.', 'e107-importer'), $images); ?></li>
       <?php } else { ?>
         <li><?php _e('Image upload skipped.', 'e107-importer'); ?></li>
       <?php } ?>
@@ -1225,7 +1225,7 @@ class e107_Import extends WP_Importer {
 
     <h3><?php _e('Finished !', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
-      <li><?php printf(_e('<a href="%s">Have fun !</a>', 'e107-importer'), get_option('siteurl')); ?></li>
+      <li><?php printf(__('<a href="%s">Have fun !</a>', 'e107-importer'), get_option('siteurl')); ?></li>
     </ul>
 
     <?php
