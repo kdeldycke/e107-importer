@@ -228,6 +228,7 @@ class e107_Import extends WP_Importer {
   //   finally update the HTML code accordingly.
   function importImagesFromPost($post_id, $allowed_domains=array()) {
     global $wpdb;
+    $image_counter = 0;
     // Get post content
     $post = get_post($post_id);
     $html_content = $post->post_content;
@@ -275,6 +276,7 @@ class e107_Import extends WP_Importer {
 
       // Download remote file and attach it to the post
       $new_tag = media_sideload_image($img_url, $post_id);
+      $image_counter++;
 
       // Update post content with the new image tag pointing to the local image
       $html_content = str_replace($img_tag, $new_tag, $html_content);
@@ -284,6 +286,7 @@ class e107_Import extends WP_Importer {
         ));
       // TODO: save image original path and its final permalink to not upload file twice
     }
+    return $image_counter;
   }
 
 
@@ -914,6 +917,8 @@ class e107_Import extends WP_Importer {
 
   // This method import all images embedded in news and pages to WordPress
   function importImages($local_only = false) {
+    $image_counter = 0;
+
     // Build the list of authorized domains from which we are allowed to import images
     $allowed_domains = array();
     if ($local_only == true)
@@ -922,7 +927,8 @@ class e107_Import extends WP_Importer {
     // Get the list of WordPress news and page IDs
     $news_and_pages_ids = array_merge(array_values($this->news_mapping), array_values($this->page_mapping));
     foreach ($news_and_pages_ids as $post_id)
-      $this->importImagesFromPost($post_id, $allowed_domains);
+      $image_counter = $image_counter + $this->importImagesFromPost($post_id, $allowed_domains);
+    return $image_counter;
   }
 
 
@@ -1122,7 +1128,6 @@ class e107_Import extends WP_Importer {
     $this->importNewsAndCategories();
     echo '<p><strong>'.sizeof($this->news_mapping).'</strong>'.__(' news imported.').'</p>';
     echo '<p><strong>'.sizeof($this->category_mapping).'</strong>'.__(' categories imported.').'</p>';
-    // TODO: echo '<p><strong>'.sizeof($images).'</strong>'.__(' images uploaded.').'</p>';
 
     echo '<h3>'.__('Update redirection plugin').'</h3>';
     $this->updateRedirectorSettings('news_mapping', $this->news_mapping);
@@ -1131,7 +1136,6 @@ class e107_Import extends WP_Importer {
     echo '<h3>'.__('Import custom pages').'</h3>';
     $this->importPages();
     echo '<p><strong>'.sizeof($this->page_mapping).'</strong>'.__(' custom pages imported.').'</p>';
-    // TODO: echo '<p><strong>'.sizeof($images).'</strong>'.__(' images uploaded.').'</p>';
 
     echo '<h3>'.__('Update redirection plugin').'</h3>';
     $this->updateRedirectorSettings('page_mapping', $this->page_mapping);
@@ -1145,7 +1149,7 @@ class e107_Import extends WP_Importer {
     $this->updateRedirectorSettings('comment_mapping', $this->comment_mapping);
     echo '<p>'.__('Old comments URLs are now redirected to permalinks.').'</p>';
 
-    $this->inite107Context(); // e107 context is required by replaceConstants() and some othe method called below
+    $this->inite107Context(); // e107 context is required by replaceConstants() and some other methods called below
 
     echo '<h3>'.__('Replace e107 constants by proper URLs').'</h3>';
     $this->replaceConstants();
@@ -1163,12 +1167,13 @@ class e107_Import extends WP_Importer {
     }
 
     echo '<h3>'.__('Upload images').'</h3>';
+    $images = 0;
     if ($this->e107_import_images == 'upload_all') {
-      $this->importImages();
-      echo '<p>'.__('All image embedded in news and pages uploaded to WordPress.').'</p>';
+      $images = $this->importImages();
+      echo '<p><strong>'.$images.'</strong> '.__('images embedded in news and pages uploaded to WordPress.').'</p>';
     } elseif ($this->e107_import_images == 'site_upload') {
-      $this->importImages(true);
-      printf('<p>'.__('All image files from %s domain and which are used in news and pages were uploaded to WordPress.').'</p>', '<a href="'.$this->e107_pref['siteurl'].'">'.$this->e107_pref['siteurl'].'</a>');
+      $images = $this->importImages(true);
+      printf('<p><strong>'.$images.'</strong> '.__('images from %s domain and which are used in news and pages were uploaded to WordPress.').'</p>', '<a href="'.$this->e107_pref['siteurl'].'">'.$this->e107_pref['siteurl'].'</a>');
     } else {
       echo '<p>'.__('Image upload skipped.').'</p>';
     }
