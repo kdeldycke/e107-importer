@@ -44,7 +44,7 @@ Looks like you have some kind of Unicode transcoding errors. Before running e107
 
 = Why profanities show up in imported content ? =
 
-This plugin ignore the configuration of the profanity filter from e107. If you want to hide words, it should be done by a dedicated WordPress plug-in. As [suggested by Jon Freger](http://kevin.deldycke.com/2006/11/wordpress-to-e107-v06-better-content-rendering-and-extended-news-support/#comment-2937), you can use the [WebPurify plugin](http://www.webpurify.com/wp-plugin.php).
+This plugin ignore the configuration of the profanity filter from e107. If you want to hide words, it should be done by a dedicated WordPress plug-in. As [suggested by Jon Freger](http://kevin.deldycke.com/2006/11/wordpress-to-e107-v06-better-content-rendering-and-extended-news-support/#comment-2937), you can use the [WebPurify plugin](http://wordpress.org/extend/plugins/webpurifytextreplace).
 
 = What is the status of this plugin ? =
 
