@@ -1220,7 +1220,7 @@ class e107_Import extends WP_Importer {
     <ul class="ul-disc">
       <li><?php _e('Activate plugin...', 'e107-importer'); ?></li>
       <?php activate_plugin(E107_REDIRECTOR_PLUGIN, '', false, true); ?>
-      <li><?php _e('Plugin active.', 'e107-importer'); ?></li>
+      <li><?php _e('Plugin activated.', 'e107-importer'); ?></li>
     </ul>
 
     <h3><?php _e('Finished !', 'e107-importer'); ?></h3>
