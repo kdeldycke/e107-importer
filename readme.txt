@@ -42,6 +42,10 @@ This tool was tested with [e107 0.7.24](http://e107.org/news.php?item.877) and [
 
 Looks like you have some kind of Unicode transcoding errors. Before running e107 Importer, your e107 site must be fully encoded in UTF-8. If it's not the case, please have a look at the [*Upgrading database content to UTF-8*](http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8) article on e107 wiki.
 
+= Can you add import of e107 forums ? =
+
+I plan to add e107 forum import in this plugin in the future. It will be released when ready. The target is bbPress, but [the WordPress plugin version](http://wordpress.org/extend/plugins/bbpress/), not [the standalone version](http://bbpress.org/). I also don't plan to support [BuddyPress](http://buddypress.org/) forums. I'm only interested in the bbPress plugin as it currently has features I'm interested in. I'm still happy to add support of the two others if you have code to contribute.
+
 = Why profanities show up in imported content ? =
 
 This plugin ignore the configuration of the profanity filter from e107. If you want to hide words, it should be done by a dedicated WordPress plug-in. As [suggested by Jon Freger](http://kevin.deldycke.com/2006/11/wordpress-to-e107-v06-better-content-rendering-and-extended-news-support/#comment-2937), you can use the [WebPurify plugin](http://wordpress.org/extend/plugins/webpurifytextreplace).
@@ -100,8 +104,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 == Changelog ==
 
 = 1.1 =
-
-No changes yet.
+* Add a placeholder for forum import.
 
 = 1.0 =
 * Upgrade e107 code from e107 v0.7.24.

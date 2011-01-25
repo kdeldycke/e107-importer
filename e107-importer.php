@@ -27,6 +27,7 @@ if ( !class_exists( 'WP_Importer' ) ) {
 define("E107_IMPORTER_PATH"    , WP_PLUGIN_DIR . '/e107-importer/');
 define("E107_INCLUDES_FOLDER"  , 'e107-includes');
 define("E107_REDIRECTOR_PLUGIN", 'e107-importer/e107-redirector.php');
+define("BBPRESS_PLUGIN"        , 'bbpress/bbpress.php');
 
 
 if ( class_exists( 'WP_Importer' ) ) {
@@ -50,6 +51,7 @@ class e107_Import extends WP_Importer {
   var $category_mapping;
   var $page_mapping;
   var $comment_mapping;
+  var $forum_mapping;
 
   // Initialized in initImportContext()
   var $e107_pref;
@@ -719,6 +721,16 @@ class e107_Import extends WP_Importer {
   }
 
 
+  // Import e107 forums as bbPress WordPress plugin forums
+  function importForums() {
+    global $wpdb;
+
+    // XXX This is just a placeholder for now
+
+    $this->forum_mapping = array();
+  }
+
+
   // This method parse content of news, pages and comments to replace all {e_SOMETHING} e107's constants
   function replaceConstants() {
     global $wpdb;
@@ -1057,6 +1069,27 @@ class e107_Import extends WP_Importer {
         </tr>
       </table>
 
+      <h3><?php _e('Forums', 'e107-importer'); ?></h3>
+      <p><?php _e('e107 forums can be imported to <a href="http://wordpress.org/extend/plugins/bbpress/">bbPress plugin</a>.', 'e107-importer'); ?></p>
+      <?php if (!array_key_exists(BBPRESS_PLUGIN, get_plugins())) { ?>
+        <p><?php _e('bbPress plugin is not available on your system. If you want to import forums, please install it first before comming back to this screen. ', 'e107-importer'); ?></p>
+      <?php } elseif (!is_plugin_active(BBPRESS_PLUGIN)) { ?>
+        <p><?php _e('bbPress plugin is available on your system, but is not active. It will be activated automaticcaly if you choose to import forums below.', 'e107-importer'); ?></p>
+      <?php } else { ?>
+        <p><?php _e('bbPress plugin is available on your system, and ready to receive forum content from e107.', 'e107-importer'); ?></p>
+      <?php } ?>
+      <?php if (array_key_exists(BBPRESS_PLUGIN, get_plugins())) { ?>
+        <table class="form-table">
+          <tr valign="top">
+            <th scope="row"><?php _e('Do you want to import forums ?', 'e107-importer'); ?></th>
+            <td>
+              <label for="import-forums"><input name="e107_import_forums" type="radio" id="import-forums" value="import_forums"/> <?php _e('Yes: import forums from e107', 'e107-importer'); ?><?php if (!is_plugin_active(BBPRESS_PLUGIN)) _e(' and activate the bbPress plugin', 'e107-importer'); ?>.</label><br/>
+              <label for="ignore-forums"><input name="e107_import_forums" type="radio" id="ignore-forums" value="ignore_forums" checked="checked"/> <?php _e('No: do not import forums from e107 to bbPress.', 'e107-importer'); ?></label><br/>
+            </td>
+          </tr>
+        </table>
+      <?php } ?>
+
       <h3><?php _e('BBCode', 'e107-importer'); ?></h3>
       <table class="form-table">
         <tr valign="top">
@@ -1098,6 +1131,7 @@ class e107_Import extends WP_Importer {
                               , 'e107_preferences'
                               , 'e107_mail_user'
                               , 'e107_extended_news'
+                              , 'e107_import_forums'
                               , 'e107_bbcode_parser'
                               , 'e107_import_images'
                               );
@@ -1171,6 +1205,25 @@ class e107_Import extends WP_Importer {
       <li><?php _e('Update redirection plugin with comment mapping...', 'e107-importer'); ?></li>
       <?php $this->updateRedirectorSettings('comment_mapping', $this->comment_mapping); ?>
       <li><?php _e('Old comments URLs are now redirected.', 'e107-importer'); ?></li>
+    </ul>
+
+    <h3><?php _e('Forums', 'e107-importer'); ?></h3>
+    <ul class="ul-disc">
+      <?php if ($this->e107_import_forums == 'import_forums') { ?>
+        <?php if (!is_plugin_active(BBPRESS_PLUGIN)) { ?>
+          <li><?php _e('Activate bbPress plugin...', 'e107-importer'); ?></li>
+          <?php activate_plugin(BBPRESS_PLUGIN, '', false, true); ?>
+          <li><?php _e('Plugin activated.', 'e107-importer'); ?></li>
+        <?php } ?>
+        <li><?php _e('Import forums...', 'e107-importer'); ?></li>
+        <?php $this->importForums(); ?>
+        <li><?php printf(__('%s forums imported.', 'e107-importer'), sizeof($this->forum_mapping)); ?></li>
+        <li><?php _e('Update redirection plugin with forum mapping...', 'e107-importer'); ?></li>
+        <?php $this->updateRedirectorSettings('forum_mapping', $this->forum_mapping); ?>
+        <li><?php _e('Old forum URLs are now redirected.', 'e107-importer'); ?></li>
+      <?php } else { ?>
+        <li><?php _e('e107 forums import skipped.', 'e107-importer'); ?></li>
+      <?php } ?>
     </ul>
 
     <h3><?php _e('Content Parsing', 'e107-importer'); ?></h3>

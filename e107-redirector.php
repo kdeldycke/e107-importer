@@ -21,13 +21,15 @@ class e107_Redirector {
     $news_mapping    = array();
     $page_mapping    = array();
     $comment_mapping = array();
-    $user_mapping = array();
+    $user_mapping    = array();
+    $forum_mapping   = array();
 
     // Load mappings
     if (get_option('e107_redirector_news_mapping'))    $news_mapping    = get_option('e107_redirector_news_mapping');
     if (get_option('e107_redirector_page_mapping'))    $page_mapping    = get_option('e107_redirector_page_mapping');
     if (get_option('e107_redirector_comment_mapping')) $comment_mapping = get_option('e107_redirector_comment_mapping');
     if (get_option('e107_redirector_user_mapping'))    $user_mapping    = get_option('e107_redirector_user_mapping');
+    if (get_option('e107_redirector_forum_mapping'))   $forum_mapping   = get_option('e107_redirector_forum_mapping');
 
     // Final destination
     $link = '';
@@ -67,6 +69,11 @@ class e107_Redirector {
                                , '/^.*\/userposts\.php(?:%3F|\?)0\.comments\.(\d+).*$/i'
                                    # /userposts.php?0.comments.29
                                    # TODO: /userposts.php?0.forums.29
+                               )
+           ),
+      array( 'type'    => 'forum'
+           , 'mapping' => $forum_mapping
+           , 'rules'   => array( # TODO
                                )
            )
     );
