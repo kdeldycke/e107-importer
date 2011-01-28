@@ -41,6 +41,7 @@ class e107_Import extends WP_Importer {
   var $e107_db_name;
   var $e107_db_prefix;
 
+  var $e107_content_ownership;
   var $e107_mail_user;
   var $e107_extended_news;
   var $e107_bbcode_parser;
@@ -407,6 +408,21 @@ class e107_Import extends WP_Importer {
       $gmt_offset = (int) $gmt_offset + $x;
     }
     update_option('gmt_offset', $gmt_offset);
+  }
+
+
+  // Method to force ownership of all imported content to a songle user
+  function setGlobalOwnership($new_owner_id) {
+    // Get the list of all e107 user IDs
+    $user_list = $this->getE107UserList();
+
+    // The new user mapping is set to our given global owner
+    $this->user_mapping = array();
+    foreach ($user_list as $user) {
+      extract($user);
+      $user_id = (int) $user_id;
+      $this->user_mapping[$user_id] = (int) $new_owner_id;
+    }
   }
 
 
@@ -1035,6 +1051,18 @@ class e107_Import extends WP_Importer {
       </table>
 
       <h3><?php _e('Users', 'e107-importer'); ?></h3>
+      <p><?php _e('This importer will try to merge e107 users with WordPress existing users based on email address and login. If it can\'t find something that match, a new user will be created.', 'e107-importer'); ?></p>
+      <p><?php _e('If for any reason (<a href="http://kevin.deldycke.com/2011/01/e107-importer-wordpress-plugin-v1-0-released/comment-page-1/#comment-8242">like Simon Paul\'s</a>), you would like to not import e107 users in WordPress, you may use the option below, but you have to select which existing WordPress user will received content ownership.', 'e107-importer'); ?></p>
+      <table class="form-table">
+        <tr valign="top">
+          <th scope="row"><?php _e('Do you want to force ownership of news, comments and pages ?', 'e107-importer'); ?></th>
+          <td>
+            <label for="take-ownership"><input name="e107_content_ownership" type="radio" id="take-ownership" value="take_ownership"/> <?php _e('Yes: attribute all imported content to ', 'e107-importer'); ?><?php wp_dropdown_users(); ?></label><br/>
+            <label for="keep-ownership"><input name="e107_content_ownership" type="radio" id="keep-ownership" value="keep_ownership" checked="checked"/> <?php _e('No: keep original ownership and import e107 users.', 'e107-importer'); ?></label><br/>
+          </td>
+        </tr>
+      </table>
+      <p><?php _e('e107 users\' password are encrypted. All passwords will be resetted. And unlike e107, WordPress don\'t accept strange characters (like accents, etc.) in login. When a user will be added to WordPress, all non-ascii chars will be deleted from the login string. These are two good reasons to send a mail with new credentials to your users.', 'e107-importer'); ?></p>
       <table class="form-table">
         <tr valign="top">
           <th scope="row"><?php _e('Do you want to inform each user of their new credentials ?', 'e107-importer'); ?></th>
@@ -1044,17 +1072,12 @@ class e107_Import extends WP_Importer {
           </td>
         </tr>
       </table>
-      <p><?php _e('Notes:', 'e107-importer'); ?></p>
-      <ul class="ul-square">
-        <li><?php _e('e107 users\' password are encrypted. All passwords will be resetted.', 'e107-importer'); ?></li>
-        <li><?php _e('Unlike e107, WordPress don\'t accept strange characters (like accents, etc.) in login. When a user will be added to WordPress, all non-ascii chars will be deleted from the login string.', 'e107-importer'); ?></li>
-        <li><?php
-          printf( __('All users will be imported in the WordPress database with the <code>%s</code> role. You can change the default role in the <a href="%s/wp-admin/options-general.php"><code>Options</code> &gt; <code>General</code> panel</a>. If a user is the author of at least one post or static page, its level will be raised to <code>contributor</code>.', 'e107-importer')
-                 , __(get_settings('default_role'))
-                 , get_option('siteurl')
-                 );
-        ?></li>
-      </ul>
+      <p><?php
+        printf( __('All users will be imported in the WordPress database with the <code>%s</code> role. You can change the default role in the <a href="%s/wp-admin/options-general.php"><code>Options</code> &gt; <code>General</code> panel</a>. If a user is the author of at least one post or static page, its level will be raised to <code>contributor</code>.', 'e107-importer')
+              , __(get_settings('default_role'))
+              , get_option('siteurl')
+              );
+      ?></p>
 
       <h3><?php _e('News Extends', 'e107-importer'); ?></h3>
       <p><?php _e('WordPress doesn\'t support extended news.', 'e107-importer'); ?></p>
@@ -1129,6 +1152,7 @@ class e107_Import extends WP_Importer {
     // Collect parameters and options from the welcome screen
     $e107_option_names = array( 'e107_db_host', 'e107_db_user', 'e107_db_pass', 'e107_db_name', 'e107_db_prefix'
                               , 'e107_preferences'
+                              , 'e107_content_ownership'
                               , 'e107_mail_user'
                               , 'e107_extended_news'
                               , 'e107_import_forums'
@@ -1168,9 +1192,21 @@ class e107_Import extends WP_Importer {
 
     <h3><?php _e('Users', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
-      <li><?php _e('Import users...', 'e107-importer'); ?></li>
-      <?php $this->importUsers(); ?>
-      <li><?php printf(__('%s users imported.', 'e107-importer'), sizeof($this->user_mapping)); ?></li>
+      <?php if ($this->e107_content_ownership == 'take_ownership') { ?>
+        <li><?php _e('Skip user import.', 'e107-importer'); ?></li>
+        <li><?php _e('Get the user that will take ownership of all imported content...', 'e107-importer'); ?></li>
+        <?php $owner_id = (int)$_REQUEST['user'];
+              $owner = new WP_User($owner_id);
+        ?>
+        <li><?php printf(__('<em>%s</em> (#%s) will take ownership of all imported content.', 'e107-importer'), $owner->user_login, $owner_id); ?></li>
+        <li><?php _e('Force ownership of all imported content...', 'e107-importer'); ?></li>
+        <?php $this->setGlobalOwnership($owner_id); ?>
+        <li><?php _e('Ownership forced.', 'e107-importer'); ?></li>
+      <?php } else { ?>
+        <li><?php _e('Import users...', 'e107-importer'); ?></li>
+        <?php $this->importUsers(); ?>
+        <li><?php printf(__('%s users imported.', 'e107-importer'), sizeof($this->user_mapping)); ?></li>
+      <?php } ?>
       <li><?php _e('Update redirection plugin with user mapping...', 'e107-importer'); ?></li>
       <?php $this->updateRedirectorSettings('user_mapping', $this->user_mapping); ?>
       <li><?php _e('Old user URLs are now redirected.', 'e107-importer'); ?></li>

@@ -104,6 +104,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 == Changelog ==
 
 = 1.1 =
+* Make e107 user import optionnal. This needs you to set a pre-existing WordPress user that will take ownership of all imported content.
 * Add a placeholder for forum import.
 
 = 1.0 =
