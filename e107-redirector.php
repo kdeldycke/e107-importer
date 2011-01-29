@@ -18,18 +18,20 @@ class e107_Redirector {
     $requested = $_SERVER['REQUEST_URI'];
 
     // Initialize mappings
-    $news_mapping    = array();
-    $page_mapping    = array();
-    $comment_mapping = array();
-    $user_mapping    = array();
-    $forum_mapping   = array();
+    $news_mapping       = array();
+    $page_mapping       = array();
+    $comment_mapping    = array();
+    $user_mapping       = array();
+    $forum_mapping      = array();
+    $forum_post_mapping = array();
 
     // Load mappings
-    if (get_option('e107_redirector_news_mapping'))    $news_mapping    = get_option('e107_redirector_news_mapping');
-    if (get_option('e107_redirector_page_mapping'))    $page_mapping    = get_option('e107_redirector_page_mapping');
-    if (get_option('e107_redirector_comment_mapping')) $comment_mapping = get_option('e107_redirector_comment_mapping');
-    if (get_option('e107_redirector_user_mapping'))    $user_mapping    = get_option('e107_redirector_user_mapping');
-    if (get_option('e107_redirector_forum_mapping'))   $forum_mapping   = get_option('e107_redirector_forum_mapping');
+    if (get_option('e107_redirector_news_mapping'))       $news_mapping       = get_option('e107_redirector_news_mapping');
+    if (get_option('e107_redirector_page_mapping'))       $page_mapping       = get_option('e107_redirector_page_mapping');
+    if (get_option('e107_redirector_comment_mapping'))    $comment_mapping    = get_option('e107_redirector_comment_mapping');
+    if (get_option('e107_redirector_user_mapping'))       $user_mapping       = get_option('e107_redirector_user_mapping');
+    if (get_option('e107_redirector_forum_mapping'))      $forum_mapping      = get_option('e107_redirector_forum_mapping');
+    if (get_option('e107_redirector_forum_post_mapping')) $forum_post_mapping = get_option('e107_redirector_forum_post_mapping');
 
     // Final destination
     $link = '';

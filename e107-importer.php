@@ -53,6 +53,7 @@ class e107_Import extends WP_Importer {
   var $page_mapping;
   var $comment_mapping;
   var $forum_mapping;
+  var $forum_post_mapping;
 
   // Initialized in initImportContext()
   var $e107_pref;
@@ -361,7 +362,7 @@ class e107_Import extends WP_Importer {
 
   function getE107NewsList() {
     // Prepare the SQL request
-    $e107_newsTable  = $this->e107_db_prefix."news";
+    $e107_newsTable = $this->e107_db_prefix."news";
     $sql = "SELECT * FROM `".$e107_newsTable."`";
     // Return news list
     return $this->queryE107DB($sql);
@@ -370,7 +371,7 @@ class e107_Import extends WP_Importer {
 
   function getE107PageList() {
     // Prepare the SQL request
-    $e107_pagesTable  = $this->e107_db_prefix."page";
+    $e107_pagesTable = $this->e107_db_prefix."page";
     $sql = "SELECT * FROM `".$e107_pagesTable."`";
     // Return page list
     return $this->queryE107DB($sql);
@@ -379,8 +380,26 @@ class e107_Import extends WP_Importer {
 
   function getE107CommentList() {
     // Prepare the SQL request
-    $e107_commentsTable  = $this->e107_db_prefix."comments";
+    $e107_commentsTable = $this->e107_db_prefix."comments";
     $sql  = "SELECT * FROM `".$e107_commentsTable."`";
+    // Return comment list
+    return $this->queryE107DB($sql);
+  }
+
+
+  function getE107ForumList() {
+    // Prepare the SQL request
+    $e107_forumsTable = $this->e107_db_prefix."forum";
+    $sql  = "SELECT * FROM `".$e107_forumsTable."` ORDER BY forum_parent";
+    // Return comment list
+    return $this->queryE107DB($sql);
+  }
+
+
+  function getE107ForumPostList() {
+    // Prepare the SQL request
+    $e107_postsTable = $this->e107_db_prefix."forum_t";
+    $sql  = "SELECT * FROM `".$e107_postsTable."`";
     // Return comment list
     return $this->queryE107DB($sql);
   }
@@ -737,13 +756,86 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Import e107 forums as bbPress WordPress plugin forums
+  // Import e107 forums to bbPress WordPress plugin
   function importForums() {
     global $wpdb;
+    $this->forum_mapping = array();
+
+    // Get all forum
+    $forum_list = $this->getE107ForumList();
+
+    foreach ($forum_list as $forum) {
+      extract($forum);
+      $forum_id     = (int) $forum_id;
+      $forum_parent = (int) $forum_parent;
+
+      // The moderator of the forum is set as author
+      // XXX Does e107 put several user IDs in this $forum_moderators field ?
+      $author_id = (int) $this->user_mapping[$forum_moderators];
+
+      // Calculate forum's parent
+      $updated_parent = 0;
+      if (array_key_exists($forum_parent, $this->forum_mapping)) {
+        $updated_parent = (int) $this->forum_mapping[$forum_parent];
+      }
+
+      // Save e107 forum in WordPress database
+      $ret_id = wp_insert_post(array(
+          'post_author'    => $author_id
+        , 'post_date'      => $this->mysql_date($forum_datestamp)  //XXX ask or get the time offset ?
+        , 'post_date_gmt'  => $this->mysql_date($forum_datestamp)  //XXX ask or get the time offset ?
+        , 'post_content'   => $forum_description
+        , 'post_title'     => $forum_name
+        //, 'post_status'    => 'publish'
+        , 'post_type'      => 'bbp_forum'
+        //, 'comment_status' => 'closed'
+        //, 'ping_status'    => 'closed'
+        , 'post_parent'    => $updated_parent
+        , 'menu_order'     => (int) $forum_order
+        ));
+
+      // Update forum mapping
+      $this->forum_mapping[$forum_id] = (int) $ret_id;
+
+      do_action('publish_phone', $post_ID);
+
+      // Set forum type
+      if ($forum_parent == 0) {
+        // The forum is a category
+        bbp_categorize_forum($ret_id);
+      } else {
+        // The forum is a normal forum
+        bbp_normalize_forum($ret_id);
+      }
+
+      // Set forum visibility. 0 is public for e107.
+      if ($forum_parent == 0) {
+        bbp_publicize_forum($ret_id);
+      } else {
+        bbp_privatize_forum($ret_id);
+      }
+
+      // XXX What to do with e107's $forum_postclass ?
+
+      // XXX How to handle e107's $forum_sub field ?
+
+      // Does e107 support open and close forum ?
+      //bbp_close_forum()
+      //bbp_open_forum()
+    }
+  }
+
+
+  // Import e107 forum content to bbPress WordPress plugin
+  function importForumContent() {
+    global $wpdb;
+    $this->forum_post_mapping = array();
+
+    // Get all forum posts
+    $forum_post_list = $this->getE107ForumPostList();
 
     // XXX This is just a placeholder for now
 
-    $this->forum_mapping = array();
   }
 
 
@@ -1251,11 +1343,15 @@ class e107_Import extends WP_Importer {
           <?php activate_plugin(BBPRESS_PLUGIN, '', false, true); ?>
           <li><?php _e('Plugin activated.', 'e107-importer'); ?></li>
         <?php } ?>
-        <li><?php _e('Import forums...', 'e107-importer'); ?></li>
+        <li><?php _e('Import forums and forum categories...', 'e107-importer'); ?></li>
         <?php $this->importForums(); ?>
-        <li><?php printf(__('%s forums imported.', 'e107-importer'), sizeof($this->forum_mapping)); ?></li>
-        <li><?php _e('Update redirection plugin with forum mapping...', 'e107-importer'); ?></li>
-        <?php $this->updateRedirectorSettings('forum_mapping', $this->forum_mapping); ?>
+        <li><?php printf(__('%s forums and forum categories imported.', 'e107-importer'), sizeof($this->forum_mapping)); ?></li>
+        <li><?php _e('Import forum content...', 'e107-importer'); ?></li>
+        <?php $this->importForumContent(); ?>
+        <li><?php printf(__('%s forum posts imported.', 'e107-importer'), sizeof($this->forum_post_mapping)); ?></li>
+        <li><?php _e('Update redirection plugin with forum and forum post mapping...', 'e107-importer'); ?></li>
+        <?php $this->updateRedirectorSettings('forum_mapping',      $this->forum_mapping); ?>
+        <?php $this->updateRedirectorSettings('forum_post_mapping', $this->forum_post_mapping); ?>
         <li><?php _e('Old forum URLs are now redirected.', 'e107-importer'); ?></li>
       <?php } else { ?>
         <li><?php _e('e107 forums import skipped.', 'e107-importer'); ?></li>
