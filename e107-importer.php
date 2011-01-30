@@ -227,83 +227,6 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // This method search for images path in a post (or page) content,
-  //   then it import the images from the remote location and
-  //   finally update the HTML code accordingly.
-  function importImagesFromPost($post_id, $allowed_domains=array()) {
-    global $wpdb;
-    $image_counter = 0;
-    // Get post content
-    $post = get_post($post_id);
-    $html_content = $post->post_content;
-
-    // Locate all <img/> tags and import them into WordPress
-    // Look at http://kevin.deldycke.com/2007/03/ultimate-regular-expression-for-html-tag-parsing-with-php/ for details about this regex
-    $img_regex = "/<\s*img((\s+\w+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>/i";
-    preg_match_all($img_regex, $html_content, $matches, PREG_SET_ORDER);
-    foreach ($matches as $val) {
-      $img_tag = $val[0];
-
-      // Get image URL from the src attribute
-      $src_regex = "/\s+src\s*=\s*(?:\"(.*?)\"|'(.*?)'|[^'\">\s]+)/i"; // This regex is a variation of the main one
-      preg_match_all($src_regex, $img_tag, $src_matches, PREG_SET_ORDER);
-      // URL is in the second or the third index of the array depending of the quotes (double or single)
-      $img_url = '';
-      for ($i = 1; $i <= 2 and strlen($img_url) == 0; $i += 1)
-        if (sizeof($src_matches[0]) > $i)
-          $img_url = $src_matches[0][$i];
-
-      // Clean-up the URL
-      // If url doesn't start with "http[s]://", add e107 site url in front to build an absolute url
-      $http_prefix_regex = '/^https?:\/\//i';
-      if (! preg_match($http_prefix_regex, $img_url))
-        $img_url = SITEURL.$img_url;
-
-      // Only import files from authorized domains
-      $domain_ok = true;
-      if ($allowed_domains && is_array($allowed_domains) && sizeof($allowed_domains) > 0) {
-        $domain_ok = false;
-        foreach ($allowed_domains as $domain) {
-          $domain = $this->deleteTrailingChar($domain, '/');
-          if (substr($img_url, 0, strlen($domain)) == $domain) {
-            $domain_ok = true;
-            break;
-          }
-        }
-      }
-      if (!$domain_ok)
-        continue;
-
-      // XXX Hack attempting to fix http://core.trac.wordpress.org/ticket/16330
-      // $img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
-      // $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
-
-      // Download remote file and attach it to the post
-      $new_tag = media_sideload_image($img_url, $post_id);
-      $image_counter++;
-
-      if (is_wp_error($new_tag)) {
-        ?>
-        <li>
-          <?php printf(__('Error while trying to upload image <code>%s</code>:', 'e107-importer'), $img_url); ?><br/>
-          <?php printf(__('<pre>%s</pre>', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
-          <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
-        </li>
-        <?php
-      } else {
-        // Update post content with the new image tag pointing to the local image
-        $html_content = str_replace($img_tag, $new_tag, $html_content);
-        wp_update_post(array(
-            'ID'           => $post_id
-          , 'post_content' => $wpdb->escape($html_content)
-          ));
-        // TODO: save image original path and its final permalink to not upload file twice
-      }
-    }
-    return $image_counter;
-  }
-
-
   // Establish a connection to the e107 database.
   // This code is kept in a separate method to not mess with $wpdb ...
   function connectToE107DB() {
@@ -1056,6 +979,7 @@ class e107_Import extends WP_Importer {
 
   // This method import all images embedded in news and pages to WordPress
   function importImages($local_only = false) {
+    global $wpdb;
     $image_counter = 0;
 
     // Build the list of authorized domains from which we are allowed to import images
@@ -1065,8 +989,75 @@ class e107_Import extends WP_Importer {
 
     // Get the list of WordPress news and page IDs
     $news_and_pages_ids = array_merge(array_values($this->news_mapping), array_values($this->page_mapping));
-    foreach ($news_and_pages_ids as $post_id)
-      $image_counter = $image_counter + $this->importImagesFromPost($post_id, $allowed_domains);
+    foreach ($news_and_pages_ids as $post_id) {
+      // Get post content
+      $post = get_post($post_id);
+      $html_content = $post->post_content;
+
+      // Locate all <img/> tags and import them into WordPress
+      // Look at http://kevin.deldycke.com/2007/03/ultimate-regular-expression-for-html-tag-parsing-with-php/ for details about this regex
+      $img_regex = "/<\s*img((\s+\w+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>/i";
+      preg_match_all($img_regex, $html_content, $matches, PREG_SET_ORDER);
+      foreach ($matches as $val) {
+        $img_tag = $val[0];
+
+        // Get image URL from the src attribute
+        $src_regex = "/\s+src\s*=\s*(?:\"(.*?)\"|'(.*?)'|[^'\">\s]+)/i"; // This regex is a variation of the main one
+        preg_match_all($src_regex, $img_tag, $src_matches, PREG_SET_ORDER);
+        // URL is in the second or the third index of the array depending of the quotes (double or single)
+        $img_url = '';
+        for ($i = 1; $i <= 2 and strlen($img_url) == 0; $i += 1)
+          if (sizeof($src_matches[0]) > $i)
+            $img_url = $src_matches[0][$i];
+
+        // Clean-up the URL
+        // If url doesn't start with "http[s]://", add e107 site url in front to build an absolute url
+        $http_prefix_regex = '/^https?:\/\//i';
+        if (! preg_match($http_prefix_regex, $img_url))
+          $img_url = SITEURL.$img_url;
+
+        // Only import files from authorized domains
+        $domain_ok = true;
+        if ($allowed_domains && is_array($allowed_domains) && sizeof($allowed_domains) > 0) {
+          $domain_ok = false;
+          foreach ($allowed_domains as $domain) {
+            $domain = $this->deleteTrailingChar($domain, '/');
+            if (substr($img_url, 0, strlen($domain)) == $domain) {
+              $domain_ok = true;
+              break;
+            }
+          }
+        }
+        if (!$domain_ok)
+          continue;
+
+        // XXX Hack attempting to fix http://core.trac.wordpress.org/ticket/16330
+        // $img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
+        // $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
+
+        // Download remote file and attach it to the post
+        $new_tag = media_sideload_image($img_url, $post_id);
+        $image_counter++;
+
+        if (is_wp_error($new_tag)) {
+          ?>
+          <li>
+            <?php printf(__('Error while trying to upload image <code>%s</code>:', 'e107-importer'), $img_url); ?><br/>
+            <?php printf(__('<pre>%s</pre>', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
+            <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
+          </li>
+          <?php
+        } else {
+          // Update post content with the new image tag pointing to the local image
+          $html_content = str_replace($img_tag, $new_tag, $html_content);
+          wp_update_post(array(
+              'ID'           => $post_id
+            , 'post_content' => $wpdb->escape($html_content)
+            ));
+          // TODO: save image original path and its final permalink to not upload file twice
+        }
+      }
+    }
     return $image_counter;
   }
 
