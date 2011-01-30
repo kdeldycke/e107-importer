@@ -817,7 +817,7 @@ class e107_Import extends WP_Importer {
       }
 
       // Publish the forum
-      wp_insert_post(array('ID' => $ret_id, 'post_status' => 'publish'));
+      wp_publish_post($ret_id);
 
       // XXX What to do with e107's $forum_postclass ?
 
@@ -831,7 +831,7 @@ class e107_Import extends WP_Importer {
 
 
   // Import e107 forum content to bbPress WordPress plugin
-  function importForumContent() {
+  function importForumThreads() {
     global $wpdb;
     $this->forum_post_mapping = array();
 
@@ -886,7 +886,7 @@ class e107_Import extends WP_Importer {
       }
 
       // Publish the post
-      wp_insert_post(array('ID' => $ret_id, 'post_status' => 'publish'));
+      wp_publish_post($ret_id);
     }
   }
 
@@ -1398,8 +1398,8 @@ class e107_Import extends WP_Importer {
         <li><?php _e('Import forums and forum categories...', 'e107-importer'); ?></li>
         <?php $this->importForums(); ?>
         <li><?php printf(__('%s forums and forum categories imported.', 'e107-importer'), sizeof($this->forum_mapping)); ?></li>
-        <li><?php _e('Import forum content...', 'e107-importer'); ?></li>
-        <?php $this->importForumContent(); ?>
+        <li><?php _e('Import forum threads...', 'e107-importer'); ?></li>
+        <?php $this->importForumThreads(); ?>
         <li><?php printf(__('%s forum posts imported.', 'e107-importer'), sizeof($this->forum_post_mapping)); ?></li>
         <li><?php _e('Update redirection plugin with forum and forum post mapping...', 'e107-importer'); ?></li>
         <?php $this->updateRedirectorSettings('forum_mapping',      $this->forum_mapping); ?>
