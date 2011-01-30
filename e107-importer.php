@@ -958,10 +958,10 @@ class e107_Import extends WP_Importer {
 
   // Perform some transformation in WordPress content
   function parseAndUpdate($content_ids, $content_type, $property, $parser) {
-    // $content_ids is a list of WordPress IDs we want to modify.
-    // $content_type can be 'post' or 'comment'.
-    // TODO: $property is the name of the property we would like to apply the parser to (only tested on 'title' and 'content').
-    // $parser is either 'bbcode' for e107 BBCode parsing or 'constants' for e107 constants replacement.
+    // $content_ids   is a list of WordPress IDs we want to modify.
+    // $content_type  can be 'post' or 'comment'.
+    // $property      is the name of the property we would like to apply the parser to (only tested on 'title' and 'content').
+    // $parser        is either 'bbcode' for e107 BBCode parsing or 'constants' for e107 constants replacement.
     global $wpdb;
 
     foreach ($content_ids as $content_id) {
@@ -970,7 +970,7 @@ class e107_Import extends WP_Importer {
       } else {
         $content_object = get_post($content_id);
       }
-      $content_property = $content_type.'_content';
+      $content_property = $content_type.'_'.$property;
       $content = $content_object->$content_property;
 
       // Apply the specified transformation
@@ -1364,18 +1364,21 @@ class e107_Import extends WP_Importer {
       <li><?php _e('Initialize e107 context...', 'e107-importer'); ?></li>
       <?php $this->inite107Context(); ?>
       <li><?php _e('e107 context initialized.', 'e107-importer'); ?></li>
-      <!-- TODO: parse titles too ! -->
       <li><?php _e('Replace e107 constants in news...', 'e107-importer'); ?></li>
-      <?php $this->parseAndUpdate(array_values($this->news_mapping),       'post',    'content', 'constants') ?>
+      <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'title'  , 'constants') ?>
+      <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', 'constants') ?>
       <li><?php _e('Replace e107 constants in pages...', 'e107-importer'); ?></li>
-      <?php $this->parseAndUpdate(array_values($this->page_mapping),       'post',    'content', 'constants') ?>
+      <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'title'  , 'constants') ?>
+      <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', 'constants') ?>
       <li><?php _e('Replace e107 constants in comments...', 'e107-importer'); ?></li>
       <?php $this->parseAndUpdate(array_values($this->comment_mapping),    'comment', 'content', 'constants') ?>
       <?php if ($this->e107_import_forums == 'import_forums') { ?>
         <li><?php _e('Replace e107 constants in forums...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->forum_mapping),      'post',    'content', 'constants') ?>
+        <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'title'  , 'constants') ?>
+        <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'content', 'constants') ?>
         <li><?php _e('Replace e107 constants in forum threads...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post',    'content', 'constants') ?>
+        <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'title'  , 'constants') ?>
+        <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'content', 'constants') ?>
       <?php } ?>
       <li><?php _e('All e107 constants replaced by proper URLs.', 'e107-importer'); ?></li>
       <li><?php _e('Parse BBCode...', 'e107-importer'); ?></li>
@@ -1384,16 +1387,20 @@ class e107_Import extends WP_Importer {
         <li><?php _e('BBCode converted to HTML using e107 Importer\'s enhanced parser.', 'e107-importer'); ?></li>
       <?php } elseif ($this->e107_bbcode_parser == 'original') { ?>
         <li><?php _e('Parse BBCode in news...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->news_mapping),       'post',    'content', 'bbcode') ?>
+        <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'title'  , 'bbcode') ?>
+        <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', 'bbcode') ?>
         <li><?php _e('Parse BBCode in pages...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->page_mapping),       'post',    'content', 'bbcode') ?>
+        <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'title'  , 'bbcode') ?>
+        <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', 'bbcode') ?>
         <li><?php _e('Parse BBCode in comments...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->comment_mapping),    'comment', 'content', 'bbcode') ?>
+        <?php $this->parseAndUpdate(array_values($this->comment_mapping), 'comment', 'content', 'bbcode') ?>
         <?php if ($this->e107_import_forums == 'import_forums') { ?>
           <li><?php _e('Parse BBCode in forums...', 'e107-importer'); ?></li>
-          <?php $this->parseAndUpdate(array_values($this->forum_mapping),      'post',    'content', 'bbcode') ?>
+          <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'title', 'bbcode') ?>
+          <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'content', 'bbcode') ?>
           <li><?php _e('Parse BBCode in forum threads...', 'e107-importer'); ?></li>
-          <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post',    'content', 'bbcode') ?>
+          <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'title', 'bbcode') ?>
+          <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'content', 'bbcode') ?>
         <?php } ?>
         <li><?php _e('All BBCodes converted to HTML.', 'e107-importer'); ?></li>
       <?php } else { ?>
