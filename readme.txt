@@ -122,6 +122,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 
 = 1.1 =
 * Add import of forums and threads to bbPress WordPress plugin.
+* Parse BBCode and e107 constants in forums and thread.
 * Make e107 user import optional. This needs you to set a pre-existing WordPress user that will take ownership of all imported content.
 * Add an entry in the FAQ regarding script ending prematurely.
 

@@ -47,13 +47,13 @@ class e107_Import extends WP_Importer {
   var $e107_bbcode_parser;
   var $e107_import_images;
 
-  var $user_mapping;
-  var $news_mapping;
-  var $category_mapping;
-  var $page_mapping;
-  var $comment_mapping;
-  var $forum_mapping;
-  var $forum_post_mapping;
+  var $user_mapping       = array();
+  var $news_mapping       = array();
+  var $category_mapping   = array();
+  var $page_mapping       = array();
+  var $comment_mapping    = array();
+  var $forum_mapping      = array();
+  var $forum_post_mapping = array();
 
   // Initialized in initImportContext()
   var $e107_pref;
@@ -447,13 +447,10 @@ class e107_Import extends WP_Importer {
 
   // Import e107 users to WordPress
   function importUsers() {
-    // Get user list
-    $user_list = $this->getE107UserList();
-
     global $wpdb;
 
-    // This array contain the mapping between old e107 users and new wordpress users
-    $this->user_mapping = array();
+    // Get user list
+    $user_list = $this->getE107UserList();
 
     // Send a mail to each user to tell them about password change ?
     $send_mail = False;
@@ -551,15 +548,13 @@ class e107_Import extends WP_Importer {
 
   // Get e107 news and save them as WordPress posts
   function importNewsAndCategories() {
+    global $wpdb;
+
     // Phase 1: import categories
 
     // Get category list
     $category_list = $this->getE107CategoryList();
 
-    global $wpdb;
-
-    // This array contain the mapping between old e107 news categories and new WordPress categories
-    $this->category_mapping = array();
     foreach ($category_list as $category) {
       extract($category);
       $cat_id = category_exists($category_name);
@@ -575,9 +570,6 @@ class e107_Import extends WP_Importer {
 
     // Get news list
     $news_list = $this->getE107NewsList();
-
-    // This array contain the mapping between old e107 news and newly inserted wordpress posts
-    $this->news_mapping = array();
 
     foreach ($news_list as $news) {
       $count++;
@@ -627,13 +619,10 @@ class e107_Import extends WP_Importer {
 
   // Convert static pages to WordPress pages
   function importPages() {
-    // Get static pages list
-    $page_list = $this->getE107PageList();
-
     global $wpdb;
 
-    // This array contain the mapping between old e107 static pages and newly inserted WordPress pages
-    $this->page_mapping = array();
+    // Get static pages list
+    $page_list = $this->getE107PageList();
 
     foreach ($page_list as $page) {
       $count++;
@@ -685,13 +674,10 @@ class e107_Import extends WP_Importer {
 
   // Import e107 comments as WordPress comments
   function importComments() {
-    // Get News list
-    $comment_list = $this->getE107CommentList();
-
     global $wpdb;
 
-    // This array contain the mapping between old e107 comments and newly inserted WordPress comments
-    $this->comment_mapping = array();
+    // Get News list
+    $comment_list = $this->getE107CommentList();
 
     foreach ($comment_list as $comment) {
       $count++;
@@ -759,7 +745,6 @@ class e107_Import extends WP_Importer {
   // Import e107 forums to bbPress WordPress plugin
   function importForums() {
     global $wpdb;
-    $this->forum_mapping = array();
 
     // Get all forum
     $forum_list = $this->getE107ForumList();
@@ -833,7 +818,6 @@ class e107_Import extends WP_Importer {
   // Import e107 forum content to bbPress WordPress plugin
   function importForumThreads() {
     global $wpdb;
-    $this->forum_post_mapping = array();
 
     // Get all forum posts
     $forum_post_list = $this->getE107ForumPostList();
@@ -891,47 +875,8 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // This method parse content of news, pages and comments to replace all {e_SOMETHING} e107's constants
-  function replaceConstants() {
-    global $wpdb;
-    // Get the list of WordPress news and page IDs
-    $news_and_pages_ids = array_merge(array_values($this->news_mapping), array_values($this->page_mapping));
-    // Parse BBCode in each news and page
-    foreach ($news_and_pages_ids as $post_id) {
-      // Get post content
-      $post = get_post($post_id);
-      $content = $post->post_content;
-      // Apply constants transformation
-      $new_content = $this->e107_parser->replaceConstants($content, $nonrelative = "full", $all = True);
-      // Update post content if necessary
-      if ($new_content != $content) {
-        wp_update_post(array(
-            'ID'           => $post_id
-          , 'post_content' => $wpdb->escape($new_content)
-          ));
-      }
-    }
-
-    // Get the list of all WP comments IDs
-    $comments_ids = array_values($this->comment_mapping);
-    // Parse BBCode in each news and page
-    foreach ($comments_ids as $comment_id) {
-      // Get comment content
-      $comment = get_comment($comment_id);
-      $content = $comment->comment_content;
-      // Apply constants transformation
-      $new_content = $this->e107_parser->replaceConstants($content, $nonrelative = "full", $all = True);
-      // Update comment content if necessary
-      if ($new_content != $content)
-        wp_update_comment(array(
-            'comment_ID'      => $comment_id
-          , 'comment_content' => $wpdb->escape($new_content)
-          ));
-    }
-  }
-
-
   // This method replace old e107 URLs embeded in news, pages and comments by WP permalinks
+  // TODO: merge with parseAndUpdate() method
   function replaceWithPermalinks() {
     global $wpdb;
     // Associate each mapping with their related regexp
@@ -1013,43 +958,49 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Transform BBCode to HTML using original e107 parser
-  // TODO: parse BBCode in titles (both posts and pages) !
-  // TODO: factorize with replaceConstants() -> less code & less database IO
-  function parseBBCodeWithE107() {
+  // Perform some transformation in WordPress content
+  function parseAndUpdate($content_ids, $content_type, $property, $parser) {
+    // $content_ids is a list of WordPress IDs we want to modify.
+    // $content_type can be 'post' or 'comment'.
+    // TODO: $property is the name of the property we would like to apply the parser to (only tested on 'title' and 'content').
+    // $parser is either 'bbcode' for e107 BBCode parsing or 'constants' for e107 constants replacement.
     global $wpdb;
-    // Get the list of WordPress news and page IDs
-    $news_and_pages_ids = array_merge(array_values($this->news_mapping), array_values($this->page_mapping));
-    // Parse BBCode in each news and page
-    foreach ($news_and_pages_ids as $post_id) {
-      // Get post content
-      $post = get_post($post_id);
-      $content = $post->post_content;
-      // Apply BBCode transformation
-      $new_content = $this->e107_parser->toHTML($content, $parseBB = TRUE);
-      // Update post content if necessary
-      if ($new_content != $content)
-        wp_update_post(array(
-            'ID'           => $post_id
-          , 'post_content' => $wpdb->escape($new_content)
-          ));
-    }
 
-    // Get the list of all WP comments IDs
-    $comments_ids = array_values($this->comment_mapping);
-    // Parse BBCode in each news and page
-    foreach ($comments_ids as $comment_id) {
-      // Get comment content
-      $comment = get_comment($comment_id);
-      $content = $comment->comment_content;
-      // Apply BBCode transformation
-      $new_content = $this->e107_parser->toHTML($content, $parseBB = TRUE);
-      // Update comment content if necessary
-      if ($new_content != $content)
-        wp_update_comment(array(
-            'comment_ID'      => $comment_id
-          , 'comment_content' => $wpdb->escape($new_content)
-          ));
+    foreach ($content_ids as $content_id) {
+      if ($content_type == 'comment') {
+        $content_object = get_comment($content_id);
+      } else {
+        $content_object = get_post($content_id);
+      }
+      $content_property = $content_type.'_content';
+      $content = $content_object->$content_property;
+
+      // Apply the specified transformation
+      switch ($parser) {
+        case 'constants':
+          // Replace all {e_SOMETHING} e107's constants to fully qualified URLs
+          $new_content = $this->e107_parser->replaceConstants($content, $nonrelative = "full", $all = True);
+          break;
+        case 'bbcode':
+          // Transform BBCode to HTML using original e107 parser
+          $new_content = $this->e107_parser->toHTML($content, $parseBB = TRUE);
+          break;
+      }
+
+      // Update WordPress content
+      if ($new_content != $content) {
+        if ($content_type == 'comment') {
+          wp_update_comment(array(
+              'comment_ID'      => $content_id
+            , 'comment_content' => $wpdb->escape($new_content)
+            ));
+        } else {
+          wp_update_post(array(
+              'ID'           => $content_id
+            , 'post_content' => $wpdb->escape($new_content)
+            ));
+        }
+      }
     }
   }
 
@@ -1415,16 +1366,34 @@ class e107_Import extends WP_Importer {
       <li><?php _e('Initialize e107 context...', 'e107-importer'); ?></li>
       <?php $this->inite107Context(); ?>
       <li><?php _e('e107 context initialized.', 'e107-importer'); ?></li>
-      <li><?php _e('Replace e107 constants...', 'e107-importer'); ?></li>
-      <?php $this->replaceConstants(); ?>
+      <!-- TODO: parse titles too ! -->
+      <li><?php _e('Replace e107 constants in news...', 'e107-importer'); ?></li>
+      <?php $this->parseAndUpdate(array_values($this->news_mapping),       'post',    'content', 'constants') ?>
+      <li><?php _e('Replace e107 constants in pages...', 'e107-importer'); ?></li>
+      <?php $this->parseAndUpdate(array_values($this->page_mapping),       'post',    'content', 'constants') ?>
+      <li><?php _e('Replace e107 constants in comments...', 'e107-importer'); ?></li>
+      <?php $this->parseAndUpdate(array_values($this->comment_mapping),    'comment', 'content', 'constants') ?>
+      <li><?php _e('Replace e107 constants in forums...', 'e107-importer'); ?></li>
+      <?php $this->parseAndUpdate(array_values($this->forum_mapping),      'post',    'content', 'constants') ?>
+      <li><?php _e('Replace e107 constants in forum threads...', 'e107-importer'); ?></li>
+      <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post',    'content', 'constants') ?>
       <li><?php _e('All e107 constants replaced by proper URLs.', 'e107-importer'); ?></li>
       <li><?php _e('Parse BBCode...', 'e107-importer'); ?></li>
       <?php if ($this->e107_bbcode_parser == 'enhanced') { ?>
         <?php $this->parseBBCodeWithEnhancedParser(); ?>
         <li><?php _e('BBCode converted to HTML using e107 Importer\'s enhanced parser.', 'e107-importer'); ?></li>
       <?php } elseif ($this->e107_bbcode_parser == 'original') { ?>
-        <?php $this->parseBBCodeWithE107(); ?>
-        <li><?php _e('BBCode converted to HTML using the original e107 parser.', 'e107-importer'); ?></li>
+        <li><?php _e('Parse BBCode in news...', 'e107-importer'); ?></li>
+        <?php $this->parseAndUpdate(array_values($this->news_mapping),       'post',    'content', 'bbcode') ?>
+        <li><?php _e('Parse BBCode in pages...', 'e107-importer'); ?></li>
+        <?php $this->parseAndUpdate(array_values($this->page_mapping),       'post',    'content', 'bbcode') ?>
+        <li><?php _e('Parse BBCode in comments...', 'e107-importer'); ?></li>
+        <?php $this->parseAndUpdate(array_values($this->comment_mapping),    'comment', 'content', 'bbcode') ?>
+        <li><?php _e('Parse BBCode in forums...', 'e107-importer'); ?></li>
+        <?php $this->parseAndUpdate(array_values($this->forum_mapping),      'post',    'content', 'bbcode') ?>
+        <li><?php _e('Parse BBCode in forum threads...', 'e107-importer'); ?></li>
+        <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post',    'content', 'bbcode') ?>
+        <li><?php _e('All BBCodes converted to HTML.', 'e107-importer'); ?></li>
       <?php } else { ?>
         <li><?php _e('BBCode tags left as-is.', 'e107-importer'); ?></li>
       <?php } ?>
