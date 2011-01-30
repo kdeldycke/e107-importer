@@ -1081,7 +1081,7 @@ class e107_Import extends WP_Importer {
     if ($action == 'import')
       $this->import();
     else
-      $this->printWelcomeScreen();
+      $this->printOptionScreen();
   }
 
 
@@ -1097,10 +1097,8 @@ class e107_Import extends WP_Importer {
   }
 
 
-  function printWelcomeScreen() {
+  function printOptionScreen() {
     $this->header();
-    // TODO: get the description from the readme.txt and display it here
-    // TODO: use AJAX to validate the form ?
     ?>
 
     <form action="admin.php?import=e107&amp;action=import" method="post">
