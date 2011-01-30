@@ -19,6 +19,7 @@ This plugin allows you to extract the most important content and data from an e1
 * Handle extended part of news nicely,
 * Import custom pages (and take care of their private / public visibility),
 * Import comments (both from news and custom pages),
+* Import forums and threads to bbPress WordPress plugin.
 * Import images from news and pages,
 * Let you choose which kind of images you want to upload to WordPress (external or not),
 * Import preferences (site name, description, ...),
@@ -28,7 +29,7 @@ This plugin allows you to extract the most important content and data from an e1
 * Send mails to users to inform them about their new credentials,
 * Redirect old e107 news, pages, users and feeds URLs to new WordPress content via an integrated plugin (for SEO).
 
-This tool was tested with [e107 0.7.24](http://e107.org/news.php?item.877) and [WordPress 3.1-RC3](http://wordpress.org/news/2011/01/wordpress-3-1-release-candidate-3/). If you have older versions, please upgrade first.
+This tool was tested with [e107 0.7.24](http://e107.org/news.php?item.877), [WordPress 3.1-RC3](http://wordpress.org/news/2011/01/wordpress-3-1-release-candidate-3/) and the [development version of bbPress WordPress plugin](http://trac.bbpress.org/browser/branches/plugin?rev=2824). If you have any older versions, please upgrade first.
 
 == Installation ==
 
@@ -56,9 +57,11 @@ The issue and [solutions are detailed in WordPress FAQ](http://codex.wordpress.o
 
 Looks like you have some kind of Unicode transcoding errors. Before running e107 Importer, your e107 site must be fully encoded in UTF-8. If it's not the case, please have a look at the [*Upgrading database content to UTF-8*](http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8) article on e107 wiki.
 
-= Can you add import of e107 forums ? =
+= Can you add import of e107 forums to BuddyPress and bbPress ? =
 
-I plan to add e107 forum import in this plugin in the future. It will be released when ready. The target is bbPress, but [the WordPress plugin version](http://wordpress.org/extend/plugins/bbpress/), not [the standalone version](http://bbpress.org/). I also don't plan to support [BuddyPress](http://buddypress.org/) forums. I'm only interested in the bbPress plugin as it currently has features I'm interested in. I'm still happy to add support of the two others if you have code to contribute.
+This plugin currently import forums to bbPress. But [the WordPress plugin version](http://wordpress.org/extend/plugins/bbpress/), not [the standalone version](http://bbpress.org/). I also don't plan to support [BuddyPress](http://buddypress.org/) forums. I'm only interested in the bbPress plugin as it currently has features I'm interested in.
+
+I'm still happy to add support of the two others if you have code to contribute.
 
 = Why profanities show up in imported content ? =
 
@@ -101,7 +104,7 @@ FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugin
 
 Here is a list of e107 and WordPress versions I tested my plugin with:
 
-* e107-importer 1.1 : e107 0.7.24 / WordPress 3.1-RC3
+* e107-importer 1.1 : e107 0.7.24 / WordPress 3.1-RC3 / bbPress plugin SVN r2824
 * e107-importer 1.0 : e107 0.7.24 / WordPress 3.1-RC3
 * e107-importer 0.9 : e107 0.7.11 / WordPress 2.3.2
 * e107-importer 0.8 : e107 0.7.8  / WordPress 2.1.3
@@ -118,9 +121,9 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 == Changelog ==
 
 = 1.1 =
+* Add import of forums and threads to bbPress WordPress plugin.
 * Make e107 user import optional. This needs you to set a pre-existing WordPress user that will take ownership of all imported content.
 * Add an entry in the FAQ regarding script ending prematurely.
-* Add a placeholder for forum import.
 
 = 1.0 =
 * Upgrade e107 code from e107 v0.7.24.
@@ -184,7 +187,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 == Upgrade Notice ==
 
 = 1.1 =
-User import now optional. Can force ownership of all imported content to a pre-existing WordPress user.
+Add import of forums and threads. User import now optional. Can force ownership of all imported content to a pre-existing WordPress user.
 
 = 1.0 =
 First release compatible with the WordPress 3.x series.
