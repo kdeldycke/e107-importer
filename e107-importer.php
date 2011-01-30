@@ -191,7 +191,7 @@ class e107_Import extends WP_Importer {
 
     // Load preferences if not already loaded
     if (!isset($this->e107_pref) || !is_array($this->e107_pref))
-      $this->loadPreferences();
+      $this->loadE107Preferences();
 
     // Override BBCode definition files configuration
     $this->e107_pref['bbcode_list'] = array();
@@ -329,7 +329,7 @@ class e107_Import extends WP_Importer {
   }
 
 
-  function loadPreferences() {
+  function loadE107Preferences() {
     $e107_coreTable = $this->e107_db_prefix.'core';
     $sql = "SELECT e107_value FROM `".$e107_coreTable."` WHERE e107_name = 'SitePrefs'";
     $site_pref = $this->queryE107DB($sql);
@@ -1274,7 +1274,7 @@ class e107_Import extends WP_Importer {
     <h3><?php _e('Site Preferences', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
       <li><?php _e('Load preferences...', 'e107-importer'); ?></li>
-      <?php $this->loadPreferences(); ?>
+      <?php $this->loadE107Preferences(); ?>
       <li><?php _e('Preferences loaded.', 'e107-importer'); ?></li>
       <li><?php _e('Import preferences...', 'e107-importer'); ?></li>
       <?php if ($this->e107_preferences == 'import_pref') { ?>
