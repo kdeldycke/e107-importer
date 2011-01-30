@@ -772,10 +772,9 @@ class e107_Import extends WP_Importer {
         , 'post_date_gmt'  => $this->mysql_date($forum_datestamp)  //XXX ask or get the time offset ?
         , 'post_content'   => $forum_description
         , 'post_title'     => $forum_name
-        //, 'post_status'    => 'publish'
         , 'post_type'      => 'bbp_forum'
-        //, 'comment_status' => 'closed'
-        //, 'ping_status'    => 'closed'
+        , 'comment_status' => 'closed'
+        , 'ping_status'    => 'closed'
         , 'post_parent'    => $updated_parent
         , 'menu_order'     => (int) $forum_order
         ));
@@ -852,10 +851,9 @@ class e107_Import extends WP_Importer {
         , 'post_date_gmt'  => $this->mysql_date($thread_datestamp)  //XXX ask or get the time offset ?
         , 'post_content'   => $thread_thread
         , 'post_title'     => $thread_name
-        //, 'post_status'    => 'publish'
         , 'post_type'      => $post_type
-        //, 'comment_status' => 'closed'
-        //, 'ping_status'    => 'closed'
+        , 'comment_status' => 'closed'
+        , 'ping_status'    => 'closed'
         , 'post_parent'    => $thread_parent_id
         ));
 
