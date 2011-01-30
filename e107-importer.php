@@ -1256,7 +1256,6 @@ class e107_Import extends WP_Importer {
       if ($_POST[$o])
         $this->$o = $_POST[$o];
 
-    // TODO: use AJAX to display a progress bar http://wordpress.com/blog/2007/02/06/new-blogger-importer/
     $this->header();
     ?>
 
