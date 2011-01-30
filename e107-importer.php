@@ -390,7 +390,7 @@ class e107_Import extends WP_Importer {
   function getE107ForumList() {
     // Prepare the SQL request
     $e107_forumsTable = $this->e107_db_prefix."forum";
-    $sql  = "SELECT * FROM `".$e107_forumsTable."` ORDER BY forum_parent";
+    $sql  = "SELECT * FROM `".$e107_forumsTable."` ORDER BY forum_parent, forum_id";
     // Return comment list
     return $this->queryE107DB($sql);
   }
@@ -399,7 +399,7 @@ class e107_Import extends WP_Importer {
   function getE107ForumPostList() {
     // Prepare the SQL request
     $e107_postsTable = $this->e107_db_prefix."forum_t";
-    $sql  = "SELECT * FROM `".$e107_postsTable."`";
+    $sql  = "SELECT * FROM `".$e107_postsTable."` ORDER BY thread_parent, thread_id";
     // Return comment list
     return $this->queryE107DB($sql);
   }
@@ -771,6 +771,7 @@ class e107_Import extends WP_Importer {
 
       // The moderator of the forum is set as author
       // XXX Does e107 put several user IDs in this $forum_moderators field ?
+      // XXX Warning; moderator may refer to a user group.
       $author_id = (int) $this->user_mapping[$forum_moderators];
 
       // Calculate forum's parent
@@ -815,6 +816,9 @@ class e107_Import extends WP_Importer {
         bbp_privatize_forum($ret_id);
       }
 
+      // Publish the forum
+      wp_insert_post(array('ID' => $ret_id, 'post_status' => 'publish'));
+
       // XXX What to do with e107's $forum_postclass ?
 
       // XXX How to handle e107's $forum_sub field ?
@@ -834,8 +838,56 @@ class e107_Import extends WP_Importer {
     // Get all forum posts
     $forum_post_list = $this->getE107ForumPostList();
 
-    // XXX This is just a placeholder for now
+    foreach ($forum_post_list as $thread) {
+      extract($thread);
+      $thread_id       = (int) $thread_id;
+      $thread_forum_id = (int) $thread_forum_id;
+      $thread_parent   = (int) $thread_parent;
 
+      // Compute thread author's new ID
+      $thread_user = strrev(substr(strrev($thread_user), strpos(strrev($thread_user), '.') + 1));
+      $author_id = (int) $this->user_mapping[$thread_user];
+
+      // Top message of threads are topics, attached to a forum.
+      // Others are replies, attached to a topic.
+      if ($thread_parent_id > 0) {
+        $post_type = 'bbp_reply';
+        $thread_parent_id = (int) $this->forum_post_mapping[$thread_parent];
+      } else {
+        $post_type = 'bbp_topic';
+        $thread_parent_id = $this->forum_mapping[$thread_forum_id];
+      }
+
+      // TODO: $thread_active
+      // TODO: $thread_edit_datestamp
+
+      // Save e107 forum in WordPress database
+      $ret_id = wp_insert_post(array(
+          'post_author'    => $author_id
+        , 'post_date'      => $this->mysql_date($thread_datestamp)  //XXX ask or get the time offset ?
+        , 'post_date_gmt'  => $this->mysql_date($thread_datestamp)  //XXX ask or get the time offset ?
+        , 'post_content'   => $thread_thread
+        , 'post_title'     => $thread_name
+        //, 'post_status'    => 'publish'
+        , 'post_type'      => $post_type
+        //, 'comment_status' => 'closed'
+        //, 'ping_status'    => 'closed'
+        , 'post_parent'    => $thread_parent_id
+        ));
+
+      // Update forum post mapping
+      $this->forum_post_mapping[$thread_id] = (int) $ret_id;
+
+      // Sticky threads stays sticky, Announcements are promoted super-sticky.
+      if ((int) $thread_s == 1) {
+        bbp_stick_topic($ret_id);
+      } elseif ((int) $thread_s > 2) {
+        bbp_stick_topic($ret_id, True);
+      }
+
+      // Publish the post
+      wp_insert_post(array('ID' => $ret_id, 'post_status' => 'publish'));
+    }
   }
 
 
