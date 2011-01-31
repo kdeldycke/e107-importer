@@ -1461,7 +1461,7 @@ $e107_import = new e107_Import();
 global $wpdb;
 $wpdb->show_errors();
 
-register_importer('e107', __('e107'), __("Import news, categories, users, custom pages, comments, images and preferences from e107. Also takes care of redirections."), array ($e107_import, 'start'));
+register_importer('e107', __('e107'), __("Import news, categories, users, pages, comments, forums, threads, images and preferences from e107. Also takes care of redirections."), array ($e107_import, 'start'));
 
 } // class_exists( 'WP_Importer' )
 
