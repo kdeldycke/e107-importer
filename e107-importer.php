@@ -1165,7 +1165,7 @@ class e107_Import extends WP_Importer {
       </table>
       <p><?php
         printf( __('All users will be imported in the WordPress database with the <code>%s</code> role. You can change the default role in the <a href="%s/wp-admin/options-general.php"><code>Options</code> &gt; <code>General</code> panel</a>. If a user is the author of at least one post or static page, its level will be raised to <code>contributor</code>.', 'e107-importer')
-              , __(get_settings('default_role'))
+              , __(get_option('default_role'))
               , get_option('siteurl')
               );
       ?></p>
