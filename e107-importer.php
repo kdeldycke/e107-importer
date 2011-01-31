@@ -408,17 +408,6 @@ class e107_Import extends WP_Importer {
       elseif (!empty($user_loginname))
         $display_name = $user_loginname;
 
-      // Build up the description based on signature, location and birthday.
-      $desc = '';
-      if (!empty($user_signature))
-        $desc .= $user_signature.".\n";
-      if (!empty($user_customtitle))
-        $desc .= __("Custom Title: ").$user_customtitle.".\n";
-      if (!empty($user_location))
-        $desc .= __("Location: ").$user_location.".\n";
-      if (!empty($user_birthday) && $user_birthday != '0000-00-00')
-        $desc .= __("Birthday: ").$user_birthday.".\n";
-
       $user_data = array(
           'first_name'      => empty($first_name   ) ? '' : $wpdb->escape($first_name)
         , 'last_name'       => empty($last_name    ) ? '' : $wpdb->escape($last_name)
@@ -429,7 +418,6 @@ class e107_Import extends WP_Importer {
         , 'user_url'        => empty($user_homepage) ? '' : $wpdb->escape($user_homepage)
         , 'aim'             => empty($user_aim     ) ? '' : $wpdb->escape($user_aim)
         , 'yim'             => empty($user_msn     ) ? '' : $wpdb->escape($user_msn)  // Put MSN contact here because they have merged with Yahoo!: http://slashdot.org/articles/05/10/12/0227207.shtml
-        , 'description'     => empty($desc         ) ? '' : $wpdb->escape($desc)
         );
 
       // In case of an update, do not reset previous user profile properties by an empty value
@@ -465,6 +453,21 @@ class e107_Import extends WP_Importer {
       }
       // Update user mapping, cast to int
       $this->user_mapping[$user_id] = (int) $ret_id;
+
+      // Update user's description with remaining parameters like signature, location and birthday.
+      $extra_info_list = array();
+      if (!empty($user_signature))                                  $extra_info_list[] = __("Signature: ").$user_signature;
+      if (!empty($user_customtitle))                                $extra_info_list[] = __("Custom title: ").$user_customtitle;
+      if (!empty($user_location))                                   $extra_info_list[] = __("Location: ").$user_location;
+      if (!empty($user_birthday) && $user_birthday != '0000-00-00') $extra_info_list[] = __("Birthday: ").$user_birthday;
+      $wp_user = new WP_User($ret_id);
+      $old_description = $wp_user->description;
+      $new_description = $old_description;
+      foreach (array_reverse($extra_info_list) as $extra_info)
+        if (stristr($new_description, $extra_info) === False)
+          $new_description = $extra_info."\n".$new_description;
+      if ($new_description != $old_description)
+        wp_update_user(array('ID' => $wp_user->ID, 'description' => $new_description));
     }
   }
 

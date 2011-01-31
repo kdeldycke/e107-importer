@@ -126,6 +126,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 * Make e107 user import optional. This needs you to set a pre-existing WordPress user that will take ownership of all imported content.
 * Parse BBCode in titles too.
 * Import images embedded in comments and forum threads.
+* Description update of existing users is no longer destructive.
 * Add an entry in the FAQ regarding script ending prematurely.
 
 = 1.0 =
