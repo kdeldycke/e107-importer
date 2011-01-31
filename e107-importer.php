@@ -395,7 +395,8 @@ class e107_Import extends WP_Importer {
       if (!empty($user_login)) {
         $words = explode(" ", $user_login, 2);
         $first_name = $words[0];
-        $last_name  = $words[1];
+        if (len($words) > 1)
+          $last_name  = $words[1];
       }
 
       // Try to get the display name
@@ -1425,7 +1426,6 @@ class e107_Import extends WP_Importer {
           <?php $images = $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'content', $this->e107_import_images); ?>
           <li><?php printf(__('%s images uploaded from forum threads.', 'e107-importer'), $images); ?></li>
         <?php } ?>
-
       <?php } ?>
     </ul>
 
