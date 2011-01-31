@@ -395,7 +395,7 @@ class e107_Import extends WP_Importer {
       if (!empty($user_login)) {
         $words = explode(" ", $user_login, 2);
         $first_name = $words[0];
-        if (len($words) > 1)
+        if (sizeof($words) > 1)
           $last_name  = $words[1];
       }
 
