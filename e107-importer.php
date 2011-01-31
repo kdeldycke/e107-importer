@@ -381,7 +381,6 @@ class e107_Import extends WP_Importer {
       $send_mail = True;
 
     foreach ($user_list as $user) {
-      $count++;
       extract($user);
       $user_id = (int) $user_id;
 
@@ -495,7 +494,6 @@ class e107_Import extends WP_Importer {
     $news_list = $this->getE107NewsList();
 
     foreach ($news_list as $news) {
-      $count++;
       extract($news);
       $news_id = (int) $news_id;
 
@@ -548,7 +546,6 @@ class e107_Import extends WP_Importer {
     $page_list = $this->getE107PageList();
 
     foreach ($page_list as $page) {
-      $count++;
       extract($page);
       $page_id = (int) $page_id;
 
@@ -603,7 +600,6 @@ class e107_Import extends WP_Importer {
     $comment_list = $this->getE107CommentList();
 
     foreach ($comment_list as $comment) {
-      $count++;
       extract($comment);
       $comment_id      = (int) $comment_id;
       $comment_item_id = (int) $comment_item_id;
