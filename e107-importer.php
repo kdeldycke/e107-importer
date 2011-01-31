@@ -420,16 +420,16 @@ class e107_Import extends WP_Importer {
         $desc .= __("Birthday: ").$user_birthday.".\n";
 
       $user_data = array(
-          'first_name'      => $wpdb->escape($first_name)
-        , 'last_name'       => $wpdb->escape($last_name)
-        , 'nickname'        => $wpdb->escape($user_name)
-        , 'display_name'    => $wpdb->escape($display_name)
-        , 'user_email'      => $wpdb->escape($user_email)
-        , 'user_registered' => $this->mysql_date($user_join)
-        , 'user_url'        => $wpdb->escape($user_homepage)
-        , 'aim'             => $wpdb->escape($user_aim)
-        , 'yim'             => $wpdb->escape($user_msn)  // Put MSN contact here because they have merged with Yahoo!: http://slashdot.org/articles/05/10/12/0227207.shtml
-        , 'description'     => $wpdb->escape($desc)
+          'first_name'      => empty($first_name   ) ? '' : $wpdb->escape($first_name)
+        , 'last_name'       => empty($last_name    ) ? '' : $wpdb->escape($last_name)
+        , 'nickname'        => empty($user_name    ) ? '' : $wpdb->escape($user_name)
+        , 'display_name'    => empty($display_name ) ? '' : $wpdb->escape($display_name)
+        , 'user_email'      => empty($user_email   ) ? '' : $wpdb->escape($user_email)
+        , 'user_registered' => empty($user_join    ) ? '' : $this->mysql_date($user_join)
+        , 'user_url'        => empty($user_homepage) ? '' : $wpdb->escape($user_homepage)
+        , 'aim'             => empty($user_aim     ) ? '' : $wpdb->escape($user_aim)
+        , 'yim'             => empty($user_msn     ) ? '' : $wpdb->escape($user_msn)  // Put MSN contact here because they have merged with Yahoo!: http://slashdot.org/articles/05/10/12/0227207.shtml
+        , 'description'     => empty($desc         ) ? '' : $wpdb->escape($desc)
         );
 
       // In case of an update, do not reset previous user profile properties by an empty value
