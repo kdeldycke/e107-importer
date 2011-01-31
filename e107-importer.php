@@ -1415,18 +1415,21 @@ class e107_Import extends WP_Importer {
         <?php if ($this->e107_import_images == 'upload_local_images') { ?>
           <li><?php printf(__('Only upload local images comming from <code>%s</code>.', 'e107-importer'), $this->e107_pref['siteurl']); ?></li>
         <?php } ?>
-        <?php $images = 0; ?>
         <li><?php _e('Import images embedded in news content ...', 'e107-importer'); ?></li>
-        <?php $images = $images + $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', $this->e107_import_images); ?>
+        <?php $images = $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', $this->e107_import_images); ?>
+        <li><?php printf(__('%s images uploaded from news.', 'e107-importer'), $images); ?></li>
         <li><?php _e('Import images embedded in page content...', 'e107-importer'); ?></li>
-        <?php $images = $images + $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', $this->e107_import_images); ?>
+        <?php $images = $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', $this->e107_import_images); ?>
+        <li><?php printf(__('%s images uploaded from pages.', 'e107-importer'), $images); ?></li>
         <li><?php _e('Import images embedded in comments...', 'e107-importer'); ?></li>
-        <?php $images = $images + $this->parseAndUpdate(array_values($this->comment_mapping), 'comment', 'content', $this->e107_import_images); ?>
+        <?php $images = $this->parseAndUpdate(array_values($this->comment_mapping), 'comment', 'content', $this->e107_import_images); ?>
+        <li><?php printf(__('%s images uploaded from comments.', 'e107-importer'), $images); ?></li>
         <?php if ($this->e107_import_forums == 'import_forums') { ?>
           <li><?php _e('Import images embedded in forum thread content...', 'e107-importer'); ?></li>
-          <?php $images = $images + $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'content', $this->e107_import_images); ?>
+          <?php $images = $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'content', $this->e107_import_images); ?>
+          <li><?php printf(__('%s images uploaded from forum threads.', 'e107-importer'), $images); ?></li>
         <?php } ?>
-        <li><?php printf(__('%s images from news and pages uploaded.', 'e107-importer'), $images); ?></li>
+
       <?php } ?>
     </ul>
 
