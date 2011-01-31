@@ -135,7 +135,7 @@ class e107_Import extends WP_Importer {
     |     $Author: e107coders $
     +----------------------------------------------------------------------------+
     */
-    define("e107_INIT", TRUE);
+    define("e107_INIT", True);
 
     // Create a new e107 parser
     require_once(e_HANDLER.'e_parse_class.php');
@@ -146,11 +146,11 @@ class e107_Import extends WP_Importer {
     $tp = $this->e107_parser;
 
     define("THEME", "");
-    define("E107_DEBUG_LEVEL", FALSE);
-    define('E107_DBG_BBSC',    FALSE);    // Show BBCode / Shortcode usage in postings
+    define("E107_DEBUG_LEVEL", False);
+    define('E107_DBG_BBSC',    False);    // Show BBCode / Shortcode usage in postings
 
-    function check_class($var, $userclass='', $peer=FALSE, $debug=FALSE) {
-      return TRUE;
+    function check_class($var, $userclass='', $peer=False, $debug=False) {
+      return True;
     }
 
 
@@ -345,7 +345,7 @@ class e107_Import extends WP_Importer {
     update_option('blogdescription', $tag_line);
 
     $gmt_offset = $this->e107_pref['time_offset'];
-    if (!(empty($this->e107_pref['timezone']) or (strrpos(strtolower($this->e107_pref['timezone']), strtolower('GMT')) === false))) {
+    if (!(empty($this->e107_pref['timezone']) or (strrpos(strtolower($this->e107_pref['timezone']), strtolower('GMT')) === False))) {
       $x = 0;
       $gmt_offset = (int) $gmt_offset + $x;
     }
@@ -353,7 +353,7 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Method to force ownership of all imported content to a songle user
+  // Method to force ownership of all imported content to a single user
   function setGlobalOwnership($new_owner_id) {
     // Get the list of all e107 user IDs
     $user_list = $this->getE107UserList();
@@ -438,7 +438,7 @@ class e107_Import extends WP_Importer {
           unset($user_data[$k]);
 
       // Sanitize login string
-      $user_loginname = sanitize_user($user_loginname, $strict=true);
+      $user_loginname = sanitize_user($user_loginname, $strict=True);
 
       // Try to find a previous user and its ID
       $wp_user_ID = False;
@@ -450,7 +450,7 @@ class e107_Import extends WP_Importer {
       // Create a new user
       if (!$wp_user_ID) {
         // New password is required because we can't decrypt e107 password
-        $new_password = wp_generate_password( 12, false);
+        $new_password = wp_generate_password(12, False);
         $user_data['user_pass'] = $wpdb->escape($new_password);
         // Don't reset login name on user update
         $user_data['user_login'] = $wpdb->escape($user_loginname);
@@ -655,7 +655,7 @@ class e107_Import extends WP_Importer {
           , 'comment_approved'     => ! (int) $comment_blocked
           , 'user_id'              => $author_id
           , 'user_ID'              => $author_id
-          , 'filtered'             => true
+          , 'filtered'             => True
           ));
 
         // Update post mapping
@@ -897,6 +897,7 @@ class e107_Import extends WP_Importer {
       $content = $content_object->$content_property;
 
       // Apply the specified transformation
+      $local_image_upload = False;
       switch ($parser) {
         case 'constants':
           // Replace all {e_SOMETHING} e107's constants to fully qualified URLs
@@ -904,13 +905,20 @@ class e107_Import extends WP_Importer {
           break;
         case 'bbcode':
           // Transform BBCode to HTML using original e107 parser
-          $new_content = $this->e107_parser->toHTML($content, $parseBB = TRUE);
+          $new_content = $this->e107_parser->toHTML($content, $parseBB = True);
           break;
         case 'clean_markup':
           // Transform BBCode to HTML using original e107 parser
-          $new_content = $this->e107_parser->toHTML($content, $parseBB = TRUE);
+          $new_content = $this->e107_parser->toHTML($content, $parseBB = True);
           // Clean-up markup produced by e107's BBCode parser
           $new_content = $this->cleanUpMarkup($new_content);
+          break;
+        case 'upload_local_images':
+          $local_image_upload = True;
+        case 'upload_all_images':
+          $ret = $this->importImages($content, $content_id, $local_image_upload);
+          $new_content = $ret[0];
+          $counter = (empty($counter)) ? $ret[1] : $counter + $ret[1];
           break;
       }
 
@@ -929,6 +937,10 @@ class e107_Import extends WP_Importer {
         }
       }
     }
+
+    // Return our generic counter variables
+    if (!empty($counter))
+      return $counter;
   }
 
 
@@ -977,88 +989,77 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // This method import all images embedded in news and pages to WordPress
-  function importImages($local_only = false) {
-    global $wpdb;
+  // This method import all images embedded in HTML content
+  function importImages($html_content, $post_id, $local_only = False) {
     $image_counter = 0;
 
     // Build the list of authorized domains from which we are allowed to import images
     $allowed_domains = array();
-    if ($local_only == true)
+    if ($local_only == True)
       $allowed_domains[] = $this->e107_pref['siteurl'];
 
-    // Get the list of WordPress news and page IDs
-    $news_and_pages_ids = array_merge(array_values($this->news_mapping), array_values($this->page_mapping));
-    foreach ($news_and_pages_ids as $post_id) {
-      // Get post content
-      $post = get_post($post_id);
-      $html_content = $post->post_content;
+    // Locate all <img/> tags and import them into WordPress
+    // Look at http://kevin.deldycke.com/2007/03/ultimate-regular-expression-for-html-tag-parsing-with-php/ for details about this regex
+    $img_regex = "/<\s*img((\s+\w+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>/i";
+    preg_match_all($img_regex, $html_content, $matches, PREG_SET_ORDER);
+    foreach ($matches as $val) {
+      $img_tag = $val[0];
 
-      // Locate all <img/> tags and import them into WordPress
-      // Look at http://kevin.deldycke.com/2007/03/ultimate-regular-expression-for-html-tag-parsing-with-php/ for details about this regex
-      $img_regex = "/<\s*img((\s+\w+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>/i";
-      preg_match_all($img_regex, $html_content, $matches, PREG_SET_ORDER);
-      foreach ($matches as $val) {
-        $img_tag = $val[0];
+      // Get image URL from the src attribute
+      $src_regex = "/\s+src\s*=\s*(?:\"(.*?)\"|'(.*?)'|[^'\">\s]+)/i"; // This regex is a variation of the main one
+      preg_match_all($src_regex, $img_tag, $src_matches, PREG_SET_ORDER);
+      // URL is in the second or the third index of the array depending of the quotes (double or single)
+      $img_url = '';
+      for ($i = 1; $i <= 2 and strlen($img_url) == 0; $i += 1)
+        if (sizeof($src_matches[0]) > $i)
+          $img_url = $src_matches[0][$i];
 
-        // Get image URL from the src attribute
-        $src_regex = "/\s+src\s*=\s*(?:\"(.*?)\"|'(.*?)'|[^'\">\s]+)/i"; // This regex is a variation of the main one
-        preg_match_all($src_regex, $img_tag, $src_matches, PREG_SET_ORDER);
-        // URL is in the second or the third index of the array depending of the quotes (double or single)
-        $img_url = '';
-        for ($i = 1; $i <= 2 and strlen($img_url) == 0; $i += 1)
-          if (sizeof($src_matches[0]) > $i)
-            $img_url = $src_matches[0][$i];
+      // Clean-up the URL
+      // If url doesn't start with "http[s]://", add e107 site url in front to build an absolute url
+      $http_prefix_regex = '/^https?:\/\//i';
+      if (! preg_match($http_prefix_regex, $img_url))
+        $img_url = SITEURL.$img_url;
 
-        // Clean-up the URL
-        // If url doesn't start with "http[s]://", add e107 site url in front to build an absolute url
-        $http_prefix_regex = '/^https?:\/\//i';
-        if (! preg_match($http_prefix_regex, $img_url))
-          $img_url = SITEURL.$img_url;
-
-        // Only import files from authorized domains
-        $domain_ok = true;
-        if ($allowed_domains && is_array($allowed_domains) && sizeof($allowed_domains) > 0) {
-          $domain_ok = false;
-          foreach ($allowed_domains as $domain) {
-            $domain = $this->deleteTrailingChar($domain, '/');
-            if (substr($img_url, 0, strlen($domain)) == $domain) {
-              $domain_ok = true;
-              break;
-            }
+      // Only import files from authorized domains
+      $domain_ok = True;
+      if ($allowed_domains && is_array($allowed_domains) && sizeof($allowed_domains) > 0) {
+        $domain_ok = False;
+        foreach ($allowed_domains as $domain) {
+          $domain = $this->deleteTrailingChar($domain, '/');
+          if (substr($img_url, 0, strlen($domain)) == $domain) {
+            $domain_ok = True;
+            break;
           }
         }
-        if (!$domain_ok)
-          continue;
+      }
+      if (!$domain_ok)
+        continue;
 
-        // XXX Hack attempting to fix http://core.trac.wordpress.org/ticket/16330
-        // $img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
-        // $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
+      // XXX Hack attempting to fix http://core.trac.wordpress.org/ticket/16330
+       $img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
+       $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
 
-        // Download remote file and attach it to the post
-        $new_tag = media_sideload_image($img_url, $post_id);
-        $image_counter++;
+      // Download remote file and attach it to the post
+      $new_tag = media_sideload_image($img_url, $post_id);
+      $image_counter++;
 
-        if (is_wp_error($new_tag)) {
-          ?>
-          <li>
-            <?php printf(__('Error while trying to upload image <code>%s</code>:', 'e107-importer'), $img_url); ?><br/>
-            <?php printf(__('<pre>%s</pre>', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
-            <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
-          </li>
-          <?php
-        } else {
-          // Update post content with the new image tag pointing to the local image
-          $html_content = str_replace($img_tag, $new_tag, $html_content);
-          wp_update_post(array(
-              'ID'           => $post_id
-            , 'post_content' => $wpdb->escape($html_content)
-            ));
-          // TODO: save image original path and its final permalink to not upload file twice
-        }
+      if (is_wp_error($new_tag)) {
+        ?>
+        <li>
+          <?php printf(__('Error while trying to upload image <code>%s</code>:', 'e107-importer'), $img_url); ?><br/>
+          <?php printf(__('<pre>%s</pre>', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
+          <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
+        </li>
+        <?php
+      } else {
+        // Update post content with the new image tag pointing to the local image
+        $html_content = str_replace($img_tag, $new_tag, $html_content);
+
+        // TODO: save image original path and its final permalink to not upload file twice
       }
     }
-    return $image_counter;
+
+    return array($html_content, $image_counter);
   }
 
 
@@ -1221,8 +1222,8 @@ class e107_Import extends WP_Importer {
         <tr valign="top">
           <th scope="row"><?php _e('Do you want to upload image files ?', 'e107-importer'); ?></th>
           <td>
-            <label for="upload-all"><input name="e107_import_images" type="radio" id="upload-all" value="upload_all"/> <?php _e('Yes: upload all images, even those located on external sites.', 'e107-importer'); ?></label><br/>
-            <label for="site-upload"><input name="e107_import_images" type="radio" id="site-upload" value="site_upload" checked="checked"/> <?php _e('Yes, but: upload files from the e107 site only, not external images.', 'e107-importer'); ?></label><br/>
+            <label for="upload-all-images"><input name="e107_import_images" type="radio" id="upload-all-images" value="upload_all_images"/> <?php _e('Yes: upload all images, even those located on external sites.', 'e107-importer'); ?></label><br/>
+            <label for="upload_local_images"><input name="e107_import_images" type="radio" id="upload-local-images" value="upload_local_images" checked="checked"/> <?php _e('Yes, but: upload local files from the e107 site only, not external images.', 'e107-importer'); ?></label><br/>
             <label for="no-upload"><input name="e107_import_images" type="radio" id="no-upload" value="no_upload"/> <?php _e('No: do not upload image files to WordPress.', 'e107-importer'); ?></label><br/>
           </td>
         </tr>
@@ -1361,20 +1362,20 @@ class e107_Import extends WP_Importer {
       <?php $this->inite107Context(); ?>
       <li><?php _e('e107 context initialized.', 'e107-importer'); ?></li>
       <li><?php _e('Replace e107 constants in news...', 'e107-importer'); ?></li>
-      <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'title'  , 'constants') ?>
-      <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', 'constants') ?>
+      <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'title'  , 'constants'); ?>
+      <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', 'constants'); ?>
       <li><?php _e('Replace e107 constants in pages...', 'e107-importer'); ?></li>
-      <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'title'  , 'constants') ?>
-      <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', 'constants') ?>
+      <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'title'  , 'constants'); ?>
+      <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', 'constants'); ?>
       <li><?php _e('Replace e107 constants in comments...', 'e107-importer'); ?></li>
-      <?php $this->parseAndUpdate(array_values($this->comment_mapping),    'comment', 'content', 'constants') ?>
+      <?php $this->parseAndUpdate(array_values($this->comment_mapping),    'comment', 'content', 'constants'); ?>
       <?php if ($this->e107_import_forums == 'import_forums') { ?>
         <li><?php _e('Replace e107 constants in forums...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'title'  , 'constants') ?>
-        <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'content', 'constants') ?>
+        <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'title'  , 'constants'); ?>
+        <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'content', 'constants'); ?>
         <li><?php _e('Replace e107 constants in forum threads...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'title'  , 'constants') ?>
-        <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'content', 'constants') ?>
+        <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'title'  , 'constants'); ?>
+        <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'content', 'constants'); ?>
       <?php } ?>
       <li><?php _e('All e107 constants replaced by proper URLs.', 'e107-importer'); ?></li>
       <?php if ($this->e107_bbcode_parser == 'none') { ?>
@@ -1386,20 +1387,20 @@ class e107_Import extends WP_Importer {
           <li><?php _e('Parse BBCode using the original e107 parser...', 'e107-importer'); ?></li>
         <?php } ?>
         <li><?php _e('Parse news title and content...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'title'  , $this->e107_bbcode_parser) ?>
-        <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', $this->e107_bbcode_parser) ?>
+        <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'title'  , $this->e107_bbcode_parser); ?>
+        <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
         <li><?php _e('Parse pages title and content...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'title'  , $this->e107_bbcode_parser) ?>
-        <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', $this->e107_bbcode_parser) ?>
+        <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'title'  , $this->e107_bbcode_parser); ?>
+        <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
         <li><?php _e('Parse comments...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->comment_mapping), 'comment', 'content', $this->e107_bbcode_parser) ?>
+        <?php $this->parseAndUpdate(array_values($this->comment_mapping), 'comment', 'content', $this->e107_bbcode_parser); ?>
         <?php if ($this->e107_import_forums == 'import_forums') { ?>
           <li><?php _e('Pars forums title and content...', 'e107-importer'); ?></li>
-          <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'title', $this->e107_bbcode_parser) ?>
-          <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'content', $this->e107_bbcode_parser) ?>
+          <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'title', $this->e107_bbcode_parser); ?>
+          <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
           <li><?php _e('Parse forum threads title and content...', 'e107-importer'); ?></li>
-          <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'title', $this->e107_bbcode_parser) ?>
-          <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'content', $this->e107_bbcode_parser) ?>
+          <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'title', $this->e107_bbcode_parser); ?>
+          <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
         <?php } ?>
         <li><?php _e('All BBCodes converted to HTML.', 'e107-importer'); ?></li>
       <?php } ?>
@@ -1407,17 +1408,25 @@ class e107_Import extends WP_Importer {
 
     <h3><?php _e('Images', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
-      <li><?php _e('Upload images...', 'e107-importer'); ?></li>
-      <?php $images = 0; ?>
-      <?php if ($this->e107_import_images == 'upload_all') { ?>
-        <?php $images = $this->importImages(); ?>
-        <li><?php printf(__('%s images from news and pages uploaded.', 'e107-importer'), $images); ?></li>
-      <?php } elseif ($this->e107_import_images == 'site_upload') { ?>
-        <li><?php printf(__('Only upload images from <code>%s</code>.', 'e107-importer'), $this->e107_pref['siteurl']); ?></li>
-        <?php $images = $this->importImages(true); ?>
-        <li><?php printf(__('%s images from news and pages uploaded.', 'e107-importer'), $images); ?></li>
-      <?php } else { ?>
+      <?php if ($this->e107_import_images == 'no_upload') { ?>
         <li><?php _e('Image upload skipped.', 'e107-importer'); ?></li>
+      <?php } else { ?>
+        <li><?php _e('Upload images...', 'e107-importer'); ?></li>
+        <?php if ($this->e107_import_images == 'upload_local_images') { ?>
+          <li><?php printf(__('Only upload local images comming from <code>%s</code>.', 'e107-importer'), $this->e107_pref['siteurl']); ?></li>
+        <?php } ?>
+        <?php $images = 0; ?>
+        <li><?php _e('Import images embedded in news content ...', 'e107-importer'); ?></li>
+        <?php $images = $images + $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', $this->e107_import_images); ?>
+        <li><?php _e('Import images embedded in page content...', 'e107-importer'); ?></li>
+        <?php $images = $images + $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', $this->e107_import_images); ?>
+        <li><?php _e('Import images embedded in comments...', 'e107-importer'); ?></li>
+        <?php $images = $images + $this->parseAndUpdate(array_values($this->comment_mapping), 'comment', 'content', $this->e107_import_images); ?>
+        <?php if ($this->e107_import_forums == 'import_forums') { ?>
+          <li><?php _e('Import images embedded in forum thread content...', 'e107-importer'); ?></li>
+          <?php $images = $images + $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'content', $this->e107_import_images); ?>
+        <?php } ?>
+        <li><?php printf(__('%s images from news and pages uploaded.', 'e107-importer'), $images); ?></li>
       <?php } ?>
     </ul>
 
@@ -1431,7 +1440,7 @@ class e107_Import extends WP_Importer {
     <h3><?php _e('e107 Redirector', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
       <li><?php _e('Activate plugin...', 'e107-importer'); ?></li>
-      <?php activate_plugin(E107_REDIRECTOR_PLUGIN, '', false, true); ?>
+      <?php activate_plugin(E107_REDIRECTOR_PLUGIN, '', False, True); ?>
       <li><?php _e('Plugin activated.', 'e107-importer'); ?></li>
     </ul>
 

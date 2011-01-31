@@ -15,18 +15,18 @@ This plugin allows you to extract the most important content and data from an e1
 
 **Features**:
 
-* Import news and their categories,
-* Handle extended part of news nicely,
-* Import custom pages (and take care of their private / public visibility),
-* Import comments (both from news and custom pages),
+* Import news and their categories.
+* Handle extended part of news nicely.
+* Import custom pages (and take care of their private / public visibility).
+* Import comments (both from news and custom pages).
 * Import forums and threads to bbPress WordPress plugin.
-* Import images from news and pages,
-* Let you choose which kind of images you want to upload to WordPress (external or not),
-* Import preferences (site name, description, ...),
-* Convert embedded BBCode to plain HTML,
-* Import users and their profile (or try to update the profile if user already exist),
-* Try to map users to an appropriate role,
-* Send mails to users to inform them about their new credentials,
+* Import images embedded in HTML as attachments.
+* Let you choose which kind of images you want to upload to WordPress (external or not).
+* Import preferences (site name, description, ...).
+* Convert embedded BBCode to plain HTML.
+* Import users and their profile (or try to update the profile if user already exist).
+* Try to map users to an appropriate role.
+* Send mails to users to inform them about their new credentials.
 * Redirect old e107 news, pages, users and feeds URLs to new WordPress content via an integrated plugin (for SEO).
 
 This tool was tested with [e107 0.7.24](http://e107.org/news.php?item.877), [WordPress 3.1-RC3](http://wordpress.org/news/2011/01/wordpress-3-1-release-candidate-3/) and the [development version of bbPress WordPress plugin](http://trac.bbpress.org/browser/branches/plugin?rev=2824). If you have any older versions, please upgrade first.
@@ -125,6 +125,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 * Parse BBCode and e107 constants in forums and thread.
 * Make e107 user import optional. This needs you to set a pre-existing WordPress user that will take ownership of all imported content.
 * Parse BBCode in titles too.
+* Import images embedded in comments and forum threads.
 * Add an entry in the FAQ regarding script ending prematurely.
 
 = 1.0 =
