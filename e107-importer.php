@@ -560,9 +560,14 @@ class e107_Import extends WP_Importer {
       // Update author role if necessary;
       // If the user has the minimum role (aka subscriber) he is not able to post
       //   pages. In this case, we raise is role by 1 level (aka contributor).
-      $author_id = $this->user_mapping[$page_author];
-      $author = new WP_User($author_id);
-      if (! $author->has_cap('edit_posts'))
+      if (array_key_exists($page_author, $this->user_mapping)) {
+        $author_id = $this->user_mapping[$page_author];
+        $author = new WP_User($author_id);
+      } else {
+        // Can't find the original user, use the current one.
+        $author = wp_get_current_user();
+      }
+      if (!$author->has_cap('edit_posts'))
         $author->set_role('contributor');
       // If user is the author of a private page give him the 'editor' role else he can't view private pages
       if (($post_status == 'private') and (!$author->has_cap('read_private_pages')))
@@ -577,7 +582,7 @@ class e107_Import extends WP_Importer {
 
       // Save e107 static page in WordPress database
       $ret_id = wp_insert_post(array(
-          'post_author'    => $author_id                           // use the new wordpress user ID
+          'post_author'    => $author->ID
         , 'post_date'      => $this->mysql_date($page_datestamp)
         , 'post_date_gmt'  => $this->mysql_date($page_datestamp)
         , 'post_content'   => $wpdb->escape($page_text)
