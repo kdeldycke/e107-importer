@@ -1078,7 +1078,7 @@ class e107_Import extends WP_Importer {
     if (!empty($_GET['action']))
       $action = $_GET['action'];
     // Dispatch action
-    if ($action == 'import')
+    if (!empty($action) and $action == 'import')
       $this->import();
     else
       $this->printOptionScreen();
