@@ -390,8 +390,6 @@ class e107_Import extends WP_Importer {
       // $user_login     => WP First + Last name
 
       // Try to get first and last name
-      $first_name = '';
-      $last_name  = '';
       if (!empty($user_login)) {
         $words = explode(" ", $user_login, 2);
         $first_name = $words[0];
