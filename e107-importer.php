@@ -1036,8 +1036,8 @@ class e107_Import extends WP_Importer {
         continue;
 
       // XXX Hack attempting to fix http://core.trac.wordpress.org/ticket/16330
-       $img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
-       $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
+      // $img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
+      // $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
 
       // Download remote file and attach it to the post
       $new_tag = media_sideload_image($img_url, $post_id);
