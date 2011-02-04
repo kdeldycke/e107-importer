@@ -116,6 +116,11 @@ class e107_Import extends WP_Importer {
     define("e_PLUGIN" , E107_IMPORTER_PATH);
     define("e_HANDLER", E107_IMPORTER_PATH . E107_INCLUDES_FOLDER . '/');
 
+    // Set user-related globals referenced in e_parse_class.php
+    define("ADMIN" , True);  // Will replace {e_ADMIN} constant with $ADMIN_DIRECTORY
+    define("USER"  , False); // Will not replace {USERID} constant
+    define("USERID", 0);
+
     // CHARSET is normally set in e107_languages/English/English.php file
     define("CHARSET", "utf-8");
 
