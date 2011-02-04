@@ -772,7 +772,7 @@ class e107_Import extends WP_Importer {
 
       // Top message of threads are topics, attached to a forum.
       // Others are replies, attached to a topic.
-      if ($thread_parent_id > 0) {
+      if ($thread_parent > 0) {
         $post_type = 'bbp_reply';
         $thread_parent_id = (int) $this->forum_post_mapping[$thread_parent];
       } else {
