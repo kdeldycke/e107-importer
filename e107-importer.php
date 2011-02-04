@@ -721,8 +721,6 @@ class e107_Import extends WP_Importer {
       // Update forum mapping
       $this->forum_mapping[$forum_id] = (int) $ret_id;
 
-      do_action('publish_phone', $post_ID);
-
       // Set forum type
       if ($forum_parent == 0) {
         // The forum is a category
