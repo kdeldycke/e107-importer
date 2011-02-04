@@ -645,21 +645,29 @@ class e107_Import extends WP_Importer {
           }
         }
 
-        // Save e107 comment in WordPress database
-        $ret_id = wp_insert_comment(array(
-            'comment_post_ID'      => $post_id
-          , 'comment_author'       => $wpdb->escape($author_name)
-          , 'comment_author_email' => $wpdb->escape($author_email)
-          , 'comment_author_url'   => $wpdb->escape($author_url)
-          , 'comment_author_IP'    => $author_ip
-          , 'comment_date'         => $this->mysql_date($comment_datestamp)  //XXX ask or get the time offset ?
-          , 'comment_date_gmt'     => $this->mysql_date($comment_datestamp)  //XXX ask or get the time offset ?
-          , 'comment_content'      => $wpdb->escape($comment_comment)
-          , 'comment_approved'     => ! (int) $comment_blocked
-          , 'user_id'              => $author_id
-          , 'user_ID'              => $author_id
+        // Build up comment data array
+        $comment_data = array(
+            'comment_post_ID'      => empty($post_id          ) ? '' : $post_id
+          , 'comment_author'       => empty($author_name      ) ? '' : $wpdb->escape($author_name)
+          , 'comment_author_email' => empty($author_email     ) ? '' : $wpdb->escape($author_email)
+          , 'comment_author_url'   => empty($author_url       ) ? '' : $wpdb->escape($author_url)
+          , 'comment_author_IP'    => empty($author_ip        ) ? '' : $author_ip
+          , 'comment_date'         => empty($comment_datestamp) ? '' : $this->mysql_date($comment_datestamp)  //XXX ask or get the time offset ?
+          , 'comment_date_gmt'     => empty($comment_datestamp) ? '' : $this->mysql_date($comment_datestamp)  //XXX ask or get the time offset ?
+          , 'comment_content'      => empty($comment_comment  ) ? '' : $wpdb->escape($comment_comment)
+          , 'comment_approved'     => empty($comment_blocked  ) ? '' : ! (int) $comment_blocked
+          , 'user_id'              => empty($author_id        ) ? '' : $author_id
+          , 'user_ID'              => empty($author_id        ) ? '' : $author_id
           , 'filtered'             => True
-          ));
+          );
+
+        // Clean-up the array
+        foreach ($comment_data as $k=>$v)
+          if (strlen($v) <= 0)
+            unset($comment_data[$k]);
+
+        // Save e107 comment in WordPress database
+        $ret_id = wp_insert_comment($comment_data);
 
         // Update post mapping
         $this->comment_mapping[$comment_id] = (int) $ret_id;
