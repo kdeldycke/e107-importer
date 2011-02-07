@@ -765,8 +765,22 @@ class e107_Import extends WP_Importer {
       $thread_parent   = (int) $thread_parent;
 
       // Compute thread author's new ID
-      $thread_user = strrev(substr(strrev($thread_user), strpos(strrev($thread_user), '.') + 1));
-      $author_id = (int) $this->user_mapping[$thread_user];
+      $author_fragments = explode(".", $thread_user, 2);
+      $author_id        = (int) $author_fragments[0];
+      $author_name      = $author_fragments[1];
+      // Author is anonymous, its name and IP are intertwined
+      if ($author_id == 0) {
+        $last_valid_cut = 0;
+        for ($cut_index=1; $cut_index<strlen($author_name); $cut_index++) {
+          if (filter_var(substr($author_name, -$cut_index), FILTER_VALIDATE_IP))
+            $last_valid_cut = $cut_index;
+        }
+        $author_ip = substr($author_name, -$last_valid_cut);
+        $author_name = substr($author_name, 0, -$last_valid_cut);
+      // Author is not anonymous, we should find him in WordPress
+      } else {
+        $author_id = (int) $this->user_mapping[$author_id];
+      }
 
       // Top message of threads are topics, attached to a forum.
       // Others are replies, attached to a topic.
@@ -796,6 +810,12 @@ class e107_Import extends WP_Importer {
 
       // Update forum post mapping
       $this->forum_post_mapping[$thread_id] = (int) $ret_id;
+
+      // Update inserted post with Anonymous related data.
+      if ($author_id == 0) {
+        update_post_meta($ret_id, '_bbp_anonymous_name', $author_name);
+        update_post_meta($ret_id, '_bbp_anonymous_ip'  , $author_ip);
+      }
 
       // Sticky threads stays sticky, Announcements are promoted super-sticky.
       if ((int) $thread_s == 1) {
