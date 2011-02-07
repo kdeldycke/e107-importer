@@ -779,7 +779,13 @@ class e107_Import extends WP_Importer {
         $author_name = substr($author_name, 0, -$last_valid_cut);
       // Author is not anonymous, we should find him in WordPress
       } else {
-        $author_id = (int) $this->user_mapping[$author_id];
+        if (array_key_exists($author_id, $this->user_mapping)) {
+          $author_id = (int) $this->user_mapping[$author_id];
+        } else{
+          // Some users had an account but were deleted for any other reason.
+          // In this case, let's declare them anonymous. $author_name is still set.
+          $author_id = 0;
+        }
       }
 
       // Top message of threads are topics, attached to a forum.
@@ -814,7 +820,8 @@ class e107_Import extends WP_Importer {
       // Update inserted post with Anonymous related data.
       if ($author_id == 0) {
         update_post_meta($ret_id, '_bbp_anonymous_name', $author_name);
-        update_post_meta($ret_id, '_bbp_anonymous_ip'  , $author_ip);
+        if (!empty($author_ip))
+          update_post_meta($ret_id, '_bbp_anonymous_ip', $author_ip);
       }
 
       // Sticky threads stays sticky, Announcements are promoted super-sticky.
