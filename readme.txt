@@ -27,7 +27,7 @@ This plugin allows you to extract the most important content and data from an e1
 * Import users and their profile (or try to update the profile if user already exist).
 * Try to map users to an appropriate role.
 * Send mails to users to inform them about their new credentials.
-* Redirect old e107 news, pages, users and feeds URLs to new WordPress content via an integrated plugin (for SEO).
+* Redirect old e107 news, pages, users, forums, threads and feeds URLs to new WordPress content via an integrated plugin (for SEO).
 
 This tool was tested with:
 
@@ -129,6 +129,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 = 1.1 =
 * Add import of forums and threads to bbPress WordPress plugin.
 * Parse BBCode and e107 constants in forums and thread.
+* Add forums and threads redirections.
 * Make e107 user import optional. This needs you to set a pre-existing WordPress user that will take ownership of all imported content.
 * Parse BBCode in titles too.
 * Import images embedded in comments and forum threads.

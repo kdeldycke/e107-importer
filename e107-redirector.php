@@ -77,6 +77,15 @@ class e107_Redirector {
            , 'mapping' => $forum_mapping
            , 'rules'   => array( # TODO
                                )
+           ),
+      array( 'type'    => 'forum_post'
+           , 'mapping' => $forum_post_mapping
+           , 'rules'   => array( '/^.*\/e107_plugins\/forum\/forum_viewtopic\.php(?:%3F|\?)(\d+)(?:\.post)?$/i'
+                                   # /e107_plugins/forum/forum_viewtopic.php?19026
+                                   # /e107_plugins/forum/forum_viewtopic.php?19026.post
+                               , '/^.*\/e107_plugins\/forum\/forum_viewtopic\.php(?:%3F|\?)\d+\.0#post_(\d+)$/i'
+                                   # /e107_plugins/forum/forum_viewtopic.php?12301.0#post_19026
+                               )
            )
     );
 
