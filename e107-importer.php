@@ -158,6 +158,9 @@ class e107_Import extends WP_Importer {
       return True;
     }
 
+    function include_lan($path, $force=False) {
+      return '';
+    }
 
     // Use these to combine isset() and use of the set value. or defined and use of a constant
     // i.e. to fix  if($pref['foo']) ==> if ( varset($pref['foo']) ) will use the pref, or ''.
