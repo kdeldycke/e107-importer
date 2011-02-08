@@ -75,7 +75,8 @@ class e107_Redirector {
            ),
       array( 'type'    => 'forum'
            , 'mapping' => $forum_mapping
-           , 'rules'   => array( # TODO
+           , 'rules'   => array( '/^.*\/e107_plugins\/forum\/forum_viewforum\.php(?:%3F|\?)(\d+).*$/i'
+                                   # /e107_plugins/forum/forum_viewforum.php?4
                                )
            ),
       array( 'type'    => 'forum_post'
@@ -103,10 +104,13 @@ class e107_Redirector {
                 $link = get_comment_link($content_id);
               } elseif ($ctype == 'user') {
                 $link = get_author_posts_url($content_id);
-#              } elseif ($ctype == 'forum_post') {
-#                bbp_get_topic_permalink($content_id);
-#                bbp_get_reply_permalink($content_id);
-#              }
+              } elseif ($ctype == 'forum') {
+                $link = bbp_get_forum_permalink($content_id);
+              } elseif ($ctype == 'forum_post') {
+                if (get_post($content_id)->post_type == 'bbp_topic')
+                  $link = bbp_get_topic_permalink($content_id);
+                else
+                  $link = bbp_get_reply_permalink($content_id);
               } else {
                 $link = get_permalink($content_id);
               }
@@ -164,9 +168,12 @@ class e107_Redirector {
       // Redirect */news.php* URLs to the WordPress home page
       if (preg_match('/^.*\/news\.php.*$/i', $requested))
         wp_redirect(get_option('siteurl'), $status = 301);
-      // Redirect */forum_viewtopic.php* URLs to the bbPress home page
-#      elseif (preg_match('/^.*\/forum_viewtopic\.php.*$/i', $requested))
+      // Redirect */forum*.php* URLs to the bbPress home page
+#      elseif (preg_match('/^.*\/forum(.*).php.*$/i', $requested))
 #        wp_redirect(XXX, $status = 301);
+# TODO: http://coolcavemen.com/e107_plugins/forum/forum_stats.php
+# TODO: http://coolcavemen.com/top.php?0.top.forum.10
+# TODO: http://coolcavemen.com/top.php?0.active
     }
 
     // Do nothing: let WordPress do its job (and probably show user a 404 error ;) )
