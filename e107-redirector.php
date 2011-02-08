@@ -68,24 +68,32 @@ class e107_Redirector {
            , 'mapping' => $user_mapping
            , 'rules'   => array( '/^.*\/user\.php(?:%3F|\?)id\.(\d+).*$/i'
                                    # /user.php?id.29
-                               , '/^.*\/userposts\.php(?:%3F|\?)0\.comments\.(\d+).*$/i'
+                               , '/^.*\/userposts\.php(?:%3F|\?).*\.comments\.(\d+).*$/i'
                                    # /userposts.php?0.comments.29
-                                   # TODO: /userposts.php?0.forums.29
+                                   # TODO: /userposts.php?0.forums.29 redirects to the list of forum posts by User 29
                                )
            ),
       array( 'type'    => 'forum'
            , 'mapping' => $forum_mapping
-           , 'rules'   => array( '/^.*\/e107_plugins\/forum\/forum_viewforum\.php(?:%3F|\?)(\d+).*$/i'
-                                   # /e107_plugins/forum/forum_viewforum.php?4
+           , 'rules'   => array( '/^.*\/forum_viewforum\.php(?:%3F|\?)(\d+).*$/i'
+                                   # /forum_viewforum.php?4
+
+                                   # TODO ###
+                                   # /forum_viewforum.php?4.100
+                                   # /forum_viewforum.php?4.200
+                                   # Looks like Second number here seams to indicate the "page" of the forum browsing (= offset added). Maybe we should transform this to the page number itself based on prefs.
+                                   # At Line 400 of forum_viewforum.php, second number is: ($a * $pref['forum_postspage'])
                                )
            ),
       array( 'type'    => 'forum_post'
            , 'mapping' => $forum_post_mapping
-           , 'rules'   => array( '/^.*\/e107_plugins\/forum\/forum_viewtopic\.php(?:%3F|\?)(\d+)(?:\.post)?$/i'
-                                   # /e107_plugins/forum/forum_viewtopic.php?19026
-                                   # /e107_plugins/forum/forum_viewtopic.php?19026.post
-                               , '/^.*\/e107_plugins\/forum\/forum_viewtopic\.php(?:%3F|\?)\d+\.0#post_(\d+)$/i'
-                                   # /e107_plugins/forum/forum_viewtopic.php?12301.0#post_19026
+           , 'rules'   => array( '/^.*\/forum_viewtopic\.php(?:%3F|\?).*#post_(\d+).*$/i'
+                                   # /forum_viewtopic.php?12301.0#post_19026
+                                   # /forum_viewtopic.php?12301.100#post_19026
+                               , '/^.*\/forum_viewtopic\.php(?:%3F|\?)(\d+).*$/i'
+                                   # /forum_viewtopic.php?19026
+                                   # /forum_viewtopic.php?19026.post
+                                   # TODO: /forum_viewtopic.php?19026.last
                                )
            )
     );
@@ -120,7 +128,7 @@ class e107_Redirector {
     }
 
     // Redirect feeds as explained there: http://kevin.deldycke.com/2007/05/feedburner-and-e107-integration/
-    if (empty($link) && preg_match('/^.*\/e107_plugins\/rss_menu\/rss\.php(?:%3F|\?)?(.*)$/i', $requested, $matches)) {
+    if (empty($link) && preg_match('/^.*\/e107_plugins\/(?:rss_menu\/|forum\/e_)rss\.php(?:%3F|\?)?(.*)$/i', $requested, $matches)) {
       // Default feed redirections
       $feed_content = '';
       $feed_type    = 'rss2';
@@ -128,13 +136,30 @@ class e107_Redirector {
       $feed_params = explode('.', $matches[1]);
       if (sizeof($feed_params) > 0)
         switch (strtolower($feed_params[0])) {
-          case 'news':
           case '1':
+          case 'news':
             $feed_content = '';
             break;
-          case 'comments':
           case '5':
+          case 'comments':
             $feed_content = 'comments_';
+            break;
+          case 'forum':
+            break;
+          case '6':
+          case 'threads':      # TODO: Test both
+          case 'forumthreads': # TODO: Test both
+          case '7':
+          case 'posts':
+          case 'forumposts':
+          case '8':
+          case 'topic':
+          case 'forumtopic':
+          case '11':
+          case 'name':
+          case 'forumname':
+            #$feed_content = 'forum_';
+            # TODO: get the feed of the thread (= feed of the topic + replies) to which the post is part of (all e107 feeds here returns to forum/forum_viewtopic.php?XXX like URLs anyway).
             break;
         }
       if (sizeof($feed_params) > 1)
@@ -163,17 +188,28 @@ class e107_Redirector {
       wp_redirect(get_bloginfo($wordpress_feed), $status = 301);
     }
 
-    // Generic redirects
+    // Generic redirects and catch-alls
     if (empty($link)) {
-      // Redirect */news.php* URLs to the WordPress home page
+
+      // Redirect to the WordPress home page
       if (preg_match('/^.*\/news\.php.*$/i', $requested))
         wp_redirect(get_option('siteurl'), $status = 301);
-      // Redirect */forum*.php* URLs to the bbPress home page
+
+      // Redirect to bbPress home page
 #      elseif (preg_match('/^.*\/forum(.*).php.*$/i', $requested))
 #        wp_redirect(XXX, $status = 301);
-# TODO: http://coolcavemen.com/e107_plugins/forum/forum_stats.php
-# TODO: http://coolcavemen.com/top.php?0.top.forum.10
-# TODO: http://coolcavemen.com/top.php?0.active
+
+      // Redirects to forum stats
+#      elseif (preg_match('/^.*\/forum_stats\.php.*$/i', $requested))
+#        wp_redirect(XXX, $status = 301);
+
+      // Redirects to most active threads of all time
+#      elseif (preg_match('/^.*\/top\.php(?:%3F|\?)0\.active.*$/i', $requested))
+#        wp_redirect(XXX, $status = 301);
+
+       // Redirects to ???
+#      elseif (preg_match('/^.*\/top\.php(?:%3F|\?)0\.top\.forum\.10.*$/i', $requested))
+#        wp_redirect(XXX, $status = 301);
     }
 
     // Do nothing: let WordPress do its job (and probably show user a 404 error ;) )
