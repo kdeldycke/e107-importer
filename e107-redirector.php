@@ -103,6 +103,10 @@ class e107_Redirector {
                 $link = get_comment_link($content_id);
               } elseif ($ctype == 'user') {
                 $link = get_author_posts_url($content_id);
+#              } elseif ($ctype == 'forum_post') {
+#                bbp_get_topic_permalink($content_id);
+#                bbp_get_reply_permalink($content_id);
+#              }
               } else {
                 $link = get_permalink($content_id);
               }
@@ -110,11 +114,6 @@ class e107_Redirector {
             }
         }
     }
-
-    // Is the e107 news page (aka home page) requested ?
-    // If so, redirect all http://www.domain.com/anything/news.php* to the WordPress home page
-    if (empty($link) && preg_match('/^.*\/news\.php.*$/i', $requested))
-      wp_redirect(get_option('siteurl'), $status = 301);
 
     // Redirect feeds as explained there: http://kevin.deldycke.com/2007/05/feedburner-and-e107-integration/
     if (empty($link) && preg_match('/^.*\/e107_plugins\/rss_menu\/rss\.php(?:%3F|\?)?(.*)$/i', $requested, $matches)) {
@@ -158,6 +157,16 @@ class e107_Redirector {
       // Redirect to proper WordPress feed
       $wordpress_feed = $feed_content.$feed_type.'_url';
       wp_redirect(get_bloginfo($wordpress_feed), $status = 301);
+    }
+
+    // Generic redirects
+    if (empty($link)) {
+      // Redirect */news.php* URLs to the WordPress home page
+      if (preg_match('/^.*\/news\.php.*$/i', $requested))
+        wp_redirect(get_option('siteurl'), $status = 301);
+      // Redirect */forum_viewtopic.php* URLs to the bbPress home page
+#      elseif (preg_match('/^.*\/forum_viewtopic\.php.*$/i', $requested))
+#        wp_redirect(XXX, $status = 301);
     }
 
     // Do nothing: let WordPress do its job (and probably show user a 404 error ;) )
