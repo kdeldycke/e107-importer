@@ -819,9 +819,9 @@ class e107_Import extends WP_Importer {
 
       // Update inserted post with Anonymous related data.
       if ($author_id == 0) {
-        update_post_meta($ret_id, '_bbp_anonymous_name', $author_name);
+        update_post_meta($ret_id, 'bbp_anonymous_name', $author_name);
         if (!empty($author_ip))
-          update_post_meta($ret_id, '_bbp_anonymous_ip', $author_ip);
+          update_post_meta($ret_id, 'bbp_anonymous_ip', $author_ip);
       }
 
       // Sticky threads stays sticky, Announcements are promoted super-sticky.
