@@ -801,7 +801,6 @@ class e107_Import extends WP_Importer {
         $thread_parent_id = $this->forum_mapping[$thread_forum_id];
       }
 
-      // TODO: $thread_active
       // TODO: $thread_edit_datestamp
 
       // Save e107 forum in WordPress database
@@ -827,6 +826,9 @@ class e107_Import extends WP_Importer {
           update_post_meta($ret_id, 'bbp_anonymous_ip', $author_ip);
       }
 
+      // Publish the post
+      wp_publish_post($ret_id);
+
       // Sticky threads stays sticky, Announcements are promoted super-sticky.
       if ((int) $thread_s == 1) {
         bbp_stick_topic($ret_id);
@@ -834,8 +836,9 @@ class e107_Import extends WP_Importer {
         bbp_stick_topic($ret_id, True);
       }
 
-      // Publish the post
-      wp_publish_post($ret_id);
+      // Close the topic if necessary
+      if ((int)$thread_active < 1)
+        bbp_close_topic($ret_id);
     }
   }
 
