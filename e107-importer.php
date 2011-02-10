@@ -714,7 +714,7 @@ class e107_Import extends WP_Importer {
         , 'post_date_gmt'  => $this->mysql_date($forum_datestamp)  //XXX ask or get the time offset ?
         , 'post_content'   => $forum_description
         , 'post_title'     => $forum_name
-        , 'post_type'      => 'bbp_forum'
+        , 'post_type'      => bbp_get_forum_post_type()
         , 'comment_status' => 'closed'
         , 'ping_status'    => 'closed'
         , 'post_parent'    => $updated_parent
@@ -794,10 +794,10 @@ class e107_Import extends WP_Importer {
       // Top message of threads are topics, attached to a forum.
       // Others are replies, attached to a topic.
       if ($thread_parent > 0) {
-        $post_type = 'bbp_reply';
+        $post_type = bbp_get_reply_post_type();
         $thread_parent_id = (int) $this->forum_post_mapping[$thread_parent];
       } else {
-        $post_type = 'bbp_topic';
+        $post_type = bbp_get_topic_post_type();
         $thread_parent_id = $this->forum_mapping[$thread_forum_id];
       }
 

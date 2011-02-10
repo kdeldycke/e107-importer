@@ -115,7 +115,7 @@ class e107_Redirector {
               } elseif ($ctype == 'forum') {
                 $link = bbp_get_forum_permalink($content_id);
               } elseif ($ctype == 'forum_post') {
-                if (get_post($content_id)->post_type == 'bbp_topic')
+                if (get_post($content_id)->post_type == bbp_get_topic_post_type())
                   $link = bbp_get_topic_permalink($content_id);
                 else
                   $link = bbp_get_reply_permalink($content_id);
@@ -145,6 +145,8 @@ class e107_Redirector {
             $feed_content = 'comments_';
             break;
           case 'forum':
+            # TODO: get forum feed
+            # XXX Not implemented yet in bbPress, see: http://trac.bbpress.org/ticket/1422
             break;
           case '6':
           case 'threads':      # TODO: Test both
@@ -158,8 +160,8 @@ class e107_Redirector {
           case '11':
           case 'name':
           case 'forumname':
-            #$feed_content = 'forum_';
             # TODO: get the feed of the thread (= feed of the topic + replies) to which the post is part of (all e107 feeds here returns to forum/forum_viewtopic.php?XXX like URLs anyway).
+            # XXX Not implemented yet in bbPress, see: http://trac.bbpress.org/ticket/1422
             break;
         }
       if (sizeof($feed_params) > 1)
@@ -183,9 +185,11 @@ class e107_Redirector {
             $feed_type = 'atom';
             break;
         }
+      if ($feed_content != '') {
       // Redirect to proper WordPress feed
-      $wordpress_feed = $feed_content.$feed_type.'_url';
-      wp_redirect(get_bloginfo($wordpress_feed), $status = 301);
+        $wordpress_feed = $feed_content.$feed_type.'_url';
+        wp_redirect(get_bloginfo($wordpress_feed), $status = 301);
+      }
     }
 
     // Generic redirects and catch-alls
@@ -196,8 +200,8 @@ class e107_Redirector {
         wp_redirect(get_option('siteurl'), $status = 301);
 
       // Redirect to bbPress home page
-#      elseif (preg_match('/^.*\/forum(.*).php.*$/i', $requested))
-#        wp_redirect(XXX, $status = 301);
+      elseif (preg_match('/^.*\/forum(.*).php.*$/i', $requested))
+        wp_redirect(get_option('siteurl').'/'.get_option('_bbp_root_slug'), $status = 301);
 
       // Redirects to forum stats
 #      elseif (preg_match('/^.*\/forum_stats\.php.*$/i', $requested))
