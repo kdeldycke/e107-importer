@@ -116,21 +116,27 @@ class e107_Redirector {
           if (preg_match($regexp, $requested, $matches))
             if (array_key_exists($matches[1], $mapping)) {
               $content_id = $mapping[$matches[1]];
-              if ($ctype == 'comment') {
-                $link = get_comment_link($content_id);
-              } elseif ($ctype == 'category') {
-                $link = get_category_link($content_id);
-              } elseif ($ctype == 'user') {
-                $link = get_author_posts_url($content_id);
-              } elseif ($ctype == 'forum') {
-                $link = bbp_get_forum_permalink($content_id);
-              } elseif ($ctype == 'forum_post') {
-                if (get_post($content_id)->post_type == bbp_get_topic_post_type())
-                  $link = bbp_get_topic_permalink($content_id);
-                else
-                  $link = bbp_get_reply_permalink($content_id);
-              } else {
-                $link = get_permalink($content_id);
+              switch ($ctype) {
+                case 'comment':
+                  $link = get_comment_link($content_id);
+                  break;
+                case 'category';
+                  $link = get_category_link($content_id);
+                  break;
+                case 'user';
+                  $link = get_author_posts_url($content_id);
+                  break;
+                case 'forum';
+                  $link = bbp_get_forum_permalink($content_id);
+                  break;
+                case 'forum_post';
+                  if (get_post($content_id)->post_type == bbp_get_topic_post_type())
+                    $link = bbp_get_topic_permalink($content_id);
+                  else
+                    $link = bbp_get_reply_permalink($content_id);
+                  break;
+                default:
+                  $link = get_permalink($content_id);
               }
               wp_redirect($link, $status = 301);
             }
