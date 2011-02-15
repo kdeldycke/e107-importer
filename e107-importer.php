@@ -350,7 +350,6 @@ class e107_Import extends WP_Importer {
     update_option('comment_registration', !$this->e107_pref['anon_post']);
     update_option('use_smilies'         ,  $this->e107_pref['smiley_activate']);
     update_option('posts_per_page'      ,  $this->e107_pref['newsposts']);
-    update_option('gzipcompression'     ,  $this->e107_pref['compress_output']);
 
     $tag_line = $this->e107_pref['sitetag'];
     if (strlen($tag_line) <= 0)
