@@ -55,7 +55,7 @@ class e107_Redirector {
            ),
       array( 'type'    => 'category'
            , 'mapping' => $category_mapping
-           , 'rules'   => array( '/^.*\/news\.php(?:%3F|\?cat\.(\d+).*$/i'
+           , 'rules'   => array( '/^.*\/news\.php(?:%3F|\?)cat\.(\d+).*$/i'
                                    # /news.php?cat.3
                                )
            ),
@@ -111,36 +111,39 @@ class e107_Redirector {
       $ctype   = $rule_set['type'];
       $mapping = $rule_set['mapping'];
       $rules   = $rule_set['rules'];
-      if (sizeof($rules) > 0 && $mapping && is_array($mapping) && sizeof($mapping) > 0)
+      if (sizeof($rules) > 0 && $mapping && is_array($mapping) && sizeof($mapping) > 0) {
         foreach ($rules as $regexp) {
-          if (preg_match($regexp, $requested, $matches))
+          if (preg_match($regexp, $requested, $matches)) {
             if (array_key_exists($matches[1], $mapping)) {
               $content_id = $mapping[$matches[1]];
               switch ($ctype) {
                 case 'comment':
                   $link = get_comment_link($content_id);
                   break;
-                case 'category';
+                case 'category':
                   $link = get_category_link($content_id);
                   break;
-                case 'user';
+                case 'user':
                   $link = get_author_posts_url($content_id);
                   break;
-                case 'forum';
+                case 'forum':
                   $link = bbp_get_forum_permalink($content_id);
                   break;
-                case 'forum_post';
-                  if (get_post($content_id)->post_type == bbp_get_topic_post_type())
+                case 'forum_post':
+                  if (get_post($content_id)->post_type == bbp_get_topic_post_type()) {
                     $link = bbp_get_topic_permalink($content_id);
-                  else
+                  } else {
                     $link = bbp_get_reply_permalink($content_id);
+                  }
                   break;
                 default:
                   $link = get_permalink($content_id);
               }
               wp_redirect($link, $status = 301);
             }
+          }
         }
+      }
     }
 
     // Redirect feeds as explained there: http://kevin.deldycke.com/2007/05/feedburner-and-e107-integration/
