@@ -1185,7 +1185,7 @@ class e107_Import extends WP_Importer {
       </table>
 
       <h3><?php _e('Site Preferences', 'e107-importer'); ?></h3>
-      <p><?php _e('This importer can read the preferences set for e107 and apply them to this current blog. Supported preferences are: site title, site description, admin e-mail address, open user registration, users registration for comment, emoticons graphical convertion, number of posts per pages, GZip compression and timezone offset.', 'e107-importer'); ?></p>
+      <p><?php _e('This importer can read the preferences set for e107 and apply them to this current blog. Supported preferences are: site title, site description, admin e-mail address, open user registration, users registration for comment, emoticons graphical convertion, number of posts per pages and timezone offset.', 'e107-importer'); ?></p>
       <table class="form-table">
         <tr valign="top">
           <th scope="row"><?php _e('Do you want to import e107 preferences ?', 'e107-importer'); ?></th>
