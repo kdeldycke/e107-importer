@@ -141,6 +141,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 * Add an entry in the FAQ regarding script ending prematurely.
 * Disable all extra HTML rendering hooks like the one comming from e107 linkwords plugin.
 * Allow news and pages import to be skipped.
+* Add missing news category redirects.
 
 = 1.0 =
 * Upgrade e107 code from e107 v0.7.24.

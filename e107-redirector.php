@@ -19,6 +19,7 @@ class e107_Redirector {
 
     // Initialize mappings
     $news_mapping       = array();
+    $category_mapping   = array();
     $page_mapping       = array();
     $comment_mapping    = array();
     $user_mapping       = array();
@@ -27,6 +28,7 @@ class e107_Redirector {
 
     // Load mappings
     if (get_option('e107_redirector_news_mapping'))       $news_mapping       = get_option('e107_redirector_news_mapping');
+    if (get_option('e107_redirector_category_mapping'))   $category_mapping   = get_option('e107_redirector_category_mapping');
     if (get_option('e107_redirector_page_mapping'))       $page_mapping       = get_option('e107_redirector_page_mapping');
     if (get_option('e107_redirector_comment_mapping'))    $comment_mapping    = get_option('e107_redirector_comment_mapping');
     if (get_option('e107_redirector_user_mapping'))       $user_mapping       = get_option('e107_redirector_user_mapping');
@@ -49,6 +51,12 @@ class e107_Redirector {
                                    # /news.php?item.138&res=1680x1050
                                , '/^.*\/news\.php(?:%3F|\?)extend\.(\d+).*$/i'
                                    # /news.php?extend.17
+                               )
+           ),
+      array( 'type'    => 'category'
+           , 'mapping' => $category_mapping
+           , 'rules'   => array( '/^.*\/news\.php(?:%3F|\?cat\.(\d+).*$/i'
+                                   # /news.php?cat.3
                                )
            ),
       array( 'type'    => 'post'
@@ -110,6 +118,8 @@ class e107_Redirector {
               $content_id = $mapping[$matches[1]];
               if ($ctype == 'comment') {
                 $link = get_comment_link($content_id);
+              } elseif ($ctype == 'category') {
+                $link = get_category_link($content_id);
               } elseif ($ctype == 'user') {
                 $link = get_author_posts_url($content_id);
               } elseif ($ctype == 'forum') {

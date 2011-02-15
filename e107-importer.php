@@ -1395,6 +1395,9 @@ class e107_Import extends WP_Importer {
         <li><?php _e('Update redirection plugin with news mapping...', 'e107-importer'); ?></li>
         <?php $this->updateRedirectorSettings('news_mapping', $this->news_mapping); ?>
         <li><?php _e('Old news URLs are now redirected to permalinks.', 'e107-importer'); ?></li>
+        <li><?php _e('Update redirection plugin with category mapping...', 'e107-importer'); ?></li>
+        <?php $this->updateRedirectorSettings('category_mapping', $this->category_mapping); ?>
+        <li><?php _e('Old news category URLs are now redirected to permalinks.', 'e107-importer'); ?></li>
       <?php } else { ?>
         <li><?php _e('e107 news and categories import skipped.', 'e107-importer'); ?></li>
       <?php } ?>
