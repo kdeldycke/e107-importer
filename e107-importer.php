@@ -224,6 +224,9 @@ class e107_Import extends WP_Importer {
     // Turn-off profanity filter
     $this->e107_pref['profanity_filter'] = False;
 
+    // Disable all extra HTML rendering hooks like the one comming from e107 Linkwords plugin
+    $this->e107_pref['tohtml_hook'] = '';
+
     // Set global SITEURL as it's used by replaceConstants() method
     $site_url = $this->e107_pref['siteurl'];
     // Normalize URL: it must end with a single slash
