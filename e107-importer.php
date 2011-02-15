@@ -43,6 +43,7 @@ class e107_Import extends WP_Importer {
 
   var $e107_content_ownership;
   var $e107_mail_user;
+  var $e107_import_news;
   var $e107_extended_news;
   var $e107_bbcode_parser;
   var $e107_import_images;
@@ -623,10 +624,14 @@ class e107_Import extends WP_Importer {
       $comment_item_id = (int) $comment_item_id;
 
       // Get the post_id from $news_mapping or $pages_mapping depending of the comment type
-      if ($comment_type == 'page')
+      if ($comment_type == 'page') {
         $post_id = $this->page_mapping[$comment_item_id];
-      else
+      } elseif ($this->e107_import_news == 'import_news') {
         $post_id = $this->news_mapping[$comment_item_id];
+      } else {
+        // Do not import this comment: it belongs to a news an user choosed to skip news comments import
+        continue;
+      }
 
       // Don't import comments not linked with news
       $post_status = get_post_status($post_id);
@@ -1220,7 +1225,16 @@ class e107_Import extends WP_Importer {
               );
       ?></p>
 
-      <h3><?php _e('News Extends', 'e107-importer'); ?></h3>
+      <h3><?php _e('News', 'e107-importer'); ?></h3>
+      <table class="form-table">
+        <tr valign="top">
+          <th scope="row"><?php _e('Do you want to import news and their associated comments and categories ?', 'e107-importer'); ?></th>
+          <td>
+            <label for="import-news"><input name="e107_import_news" type="radio" id="import-news" value="import_news" checked="checked"/> <?php _e('Yes: import news, comments and categories.', 'e107-importer'); ?></label><br/>
+            <label for="skip-news"><input name="e107_import_news" type="radio" id="skip-news" value="skip-news"/> <?php _e('No: do not import news nor their comments or categories.', 'e107-importer'); ?></label><br/>
+          </td>
+        </tr>
+      </table>
       <p><?php _e('WordPress doesn\'t support extended news.', 'e107-importer'); ?></p>
       <table class="form-table">
         <tr valign="top">
@@ -1295,6 +1309,7 @@ class e107_Import extends WP_Importer {
                               , 'e107_preferences'
                               , 'e107_content_ownership'
                               , 'e107_mail_user'
+                              , 'e107_import_news'
                               , 'e107_extended_news'
                               , 'e107_import_forums'
                               , 'e107_bbcode_parser'
@@ -1352,15 +1367,19 @@ class e107_Import extends WP_Importer {
       <li><?php _e('Old user URLs are now redirected.', 'e107-importer'); ?></li>
     </ul>
 
-    <h3><?php _e('News and Categories', 'e107-importer'); ?></h3>
+    <h3><?php _e('News', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
-      <li><?php _e('Import news and categories...', 'e107-importer'); ?></li>
-      <?php $this->importNewsAndCategories(); ?>
-      <li><?php printf(__('%s news imported.', 'e107-importer'), sizeof($this->news_mapping)); ?></li>
-      <li><?php printf(__('%s categories imported.', 'e107-importer'), sizeof($this->category_mapping)); ?></li>
-      <li><?php _e('Update redirection plugin with news mapping...', 'e107-importer'); ?></li>
-      <?php $this->updateRedirectorSettings('news_mapping', $this->news_mapping); ?>
-      <li><?php _e('Old news URLs are now redirected to permalinks.', 'e107-importer'); ?></li>
+      <?php if ($this->e107_import_news == 'import_news') { ?>
+        <li><?php _e('Import news and categories...', 'e107-importer'); ?></li>
+        <?php $this->importNewsAndCategories(); ?>
+        <li><?php printf(__('%s news imported.', 'e107-importer'), sizeof($this->news_mapping)); ?></li>
+        <li><?php printf(__('%s categories imported.', 'e107-importer'), sizeof($this->category_mapping)); ?></li>
+        <li><?php _e('Update redirection plugin with news mapping...', 'e107-importer'); ?></li>
+        <?php $this->updateRedirectorSettings('news_mapping', $this->news_mapping); ?>
+        <li><?php _e('Old news URLs are now redirected to permalinks.', 'e107-importer'); ?></li>
+      <?php } else { ?>
+        <li><?php _e('e107 news and categories import skipped.', 'e107-importer'); ?></li>
+      <?php } ?>
     </ul>
 
     <h3><?php _e('Pages', 'e107-importer'); ?></h3>
@@ -1375,7 +1394,12 @@ class e107_Import extends WP_Importer {
 
     <h3><?php _e('Comments', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
-      <li><?php _e('Import comments...', 'e107-importer'); ?></li>
+      <?php if ($this->e107_import_news == 'import_news') { ?>
+        <li><?php _e('Import news and page comments...', 'e107-importer'); ?></li>
+      <?php } else { ?>
+        <li><?php _e('e107 news comment import skipped.', 'e107-importer'); ?></li>
+        <li><?php _e('Import page comments...', 'e107-importer'); ?></li>
+      <?php } ?>
       <?php $this->importComments(); ?>
       <li><?php printf(__('%s comments imported.', 'e107-importer'), sizeof($this->comment_mapping)); ?></li>
       <li><?php _e('Update redirection plugin with comment mapping...', 'e107-importer'); ?></li>
@@ -1411,9 +1435,11 @@ class e107_Import extends WP_Importer {
       <li><?php _e('Initialize e107 context...', 'e107-importer'); ?></li>
       <?php $this->inite107Context(); ?>
       <li><?php _e('e107 context initialized.', 'e107-importer'); ?></li>
-      <li><?php _e('Replace e107 constants in news...', 'e107-importer'); ?></li>
-      <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'title'  , 'constants'); ?>
-      <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', 'constants'); ?>
+      <?php if ($this->e107_import_news == 'import_news') { ?>
+        <li><?php _e('Replace e107 constants in news...', 'e107-importer'); ?></li>
+        <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'title'  , 'constants'); ?>
+        <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', 'constants'); ?>
+      <?php } ?>
       <li><?php _e('Replace e107 constants in pages...', 'e107-importer'); ?></li>
       <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'title'  , 'constants'); ?>
       <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', 'constants'); ?>
@@ -1436,9 +1462,11 @@ class e107_Import extends WP_Importer {
         <?php } else { ?>
           <li><?php _e('Parse BBCode using the original e107 parser...', 'e107-importer'); ?></li>
         <?php } ?>
-        <li><?php _e('Parse news title and content...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'title'  , $this->e107_bbcode_parser); ?>
-        <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
+        <?php if ($this->e107_import_news == 'import_news') { ?>
+          <li><?php _e('Parse news title and content...', 'e107-importer'); ?></li>
+          <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'title'  , $this->e107_bbcode_parser); ?>
+          <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
+        <?php } ?>
         <li><?php _e('Parse pages title and content...', 'e107-importer'); ?></li>
         <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'title'  , $this->e107_bbcode_parser); ?>
         <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
@@ -1465,9 +1493,11 @@ class e107_Import extends WP_Importer {
         <?php if ($this->e107_import_images == 'upload_local_images') { ?>
           <li><?php printf(__('Only upload local images comming from <code>%s</code>.', 'e107-importer'), $this->e107_pref['siteurl']); ?></li>
         <?php } ?>
-        <li><?php _e('Import images embedded in news content ...', 'e107-importer'); ?></li>
-        <?php $images = $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', $this->e107_import_images); ?>
-        <li><?php printf(__('%s images uploaded from news.', 'e107-importer'), $images); ?></li>
+        <?php if ($this->e107_import_news == 'import_news') { ?>
+          <li><?php _e('Import images embedded in news content ...', 'e107-importer'); ?></li>
+          <?php $images = $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', $this->e107_import_images); ?>
+          <li><?php printf(__('%s images uploaded from news.', 'e107-importer'), $images); ?></li>
+        <?php } ?>
         <li><?php _e('Import images embedded in page content...', 'e107-importer'); ?></li>
         <?php $images = $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', $this->e107_import_images); ?>
         <li><?php printf(__('%s images uploaded from pages.', 'e107-importer'), $images); ?></li>
