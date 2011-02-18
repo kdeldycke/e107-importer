@@ -786,6 +786,8 @@ class e107_Import extends WP_Importer {
       $thread_id       = (int) $thread_id;
       $thread_forum_id = (int) $thread_forum_id;
       $thread_parent   = (int) $thread_parent;
+      $thread_s        = (int) $thread_s;
+      $thread_active   = (int) $thread_active;
 
       // Compute thread author's new ID
       $author_fragments = explode(".", $thread_user, 2);
@@ -850,14 +852,14 @@ class e107_Import extends WP_Importer {
       wp_publish_post($ret_id);
 
       // Sticky threads stays sticky, Announcements are promoted super-sticky.
-      if ((int) $thread_s == 1) {
+      if ($thread_s == 1) {
         bbp_stick_topic($ret_id);
-      } elseif ((int) $thread_s > 2) {
+      } elseif ($thread_s > 2) {
         bbp_stick_topic($ret_id, True);
       }
 
       // Close the topic if necessary
-      if ((int)$thread_active < 1)
+      if ($thread_active < 1)
         bbp_close_topic($ret_id);
     }
   }
