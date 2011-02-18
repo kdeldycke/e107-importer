@@ -130,7 +130,7 @@ class e107_Redirector {
                   $link = bbp_get_forum_permalink($content_id);
                   break;
                 case 'forum_post':
-                  if (get_post($content_id)->post_type == bbp_get_topic_post_type()) {
+                  if (bbp_is_topic($content_id)) {
                     $link = bbp_get_topic_permalink($content_id);
                   } else {
                     $link = bbp_get_reply_permalink($content_id);
