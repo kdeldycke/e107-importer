@@ -872,9 +872,9 @@ class e107_Import extends WP_Importer {
 
       // Update reply metadata
       if (bbp_is_topic($ret_id)) {
-        do_action('bbp_new_topic', $ret_id, bbp_get_topic_forum_id($ret_id), $anonymous_data, $author_id);
+        do_action('bbp_new_topic', $ret_id, $thread_parent_id, $anonymous_data, $author_id);
       } else {
-        do_action('bbp_new_reply', $ret_id, bbp_get_topic_id($ret_id), bbp_get_topic_forum_id($ret_id), $anonymous_data, $author_id);
+        do_action('bbp_new_reply', $ret_id, $thread_parent_id, bbp_get_topic_forum_id($thread_parent_id), $anonymous_data, $author_id);
       }
 
       // Close the topic if necessary
