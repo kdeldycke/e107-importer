@@ -793,6 +793,7 @@ class e107_Import extends WP_Importer {
       $author_fragments = explode(".", $thread_user, 2);
       $author_id        = (int) $author_fragments[0];
       $author_name      = $author_fragments[1];
+      $author_ip        = '';
       // Author is anonymous, its name and IP are intertwined
       if ($author_id == 0) {
         $last_valid_cut = 0;
@@ -841,21 +842,39 @@ class e107_Import extends WP_Importer {
       // Update forum post mapping
       $this->forum_post_mapping[$thread_id] = (int) $ret_id;
 
-      // Update inserted post with Anonymous related data.
-      if ($author_id == 0) {
-        update_post_meta($ret_id, 'bbp_anonymous_name', $author_name);
-        if (!empty($author_ip))
-          update_post_meta($ret_id, 'bbp_anonymous_ip', $author_ip);
-      }
-
       // Publish the post
       wp_publish_post($ret_id);
+
+      // Update inserted post with Anonymous related data.
+      // Both bbp_anonymous_name and bbp_anonymous_email are required, that's why we use dummy default values.
+      $anonymous_data = array();
+      if ($author_id == 0) {
+        $anonymous_data = array( 'bbp_anonymous_name'  => empty($author_name) ? 'Anonymous user' : $author_name
+                               , 'bbp_anonymous_ip'    => empty($author_ip  ) ? '192.0.2.0'      : $author_ip   # See RFC 5735
+                               , 'bbp_anonymous_email' => 'anonymous@example.com'
+                               // Website is optionnal in bbPress
+                               );
+//         foreach ($anonymous_data as $meta_name => $meta_value)
+//           update_post_meta($ret_id, '_'.$meta_name, $meta_value, False);
+      }
+
+//       echo "<h1>post ID = ".$ret_id." | By user = ".$thread_user."</h1>";
+//       echo "<pre>";
+//       print_r($anonymous_data);
+//       echo "</pre>";
 
       // Sticky threads stays sticky, Announcements are promoted super-sticky.
       if ($thread_s == 1) {
         bbp_stick_topic($ret_id);
       } elseif ($thread_s > 2) {
         bbp_stick_topic($ret_id, True);
+      }
+
+      // Update reply metadata
+      if (bbp_is_topic($ret_id)) {
+        do_action('bbp_new_topic', $ret_id, bbp_get_topic_forum_id($ret_id), $anonymous_data, $author_id);
+      } else {
+        do_action('bbp_new_reply', $ret_id, bbp_get_topic_id($ret_id), bbp_get_topic_forum_id($ret_id), $anonymous_data, $author_id);
       }
 
       // Close the topic if necessary
@@ -1473,6 +1492,7 @@ class e107_Import extends WP_Importer {
         <?php $this->updateRedirectorSettings('forum_mapping',      $this->forum_mapping); ?>
         <?php $this->updateRedirectorSettings('forum_post_mapping', $this->forum_post_mapping); ?>
         <li><?php _e('Old forum URLs are now redirected.', 'e107-importer'); ?></li>
+        <!-- call bbp_recount_list() to recount everything here ? -->
       <?php } else { ?>
         <li><?php _e('e107 forums import skipped.', 'e107-importer'); ?></li>
       <?php } ?>

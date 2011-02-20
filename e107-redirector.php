@@ -78,7 +78,7 @@ class e107_Redirector {
                                    # /user.php?id.29
                                , '/^.*\/userposts\.php(?:%3F|\?).*\.comments\.(\d+).*$/i'
                                    # /userposts.php?0.comments.29
-                                   # TODO: /userposts.php?0.forums.29 redirects to the list of forum posts by User 29
+                                   # TODO: /userposts.php?0.forums.29 redirects to the list of forum posts by User 29  => http://localhost/?bbp_user=1
                                )
            ),
       array( 'type'    => 'forum'
