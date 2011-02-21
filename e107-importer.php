@@ -775,6 +775,7 @@ class e107_Import extends WP_Importer {
 
 
   // Import e107 forum content to bbPress WordPress plugin
+  // This method mimick bbp_new_topic_handler() and bbp_new_reply_handler()
   function importForumThreads() {
     global $wpdb;
 
@@ -817,23 +818,31 @@ class e107_Import extends WP_Importer {
       // Top message of threads are topics, attached to a forum.
       // Others are replies, attached to a topic.
       if ($thread_parent > 0) {
-        $post_type = bbp_get_reply_post_type();
+        $post_type_id = bbp_get_reply_post_type();
+        $post_type_name = 'reply';
         $thread_parent_id = (int) $this->forum_post_mapping[$thread_parent];
       } else {
-        $post_type = bbp_get_topic_post_type();
+        $post_type_id = bbp_get_topic_post_type();
+        $post_type_name = 'topic';
         $thread_parent_id = $this->forum_mapping[$thread_forum_id];
       }
 
-      // TODO: $thread_edit_datestamp
+      // Apply pre filters
+      $post_title   = apply_filters('bbp_new_'.$post_type_name.'_pre_title'  , $thread_name);
+      $post_content = apply_filters('bbp_new_'.$post_type_name.'_pre_content', $thread_thread);
+
+      // Get creation date
+      $post_date = $this->mysql_date($thread_datestamp);  //XXX ask or get the time offset ?
+      // TODO: How-to handle $thread_edit_datestamp ?
 
       // Save e107 forum in WordPress database
       $ret_id = wp_insert_post(array(
           'post_author'    => $author_id
-        , 'post_date'      => $this->mysql_date($thread_datestamp)  //XXX ask or get the time offset ?
-        , 'post_date_gmt'  => $this->mysql_date($thread_datestamp)  //XXX ask or get the time offset ?
-        , 'post_content'   => $thread_thread
-        , 'post_title'     => $thread_name
-        , 'post_type'      => $post_type
+        , 'post_date'      => $post_date
+        , 'post_date_gmt'  => $post_date
+        , 'post_content'   => $post_content
+        , 'post_title'     => $post_title
+        , 'post_type'      => $post_type_id
         , 'comment_status' => 'closed'
         , 'ping_status'    => 'closed'
         , 'post_parent'    => $thread_parent_id
@@ -845,6 +854,13 @@ class e107_Import extends WP_Importer {
       // Publish the post
       wp_publish_post($ret_id);
 
+      // Sticky threads stays sticky, Announcements are promoted super-sticky.
+      if ($thread_s == 1) {
+        bbp_stick_topic($ret_id);
+      } elseif ($thread_s > 2) {
+        bbp_stick_topic($ret_id, True);
+      }
+
       // Update inserted post with Anonymous related data.
       // Both bbp_anonymous_name and bbp_anonymous_email are required, that's why we use dummy default values.
       $anonymous_data = array();
@@ -854,27 +870,21 @@ class e107_Import extends WP_Importer {
                                , 'bbp_anonymous_email' => 'anonymous@example.com'
                                // Website is optionnal in bbPress
                                );
-//         foreach ($anonymous_data as $meta_name => $meta_value)
-//           update_post_meta($ret_id, '_'.$meta_name, $meta_value, False);
-      }
-
-//       echo "<h1>post ID = ".$ret_id." | By user = ".$thread_user."</h1>";
-//       echo "<pre>";
-//       print_r($anonymous_data);
-//       echo "</pre>";
-
-      // Sticky threads stays sticky, Announcements are promoted super-sticky.
-      if ($thread_s == 1) {
-        bbp_stick_topic($ret_id);
-      } elseif ($thread_s > 2) {
-        bbp_stick_topic($ret_id, True);
       }
 
       // Update reply metadata
       if (bbp_is_topic($ret_id)) {
-        do_action('bbp_new_topic', $ret_id, $thread_parent_id, $anonymous_data, $author_id);
+        $forum_id = $thread_parent_id;
+        do_action('bbp_new_topic', $ret_id, $forum_id, $anonymous_data, $author_id);
+        // Fix the last active time autommaticaly set by bbp_new_topic
+        bbp_update_topic_last_active_time($ret_id, $post_date);
+        bbp_update_topic_walker($ret_id, $post_date, $forum_id, 0, False);
       } else {
-        do_action('bbp_new_reply', $ret_id, $thread_parent_id, bbp_get_topic_forum_id($thread_parent_id), $anonymous_data, $author_id);
+        $topic_id = $thread_parent_id;
+        $forum_id = bbp_get_topic_forum_id($topic_id);
+        do_action('bbp_new_reply', $ret_id, $topic_id, $forum_id, $anonymous_data, $author_id);
+        // Fix the last active time autommaticaly set by bbp_new_reply
+        bbp_update_reply_walker($ret_id, $post_date, $forum_id, $topic_id, False);
       }
 
       // Close the topic if necessary
