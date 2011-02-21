@@ -894,6 +894,16 @@ class e107_Import extends WP_Importer {
   }
 
 
+  // This method recount all forum metadata
+  // Code inspired by the bbp_admin_tools() method
+  function recountForumStats() {
+    $recount_list = bbp_recount_list();
+    foreach ((array)$recount_list as $item)
+      if (isset($item[2]) && is_callable($item[2]))
+        call_user_func($item[2]);
+  }
+
+
   // This method replace old e107 URLs embeded in news, pages and comments by WP permalinks
   // TODO: merge with parseAndUpdate() method
   function replaceWithPermalinks() {
@@ -1502,7 +1512,9 @@ class e107_Import extends WP_Importer {
         <?php $this->updateRedirectorSettings('forum_mapping',      $this->forum_mapping); ?>
         <?php $this->updateRedirectorSettings('forum_post_mapping', $this->forum_post_mapping); ?>
         <li><?php _e('Old forum URLs are now redirected.', 'e107-importer'); ?></li>
-        <!-- call bbp_recount_list() to recount everything here ? -->
+        <li><?php _e('Recount forum stats...', 'e107-importer'); ?></li>
+        <?php $this->recountForumStats(); ?>
+        <li><?php _e('Forums stats up to date.', 'e107-importer'); ?></li>
       <?php } else { ?>
         <li><?php _e('e107 forums import skipped.', 'e107-importer'); ?></li>
       <?php } ?>
