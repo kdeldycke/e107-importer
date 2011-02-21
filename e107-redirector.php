@@ -100,7 +100,12 @@ class e107_Redirector {
                                , '/^.*\/forum_viewtopic\.php(?:%3F|\?)(\d+).*$/i'
                                    # /forum_viewtopic.php?19026
                                    # /forum_viewtopic.php?19026.post
-                                   # TODO: /forum_viewtopic.php?19026.last
+                               )
+           ),
+      array( 'type'    => 'forum_thread_last_page'
+           , 'mapping' => $forum_post_mapping
+           , 'rules'   => array( '/^.*\/forum_viewtopic\.php(?:%3F|\?)(\d+)\.last.*$/i'
+                                   # /forum_viewtopic.php?19026.last
                                )
            ),
       array( 'type'    => 'forum_user'
@@ -134,6 +139,8 @@ class e107_Redirector {
                 case 'forum':
                   $link = bbp_get_forum_permalink($content_id);
                   break;
+                case 'forum_thread_last_page':
+                  $content_id = bbp_topic_last_reply_id($content_id);
                 case 'forum_post':
                   if (bbp_is_topic($content_id)) {
                     $link = bbp_get_topic_permalink($content_id);
