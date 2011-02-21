@@ -544,6 +544,7 @@ class e107_Import extends WP_Importer {
         , 'post_date_gmt'  => $this->mysql_date($news_datestamp)
         , 'post_content'   => $wpdb->escape($news_body)
         , 'post_title'     => $wpdb->escape($news_title)
+        , 'post_name'      => False
         , 'post_status'    => 'publish'                           // News are always published in e107
         , 'comment_status' => $news_allow_comments                // TODO: get global config to set this value dynamiccaly
         , 'ping_status'    => 'open'                              // XXX is there such a concept in e107 ?
@@ -611,6 +612,7 @@ class e107_Import extends WP_Importer {
         , 'post_date_gmt'  => $this->mysql_date($page_datestamp)
         , 'post_content'   => $wpdb->escape($page_text)
         , 'post_title'     => $wpdb->escape($page_title)
+        , 'post_name'      => False
         , 'post_status'    => $post_status
         , 'post_type'      => 'page'
         , 'comment_status' => $comment_status
@@ -734,6 +736,7 @@ class e107_Import extends WP_Importer {
         , 'post_date_gmt'  => $this->mysql_date($forum_datestamp)  //XXX ask or get the time offset ?
         , 'post_content'   => $forum_description
         , 'post_title'     => $forum_name
+        , 'post_name'      => False
         , 'post_type'      => bbp_get_forum_post_type()
         , 'comment_status' => 'closed'
         , 'ping_status'    => 'closed'
@@ -842,6 +845,7 @@ class e107_Import extends WP_Importer {
         , 'post_date_gmt'  => $post_date
         , 'post_content'   => $post_content
         , 'post_title'     => $post_title
+        , 'post_name'      => False
         , 'post_type'      => $post_type_id
         , 'comment_status' => 'closed'
         , 'ping_status'    => 'closed'
