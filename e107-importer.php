@@ -1546,10 +1546,10 @@ class e107_Import extends WP_Importer {
 
     <h3><?php _e('Comments', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
-      <?php if ($this->e107_import_news) { ?>
+      <?php if (!$this->e107_import_news) { ?>
         <li><?php _e('e107 news comment import skipped.', 'e107-importer'); ?></li>
       <?php } ?>
-      <?php if ($this->e107_import_pages) { ?>
+      <?php if (!$this->e107_import_pages) { ?>
         <li><?php _e('e107 pages comment import skipped.', 'e107-importer'); ?></li>
       <?php } ?>
       <?php if ($this->e107_import_news or $this->e107_import_pages) { ?>
