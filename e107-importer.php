@@ -281,8 +281,9 @@ class e107_Import extends WP_Importer {
     $e107_userExtendedTable = $this->e107_db_prefix."user_extended";
     $sql  = "SELECT `".$e107_userTable."`.* FROM `".$e107_userTable."` ";
     $sql .= "LEFT JOIN `".$e107_userExtendedTable."` ON `".$e107_userTable."`.user_id = `".$e107_userExtendedTable."`.user_extended_id ";
-    $sql .= "WHERE user_ban = 0"; // Exclude banned and un-verified users
-    // Return user list
+    // Exclude banned and un-verified users
+    $sql .= "WHERE user_ban = 0";
+    // Perform the request and return rows
     return $this->queryE107DB($sql);
   }
 
@@ -291,7 +292,7 @@ class e107_Import extends WP_Importer {
     // Prepare the SQL request
     $e107_newsCategoryTable = $this->e107_db_prefix."news_category";
     $sql = "SELECT * FROM `".$e107_newsCategoryTable."`";
-    // Return category list
+    // Perform the request and return rows
     return $this->queryE107DB($sql);
   }
 
@@ -300,7 +301,7 @@ class e107_Import extends WP_Importer {
     // Prepare the SQL request
     $e107_newsTable = $this->e107_db_prefix."news";
     $sql = "SELECT * FROM `".$e107_newsTable."`";
-    // Return news list
+    // Perform the request and return rows
     return $this->queryE107DB($sql);
   }
 
@@ -309,7 +310,7 @@ class e107_Import extends WP_Importer {
     // Prepare the SQL request
     $e107_pagesTable = $this->e107_db_prefix."page";
     $sql = "SELECT * FROM `".$e107_pagesTable."`";
-    // Return page list
+    // Perform the request and return rows
     return $this->queryE107DB($sql);
   }
 
@@ -318,7 +319,7 @@ class e107_Import extends WP_Importer {
     // Prepare the SQL request
     $e107_commentsTable = $this->e107_db_prefix."comments";
     $sql  = "SELECT * FROM `".$e107_commentsTable."`";
-    // Return comment list
+    // Perform the request and return rows
     return $this->queryE107DB($sql);
   }
 
@@ -327,7 +328,7 @@ class e107_Import extends WP_Importer {
     // Prepare the SQL request
     $e107_forumsTable = $this->e107_db_prefix."forum";
     $sql  = "SELECT * FROM `".$e107_forumsTable."` ORDER BY forum_parent, forum_id";
-    // Return comment list
+    // Perform the request and return rows
     return $this->queryE107DB($sql);
   }
 
@@ -336,8 +337,14 @@ class e107_Import extends WP_Importer {
     // Prepare the SQL request
     $e107_postsTable = $this->e107_db_prefix."forum_t";
     $sql  = "SELECT * FROM `".$e107_postsTable."` ORDER BY thread_parent, thread_id";
-    // Return comment list
+    // Perform the request and return rows
     return $this->queryE107DB($sql);
+  }
+
+
+  // Get a list of all WordPress's user IDs
+  function getWPUserIDs() {
+    return $wpdb->get_col($wpdb->prepare("SELECT $wpdb->users.ID FROM $wpdb->users ORDER BY %s ASC", 'ID'));
   }
 
 
@@ -708,18 +715,61 @@ class e107_Import extends WP_Importer {
   function importForums() {
     global $wpdb;
 
+    // Group users by class
+    $user_classes = array();
+    $user_list = $this->getE107UserList();
+    foreach ($user_list as $user) {
+      extract($user);
+      if (!empty($user_class)) {
+        $user_class = (int) $user_class;
+        $updated_user_list = array();
+        if (array_key_exists($user_class, $user_classes))
+          $updated_user_list = $user_classes[$user_class];
+        $updated_user_list[] = (int) $user_id;
+        $user_classes[$user_class] = $updated_user_list;
+      }
+    }
+
     // Get all forum
     $forum_list = $this->getE107ForumList();
 
     foreach ($forum_list as $forum) {
       extract($forum);
-      $forum_id     = (int) $forum_id;
-      $forum_parent = (int) $forum_parent;
+      $forum_id         = (int) $forum_id;
+      $forum_parent     = (int) $forum_parent;
+      $forum_moderators = (int) $forum_moderators;
 
-      // The moderator of the forum is set as author
-      // XXX Does e107 put several user IDs in this $forum_moderators field ?
-      // XXX Warning; moderator may refer to a user group.
-      $author_id = (int) $this->user_mapping[$forum_moderators];
+      // Create a list of potential author based on all moderators
+      $potential_authors = array();
+
+      // If moderator ID is not 254 then moderators are defined as a e107 user class.
+      // Else, do nothing: it means moderators are all e107 admins, which is the default bbPress behaviour.
+      if ($forum_moderators != 254 and array_key_exists($forum_moderators, $user_classes)) {
+        // Migrate moderator roles from e107 users to WordPress
+        foreach ($user_classes[$forum_moderators] as $moderator) {
+          $mod_id = (int) $this->user_mapping[$moderator];
+          $potential_authors[] = $mod_id;
+          $mod_user = new WP_User($mod_id);
+          $mod_role = array_shift($mod_user->roles);
+          // Increase user role to forum moderator only if user has no role nor moderate capability
+          if ((empty($mod_role) or $mod_role == 'subscriber') and !$mod_user->has_cap('moderate'))
+            $mod_user->set_role('bbp_moderator');
+        }
+      }
+
+      // Set the author of the forum: the oldest moderator or the oldest admin.
+      if (!empty($potential_authors)) {
+        ksort($potential_authors);
+        $author_id = array_shift($potential_authors);
+      } else {
+        $user_ids = getWPUserIDs();
+        foreach ($user_ids as $user_id) {
+          if (user_can($user_id, 'publish_forums')) {
+            $author_id = $user_id;
+            break;
+          }
+        }
+      }
 
       // Calculate forum's parent
       $updated_parent = 0;
@@ -745,6 +795,33 @@ class e107_Import extends WP_Importer {
       // Update forum mapping
       $this->forum_mapping[$forum_id] = (int) $ret_id;
 
+      // Set forum visibility.
+      //   0 -> Everyone (public)
+      // 253 -> Members
+      // 254 -> Admin
+      // 255 -> No One (inactive)
+      //   X -> user class ID
+      if ($forum_class == 0) {
+        bbp_open_forum($ret_id);
+        bbp_publicize_forum($ret_id);
+      } elseif ($forum_class == 254 or $forum_class == 255) {
+        bbp_close_forum($ret_id);
+        bbp_privatize_forum($ret_id);
+      } elseif ($forum_class == 253) {
+        bbp_open_forum($ret_id);
+        bbp_privatize_forum($ret_id);
+      } else {
+        bbp_open_forum($ret_id);
+        bbp_privatize_forum($ret_id);
+      }
+
+      // TODO: $forum_postclass is for "Post permission (indicates who can post to the forum)"
+      //   0 -> Everyone (public)
+      // 253 -> Members
+      // 254 -> Admin
+      // 255 -> No One (inactive)
+      //   X -> user class ID
+
       // Set forum type
       if ($forum_parent == 0) {
         // The forum is a category
@@ -754,23 +831,10 @@ class e107_Import extends WP_Importer {
         bbp_normalize_forum($ret_id);
       }
 
-      // Set forum visibility. 0 is public for e107.
-      if ($forum_parent == 0) {
-        bbp_publicize_forum($ret_id);
-      } else {
-        bbp_privatize_forum($ret_id);
-      }
+      // XXX How to handle e107's $forum_sub field ?
 
       // Publish the forum
       wp_publish_post($ret_id);
-
-      // XXX What to do with e107's $forum_postclass ?
-
-      // XXX How to handle e107's $forum_sub field ?
-
-      // Does e107 support open and close forum ?
-      //bbp_close_forum()
-      //bbp_open_forum()
     }
   }
 
@@ -1323,6 +1387,7 @@ class e107_Import extends WP_Importer {
         <p><?php _e('bbPress plugin is available on your system, and ready to receive forum content from e107.', 'e107-importer'); ?></p>
       <?php } ?>
       <?php if (array_key_exists(BBPRESS_PLUGIN, get_plugins())) { ?>
+        <p><?php _e('e107 allows you to define moderators per-forum. On the other hand, bbPress moderation rights applies to all forums. Importing forums means that all users which were moderators in e107 will be granted to bbPress\' <code>Forum Moderator</code> role, but only if they currently have no role or are <code>Subscribers</code>.', 'e107-importer'); ?></p>
         <table class="form-table">
           <tr valign="top">
             <th scope="row"><?php _e('Do you want to import forums ?', 'e107-importer'); ?></th>
