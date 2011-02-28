@@ -344,6 +344,7 @@ class e107_Import extends WP_Importer {
 
   // Get a list of all WordPress's user IDs
   function getWPUserIDs() {
+    global $wpdb;
     return $wpdb->get_col($wpdb->prepare("SELECT $wpdb->users.ID FROM $wpdb->users ORDER BY %s ASC", 'ID'));
   }
 
@@ -762,7 +763,7 @@ class e107_Import extends WP_Importer {
         ksort($potential_authors);
         $author_id = array_shift($potential_authors);
       } else {
-        $user_ids = getWPUserIDs();
+        $user_ids = $this->getWPUserIDs();
         foreach ($user_ids as $user_id) {
           if (user_can($user_id, 'publish_forums')) {
             $author_id = $user_id;
