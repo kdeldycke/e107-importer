@@ -3,7 +3,7 @@ Contributors: Coolkevman
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XEXREDEHXSQUJ
 Tags: importer, e107, cms, migration
 Requires at least: 3.0.0
-Tested up to: 3.1-RC4
+Tested up to: 3.1
 Stable tag: 1.0
 License: GPLv2
 
@@ -32,8 +32,8 @@ This plugin allows you to extract the most important content and data from an e1
 This tool was tested with:
 
 * [e107 0.7.24](http://e107.org/news.php?item.877),
-* [WordPress 3.1-RC4](http://wordpress.org/news/2011/02/wordpress-3-0-5/) and
-* [development version of bbPress WordPress plugin (SVN r2859)](http://trac.bbpress.org/browser/branches/plugin?rev=2859).
+* [WordPress 3.1](http://wordpress.org/news/2011/02/threeone/) and
+* [development version of bbPress WordPress plugin (SVN r2935)](http://trac.bbpress.org/browser/branches/plugin?rev=2935).
 
 If you have any older versions, please upgrade first.
 
@@ -114,7 +114,7 @@ FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugin
 
 Here is a list of e107 and WordPress versions I tested my plugin with:
 
-* e107-importer 1.1 : e107 0.7.24 / WordPress 3.1-RC4 / bbPress plugin SVN r2935
+* e107-importer 1.1 : e107 0.7.24 / WordPress 3.1 / bbPress plugin SVN r2935
 * e107-importer 1.0 : e107 0.7.24 / WordPress 3.1-RC3
 * e107-importer 0.9 : e107 0.7.11 / WordPress 2.3.2
 * e107-importer 0.8 : e107 0.7.8  / WordPress 2.1.3
@@ -142,6 +142,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 * Disable all extra HTML rendering hooks like the one comming from e107 linkwords plugin.
 * Allow news and pages import to be skipped.
 * Add missing news category redirects.
+* Minimal requirement set to WordPress 3.1.
 
 = 1.0 =
 * Upgrade e107 code from e107 v0.7.24.
@@ -205,7 +206,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 == Upgrade Notice ==
 
 = 1.1 =
-Add import of forums and threads. User import now optional. Can force ownership of all imported content to a pre-existing WordPress user.
+Add import of forums and threads. User, news and pages import now optional.
 
 = 1.0 =
 First release compatible with the WordPress 3.x series.
