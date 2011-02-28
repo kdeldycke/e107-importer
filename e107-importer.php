@@ -118,6 +118,9 @@ class e107_Import extends WP_Importer {
     define("e_PLUGIN" , E107_IMPORTER_PATH);
     define("e_HANDLER", E107_IMPORTER_PATH . E107_INCLUDES_FOLDER . '/');
 
+    // Don't know why but in certain cases e_IMAGE was not defined
+    define("e_IMAGE" , $IMAGES_DIRECTORY);
+
     // Set user-related globals referenced in e_parse_class.php
     define("ADMIN" , True);  // Will replace {e_ADMIN} constant with $ADMIN_DIRECTORY
     define("USER"  , False); // Will not replace {USERID} constant
