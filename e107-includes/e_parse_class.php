@@ -11,8 +11,8 @@
 |     GNU General Public License (http://gnu.org).
 |
 |     $URL: https://e107.svn.sourceforge.net/svnroot/e107/trunk/e107_0.7/e107_handlers/e_parse_class.php $
-|     $Revision: 11804 $
-|     $Id: e_parse_class.php 11804 2010-09-21 07:38:40Z e107steved $
+|     $Revision: 12013 $
+|     $Id: e_parse_class.php 12013 2010-12-18 22:55:22Z e107steved $
 |     $Author: e107steved $
 +----------------------------------------------------------------------------+
 */
@@ -159,6 +159,10 @@ class e_parse
 			{
 				$no_encode = TRUE;
 			}
+			if (!isset($pref['html_abuse']) || $pref['html_abuse'])
+			{
+				if ($this->htmlAbuseFilter($data)) $no_encode = FALSE;
+			}
 			if ($no_encode === TRUE && $mod != 'no_html')
 			{
 				$search = array('$', '"', "'", '\\', '<?');
@@ -182,11 +186,46 @@ class e_parse
 
 
 
+	/**
+	 *	Check for HTML closing tag for input elements, without corresponding opening tag
+	 *
+	 *	@param string $data
+	 *	@param string $tagList - if empty, uses default list of input tags. Otherwise a CSV list of tags to check (any type)
+	 *
+	 *	@return boolean TRUE if an unopened closing tag found
+	 *					FALSE if nothing found
+	 */
+	function htmlAbuseFilter($data, $tagList = '')
+	{
+		if ($tagList == '')
+		{
+			$checkTags = array('textarea', 'input', 'td', 'tr', 'table');
+		}
+		else
+		{
+			$checkTags = explode(',', $tagList);
+		}
+		$data = preg_replace('#\[code\].*?\[\/code\]#i', '', $data);		// Ignore code blocks
+		foreach ($checkTags as $tag)
+		{
+			if (($pos = stripos($data, '</'.$tag)) !== FALSE)
+			{
+				if ((($bPos = stripos($data, '<'.$tag )) === FALSE) || ($bPos > $pos))
+				{
+					return TRUE;		// Potentially abusive HTML found
+				}
+			}
+		}
+		return FALSE;		// Nothing detected
+	}
+
+
+
 	function dataFilter($data)
 	{
 		$ans = '';
 		$vetWords = array('<applet', '<body', '<embed', '<frame', '<script', '<frameset', '<html', '<iframe', 
-					'<style', '<layer', '<link', '<ilayer', '<meta', '<object', 'javascript:', 'vbscript:');
+					'<style', '<layer', '<link', '<ilayer', '<meta', '<object', '<plaintext', 'javascript:', 'vbscript:');
 
 		$ret = preg_split('#(\[code.*?\[/code.*?])#mis', $data, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE );
 
@@ -1141,18 +1180,18 @@ class e_parse
 		return $text;
 	}
 
-//
-// $nonrelative:
-//   "full" = produce absolute URL path, e.g. http://sitename.com/e107_plugins/etc
-//   TRUE = produce truncated URL path, e.g. e107plugins/etc
-//   "" (default) = URL's get relative path e.g. ../e107_plugins/etc
-//
-// $all - if TRUE, then
-//		when $nonrelative is "full" or TRUE, USERID is also replaced...
-//		when $nonrelative is "" (default), ALL other e107 constants are replaced
-//
-// only an ADMIN user can convert {e_ADMIN}
-//
+	/**
+	 * Convert e107 Path Constants (eg. {e_PLUGIN}) to real paths
+	 * @param object $text
+	 * @param object $nonrelative [optional] 
+	 * "full" = produce absolute URL path, e.g. http://sitename.com/e107_plugins/etc
+	 * TRUE = produce truncated URL path, e.g. e107plugins/etc
+	 * '' (default) = URL's get relative path e.g. ../e107_plugins/etc
+	 * @param object $all [optional] if TRUE, then
+	 * when $nonrelative is "full" or TRUE, USERID is also replaced...
+	 * when $nonrelative is "" (default), ALL other e107 constants are replaced
+	 * @return string
+	 */
 	function replaceConstants($text, $nonrelative = "", $all = false)
 	{
 		if($nonrelative != "")

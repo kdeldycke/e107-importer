@@ -31,7 +31,7 @@ This plugin allows you to extract the most important content and data from an e1
 
 This tool was tested with:
 
-* [e107 0.7.24](http://e107.org/news.php?item.877),
+* [e107 0.7.25-rc1](http://e107.org/news.php?item.879),
 * [WordPress 3.1](http://wordpress.org/news/2011/02/threeone/) and
 * [development version of bbPress WordPress plugin (SVN r2942)](http://trac.bbpress.org/browser/branches/plugin?rev=2942).
 
@@ -115,7 +115,7 @@ FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugin
 
 Here is a list of e107 and WordPress versions I tested my plugin with:
 
-* e107-importer 1.2 : e107 0.7.24 / WordPress 3.1 / bbPress plugin SVN r2942
+* e107-importer 1.2 : e107 0.7.25-rc1 / WordPress 3.1 / bbPress plugin SVN r2942
 * e107-importer 1.1 : e107 0.7.24 / WordPress 3.1 / bbPress plugin SVN r2942
 * e107-importer 1.0 : e107 0.7.24 / WordPress 3.1-RC3
 * e107-importer 0.9 : e107 0.7.11 / WordPress 2.3.2
@@ -133,8 +133,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 == Changelog ==
 
 = 1.2 =
-
-No changes yet.
+* Upgrade e107 code to match latest 0.7.25-rc1.
 
 = 1.1 =
 * Add import of forums and threads to bbPress WordPress plugin.
@@ -145,7 +144,7 @@ No changes yet.
 * Import images embedded in comments and forum threads.
 * Description update of existing users is no longer destructive.
 * Add an entry in the FAQ regarding script ending prematurely.
-* Disable all extra HTML rendering hooks like the one comming from e107 linkwords plugin.
+* Disable all extra HTML rendering hooks like the one coming from e107 linkwords plugin.
 * Allow news and pages import to be skipped.
 * Add missing news category redirects.
 * Minimal requirement set to WordPress 3.1.
@@ -211,6 +210,9 @@ No changes yet.
 * First draft of e107 to WordPress importer.
 
 == Upgrade Notice ==
+
+= 1.2 =
+Upgraded against e107 0.7.25-rc1.
 
 = 1.1 =
 Add import of forums and threads. User, news and pages import now optional.
