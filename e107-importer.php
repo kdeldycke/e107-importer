@@ -888,17 +888,15 @@ class e107_Import extends WP_Importer {
       // Others are replies, attached to a topic.
       if ($thread_parent > 0) {
         $post_type_id = bbp_get_reply_post_type();
-        $post_type_name = 'reply';
         $thread_parent_id = (int) $this->forum_post_mapping[$thread_parent];
       } else {
         $post_type_id = bbp_get_topic_post_type();
-        $post_type_name = 'topic';
         $thread_parent_id = $this->forum_mapping[$thread_forum_id];
       }
 
       // Apply pre filters
-      $post_title   = apply_filters('bbp_new_'.$post_type_name.'_pre_title'  , $thread_name);
-      $post_content = apply_filters('bbp_new_'.$post_type_name.'_pre_content', $thread_thread);
+      $post_title   = apply_filters('bbp_new_'.$post_type_id.'_pre_title'  , $thread_name);
+      $post_content = apply_filters('bbp_new_'.$post_type_id.'_pre_content', $thread_thread);
 
       // Get creation date
       $post_date = $this->mysql_date($thread_datestamp);  //XXX ask or get the time offset ?
