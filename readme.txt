@@ -115,6 +115,7 @@ FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugin
 
 Here is a list of e107 and WordPress versions I tested my plugin with:
 
+* e107-importer 1.2 : e107 0.7.24 / WordPress 3.1 / bbPress plugin SVN r2942
 * e107-importer 1.1 : e107 0.7.24 / WordPress 3.1 / bbPress plugin SVN r2942
 * e107-importer 1.0 : e107 0.7.24 / WordPress 3.1-RC3
 * e107-importer 0.9 : e107 0.7.11 / WordPress 2.3.2
@@ -130,6 +131,10 @@ Here is a list of e107 and WordPress versions I tested my plugin with:
 This plugin contain original code from the e107 project, licensed under the GPL.
 
 == Changelog ==
+
+= 1.2 =
+
+No changes yet.
 
 = 1.1 =
 * Add import of forums and threads to bbPress WordPress plugin.
