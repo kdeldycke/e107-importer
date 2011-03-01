@@ -1104,12 +1104,12 @@ class e107_Import extends WP_Importer {
         if ($content_type == 'comment') {
           wp_update_comment(array(
               'comment_ID'      => $content_id
-            , 'comment_content' => $wpdb->escape($new_content)
+            , $content_property => $wpdb->escape($new_content)
             ));
         } else {
           wp_update_post(array(
-              'ID'           => $content_id
-            , 'post_content' => $wpdb->escape($new_content)
+              'ID'              => $content_id
+            , $content_property => $wpdb->escape($new_content)
             ));
         }
       }
