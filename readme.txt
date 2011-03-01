@@ -144,6 +144,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 * Allow news and pages import to be skipped.
 * Add missing news category redirects.
 * Minimal requirement set to WordPress 3.1.
+* Some pages are not tied to a user. In this case, default to the current user.
 
 = 1.0 =
 * Upgrade e107 code from e107 v0.7.24.
