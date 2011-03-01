@@ -1071,6 +1071,7 @@ class e107_Import extends WP_Importer {
       }
       $content_property = $content_type.'_'.$property;
       $content = $content_object->$content_property;
+      $new_content = $content;
 
       // Apply the specified transformation
       $local_image_upload = False;
