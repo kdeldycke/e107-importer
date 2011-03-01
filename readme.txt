@@ -105,10 +105,11 @@ FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugin
 
 == Screenshots ==
 
-1. e107 Importer options. (e107-importer 1.0)
-2. News and categories imported. Custom pages import options displayed. (e107-importer 0.7)
-3. User import completed. Plugin ask about news import options. (e107-importer 0.6)
-4. News imported. Plugin show page import options. (e107-importer 0.5)
+1. e107 Importer options. (e107-importer 1.1)
+2. e107 Importer options. (e107-importer 1.0)
+3. News and categories imported. Custom pages import options displayed. (e107-importer 0.7)
+4. User import completed. Plugin ask about news import options. (e107-importer 0.6)
+5. News imported. Plugin show page import options. (e107-importer 0.5)
 
 == Tested with... ==
 
