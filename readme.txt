@@ -2,7 +2,7 @@
 Contributors: Coolkevman
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XEXREDEHXSQUJ
 Tags: importer, e107, cms, migration
-Requires at least: 3.0.0
+Requires at least: 3.1
 Tested up to: 3.1
 Stable tag: 1.0
 License: GPLv2
