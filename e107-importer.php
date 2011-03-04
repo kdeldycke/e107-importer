@@ -61,6 +61,7 @@ class e107_Import extends WP_Importer {
   var $e107_pref;
   var $e107_parser;
 
+
   // Convert unix timestamp to mysql datetimestamp
   function mysql_date($unix_time) {
     return date("Y-m-d H:i:s", $unix_time);
@@ -403,322 +404,324 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Import e107 users to WordPress
+  // Import all e107 users to WordPress
   function importUsers() {
-    global $wpdb;
-
     // Get user list
     $user_list = $this->getE107UserList();
+    foreach ($user_list as $user)
+      importUser($user);
+  }
 
-    // Send a mail to each user to tell them about password change ?
-    $send_mail = False;
-    if ($this->e107_mail_user == 'send_mail')
-      $send_mail = True;
 
-    foreach ($user_list as $user) {
-      extract($user);
-      $user_id = (int) $user_id;
+  // Migrate one user to WordPress using its e107 data
+  function importUser($user) {
+    global $wpdb;
+    extract($user);
+    $user_id = (int) $user_id;
 
-      // e107 user details mapping
-      // $user_loginname => WP login
-      // $user_name      => WP nickname (the one to display)
-      // $user_login     => WP First + Last name
+    // e107 user details mapping
+    // $user_loginname => WP login
+    // $user_name      => WP nickname (the one to display)
+    // $user_login     => WP First + Last name
 
-      // Try to get first and last name
-      if (!empty($user_login)) {
-        $words = explode(" ", $user_login, 2);
-        $first_name = $words[0];
-        if (sizeof($words) > 1)
-          $last_name  = $words[1];
+    // Try to get first and last name
+    if (!empty($user_login)) {
+      $words = explode(" ", $user_login, 2);
+      $first_name = $words[0];
+      if (sizeof($words) > 1)
+        $last_name  = $words[1];
+    }
+
+    // Try to get the display name
+    $display_name = '';
+    if (!empty($user_name))
+      $display_name = $user_name;
+    elseif (!empty($user_login))
+      $display_name = $user_login;
+    elseif (!empty($user_loginname))
+      $display_name = $user_loginname;
+
+    $user_data = array(
+        'first_name'      => empty($first_name   ) ? '' : $wpdb->escape($first_name)
+      , 'last_name'       => empty($last_name    ) ? '' : $wpdb->escape($last_name)
+      , 'nickname'        => empty($user_name    ) ? '' : $wpdb->escape($user_name)
+      , 'display_name'    => empty($display_name ) ? '' : $wpdb->escape($display_name)
+      , 'user_email'      => empty($user_email   ) ? '' : $wpdb->escape($user_email)
+      , 'user_registered' => empty($user_join    ) ? '' : $this->mysql_date($user_join)
+      , 'user_url'        => empty($user_homepage) ? '' : $wpdb->escape($user_homepage)
+      , 'aim'             => empty($user_aim     ) ? '' : $wpdb->escape($user_aim)
+      , 'yim'             => empty($user_msn     ) ? '' : $wpdb->escape($user_msn)  // Put MSN contact here because they have merged with Yahoo!: http://slashdot.org/articles/05/10/12/0227207.shtml
+      );
+
+    // In case of an update, do not reset previous user profile properties by an empty value
+    foreach ($user_data as $k=>$v)
+      if (strlen($v) <= 0)
+        unset($user_data[$k]);
+
+    // Sanitize login string
+    $user_loginname = sanitize_user($user_loginname, $strict=True);
+
+    // Try to find a previous user and its ID
+    $wp_user_ID = False;
+    if (email_exists($user_email))
+      $wp_user_ID = email_exists($user_email);
+    elseif (username_exists($user_loginname))
+      $wp_user_ID = username_exists($user_loginname);
+
+    // Create a new user
+    if (!$wp_user_ID) {
+      // New password is required because we can't decrypt e107 password
+      $new_password = wp_generate_password(12, False);
+      $user_data['user_pass'] = $wpdb->escape($new_password);
+      // Don't reset login name on user update
+      $user_data['user_login'] = $wpdb->escape($user_loginname);
+      $ret_id = wp_insert_user($user_data);
+      // Send mail notification to users to warn them of a new password (and new login because of UTF-8)
+      if ($this->e107_mail_user)
+        wp_new_user_notification($ret_id, $new_password);
+    } else {
+      // User already exist, update its profile
+      $user_data['ID'] = $wp_user_ID;
+      $ret_id = wp_update_user($user_data);
+    }
+    // Update user mapping, cast to int
+    $this->user_mapping[$user_id] = (int) $ret_id;
+
+    // Update user's description with remaining parameters like signature, location and birthday.
+    $extra_info_list = array();
+    if (!empty($user_signature))                                  $extra_info_list[] = __("Signature: ").$user_signature;
+    if (!empty($user_customtitle))                                $extra_info_list[] = __("Custom title: ").$user_customtitle;
+    if (!empty($user_location))                                   $extra_info_list[] = __("Location: ").$user_location;
+    if (!empty($user_birthday) && $user_birthday != '0000-00-00') $extra_info_list[] = __("Birthday: ").$user_birthday;
+    $wp_user = new WP_User($ret_id);
+    $old_description = $wp_user->description;
+    $new_description = $old_description;
+    foreach (array_reverse($extra_info_list) as $extra_info)
+      if (stristr($new_description, $extra_info) === False)
+        $new_description = $extra_info."\n".$new_description;
+    if ($new_description != $old_description)
+      wp_update_user(array('ID' => $wp_user->ID, 'description' => $new_description));
+  }
+
+
+  // Import all e107 news and categories to WordPress
+  function importNewsAndCategories() {
+    // Import categories
+    $category_list = $this->getE107CategoryList();
+    foreach ($category_list as $category)
+      importCategory($category);
+    // Import news
+    $news_list = $this->getE107NewsList();
+    foreach ($news_list as $news)
+      importNews($news);
+  }
+
+
+  // Migrate one category to WordPress using its e107 data
+  function importCategory($category) {
+    extract($category);
+    $cat_id = category_exists($category_name);
+    if (!$cat_id) {
+      $new_cat = array();
+      $new_cat['cat_name'] = $category_name;
+      $cat_id = wp_insert_category($new_cat);
+    }
+    $this->category_mapping[$category_id] = (int) $cat_id;
+  }
+
+
+  // Migrate one news to WordPress using its e107 data
+  function importNews($news) {
+    global $wpdb;
+    extract($news);
+    $news_id = (int) $news_id;
+
+    // Special actions for extended news
+    if ($this->e107_extended_news == 'import_all')
+      $news_body = $news_body."\n\n".$news_extended;
+    elseif ($this->e107_extended_news == 'ignore_body')
+      $news_body = $news_extended;
+
+    // Update author role if necessary;
+    // If the user has the minimum role (aka subscriber) he is not able to post
+    //   news. In this case, we increase his role by one level (aka contributor).
+    $author_id = $this->user_mapping[$news_author];
+    $author = new WP_User($author_id);
+    if (! $author->has_cap('edit_posts'))
+      $author->set_role('contributor');
+
+    // Save e107 news in WordPress database
+    $post_id = wp_insert_post(array(
+        'post_author'    => $author_id                          // use the new wordpress user ID
+      , 'post_date'      => $this->mysql_date($news_datestamp)
+      , 'post_date_gmt'  => $this->mysql_date($news_datestamp)
+      , 'post_content'   => $wpdb->escape($news_body)
+      , 'post_title'     => $wpdb->escape($news_title)
+      , 'post_status'    => 'publish'                           // News are always published in e107
+      , 'comment_status' => $news_allow_comments                // TODO: get global config to set this value dynamiccaly
+      , 'ping_status'    => 'open'                              // XXX is there such a concept in e107 ?
+      , 'comment_count'  => $news_comment_total
+      ));
+
+    // Link post to category
+    $news_category = (int) $news_category;
+    if (array_key_exists($news_category, $this->category_mapping)) {
+      $cats = array();
+      $cats[] = $this->category_mapping[$news_category];
+      wp_set_post_categories($post_id, $cats);
+    }
+
+    // Update post mapping
+    $this->news_mapping[$news_id] = (int) $post_id;
+  }
+
+
+  // Import all e107 pages to WordPress
+  function importPages() {
+    $page_list = $this->getE107PageList();
+    foreach ($page_list as $page)
+      importPage($page);
+  }
+
+
+  // Migrate one page to WordPress using its e107 data
+  function importPage($page) {
+    global $wpdb;
+    extract($page);
+    $page_id = (int) $page_id;
+
+    // Set the status of the post to 'publish' or 'private'.
+    // There is no 'draft' in e107.
+    $post_status = 'publish';
+    if ($page_class != '0')
+      $post_status = 'private';
+
+    // Update author role if necessary;
+    // If the user has the minimum role (aka subscriber) he is not able to post
+    //   pages. In this case, we raise is role by 1 level (aka contributor).
+    if (array_key_exists($page_author, $this->user_mapping)) {
+      $author_id = $this->user_mapping[$page_author];
+      $author = new WP_User($author_id);
+    } else {
+      // Can't find the original user, use the current one.
+      $author = wp_get_current_user();
+    }
+    if (!$author->has_cap('edit_posts'))
+      $author->set_role('contributor');
+    // If user is the author of a private page give him the 'editor' role else he can't view private pages
+    if (($post_status == 'private') and (!$author->has_cap('read_private_pages')))
+      $author->set_role('editor');
+
+    // Define comment status
+    if (!$page_comment_flag) {
+      $comment_status = 'closed';
+    } else {
+      $comment_status = 'open';
+    }
+
+    // Save e107 static page in WordPress database
+    $ret_id = wp_insert_post(array(
+        'post_author'    => $author->ID
+      , 'post_date'      => $this->mysql_date($page_datestamp)
+      , 'post_date_gmt'  => $this->mysql_date($page_datestamp)
+      , 'post_content'   => $wpdb->escape($page_text)
+      , 'post_title'     => $wpdb->escape($page_title)
+      , 'post_status'    => $post_status
+      , 'post_type'      => 'page'
+      , 'comment_status' => $comment_status
+      , 'ping_status'    => 'closed'               // XXX is there a global variable in WordPress or e107 to guess this ?
+      ));
+
+    // Update page mapping
+    $this->page_mapping[$page_id] = (int) $ret_id;
+  }
+
+
+  // Import all e107 comments to WordPress
+  function importComments() {
+    $comment_list = $this->getE107CommentList();
+    foreach ($comment_list as $comment)
+      importComment($comment);
+  }
+
+
+  // Migrate one comment to WordPress using its e107 data
+  function importComment($comment) {
+    global $wpdb;
+    extract($comment);
+    $comment_id      = (int) $comment_id;
+    $comment_item_id = (int) $comment_item_id;
+
+    // Get the post_id from $news_mapping or $pages_mapping depending of the comment type
+    if ($comment_type == 'page' and $this->e107_import_pages) {
+      $post_id = $this->page_mapping[$comment_item_id];
+    } elseif ($comment_type == '0' and $this->e107_import_news) {
+      $post_id = $this->news_mapping[$comment_item_id];
+    } else {
+      // Do not import this comment: its either a non-news or non-page comment, or the user choosed to skip news and/or pages comments import
+      continue;
+    }
+
+    // Don't import comments not linked with news
+    $post_status = get_post_status($post_id);
+    if ($post_status != False) {
+
+      // Get author details from WordPress if registered.
+      $author_name  = substr($comment_author, strpos($comment_author, '.') + 1);
+      $author_id    = (int) strrev(substr(strrev($comment_author), strpos(strrev($comment_author), '.') + 1));
+      $author_ip    = $this->ip_hex2dec($comment_ip);
+      $author_email = $comment_author_email;
+      unset($author_url);
+
+      // Registered user
+      if (array_key_exists($author_id, $this->user_mapping)) {
+        $author_id = $this->user_mapping[$author_id];
+        $author = new WP_User($author_id);
+        $author_name  = $author->display_name;
+        $author_email = $author->user_email;
+        $author_url   = $author->user_url;
+      // Unregistered user
+      } else {
+        unset($author_id);
+        // Sometimes $author_name is of given as email address. In this case, try to guess the user name.
+        if ($author_email == '' and filter_var($author_name, FILTER_VALIDATE_EMAIL)) {
+          $author_email = $author_name;
+          $author_name = substr($author_name, 0, strpos($author_name, '@'));
+        }
       }
 
-      // Try to get the display name
-      $display_name = '';
-      if (!empty($user_name))
-        $display_name = $user_name;
-      elseif (!empty($user_login))
-        $display_name = $user_login;
-      elseif (!empty($user_loginname))
-        $display_name = $user_loginname;
-
-      $user_data = array(
-          'first_name'      => empty($first_name   ) ? '' : $wpdb->escape($first_name)
-        , 'last_name'       => empty($last_name    ) ? '' : $wpdb->escape($last_name)
-        , 'nickname'        => empty($user_name    ) ? '' : $wpdb->escape($user_name)
-        , 'display_name'    => empty($display_name ) ? '' : $wpdb->escape($display_name)
-        , 'user_email'      => empty($user_email   ) ? '' : $wpdb->escape($user_email)
-        , 'user_registered' => empty($user_join    ) ? '' : $this->mysql_date($user_join)
-        , 'user_url'        => empty($user_homepage) ? '' : $wpdb->escape($user_homepage)
-        , 'aim'             => empty($user_aim     ) ? '' : $wpdb->escape($user_aim)
-        , 'yim'             => empty($user_msn     ) ? '' : $wpdb->escape($user_msn)  // Put MSN contact here because they have merged with Yahoo!: http://slashdot.org/articles/05/10/12/0227207.shtml
+      // Build up comment data array
+      $comment_data = array(
+          'comment_post_ID'      => empty($post_id          ) ? '' : $post_id
+        , 'comment_author'       => empty($author_name      ) ? '' : $wpdb->escape($author_name)
+        , 'comment_author_email' => empty($author_email     ) ? '' : $wpdb->escape($author_email)
+        , 'comment_author_url'   => empty($author_url       ) ? '' : $wpdb->escape($author_url)
+        , 'comment_author_IP'    => empty($author_ip        ) ? '' : $author_ip
+        , 'comment_date'         => empty($comment_datestamp) ? '' : $this->mysql_date($comment_datestamp)  //XXX ask or get the time offset ?
+        , 'comment_date_gmt'     => empty($comment_datestamp) ? '' : $this->mysql_date($comment_datestamp)  //XXX ask or get the time offset ?
+        , 'comment_content'      => empty($comment_comment  ) ? '' : $wpdb->escape($comment_comment)
+        , 'comment_approved'     => empty($comment_blocked  ) ? '' : ! (int) $comment_blocked
+        , 'user_id'              => empty($author_id        ) ? '' : $author_id
+        , 'user_ID'              => empty($author_id        ) ? '' : $author_id
+        , 'filtered'             => True
         );
 
-      // In case of an update, do not reset previous user profile properties by an empty value
-      foreach ($user_data as $k=>$v)
+      // Clean-up the array
+      foreach ($comment_data as $k=>$v)
         if (strlen($v) <= 0)
-          unset($user_data[$k]);
+          unset($comment_data[$k]);
 
-      // Sanitize login string
-      $user_loginname = sanitize_user($user_loginname, $strict=True);
-
-      // Try to find a previous user and its ID
-      $wp_user_ID = False;
-      if (email_exists($user_email))
-        $wp_user_ID = email_exists($user_email);
-      elseif (username_exists($user_loginname))
-        $wp_user_ID = username_exists($user_loginname);
-
-      // Create a new user
-      if (!$wp_user_ID) {
-        // New password is required because we can't decrypt e107 password
-        $new_password = wp_generate_password(12, False);
-        $user_data['user_pass'] = $wpdb->escape($new_password);
-        // Don't reset login name on user update
-        $user_data['user_login'] = $wpdb->escape($user_loginname);
-        $ret_id = wp_insert_user($user_data);
-        // Send mail notification to users to warn them of a new password (and new login because of UTF-8)
-        if ($send_mail)
-          wp_new_user_notification($ret_id, $new_password);
-      } else {
-        // User already exist, update its profile
-        $user_data['ID'] = $wp_user_ID;
-        $ret_id = wp_update_user($user_data);
-      }
-      // Update user mapping, cast to int
-      $this->user_mapping[$user_id] = (int) $ret_id;
-
-      // Update user's description with remaining parameters like signature, location and birthday.
-      $extra_info_list = array();
-      if (!empty($user_signature))                                  $extra_info_list[] = __("Signature: ").$user_signature;
-      if (!empty($user_customtitle))                                $extra_info_list[] = __("Custom title: ").$user_customtitle;
-      if (!empty($user_location))                                   $extra_info_list[] = __("Location: ").$user_location;
-      if (!empty($user_birthday) && $user_birthday != '0000-00-00') $extra_info_list[] = __("Birthday: ").$user_birthday;
-      $wp_user = new WP_User($ret_id);
-      $old_description = $wp_user->description;
-      $new_description = $old_description;
-      foreach (array_reverse($extra_info_list) as $extra_info)
-        if (stristr($new_description, $extra_info) === False)
-          $new_description = $extra_info."\n".$new_description;
-      if ($new_description != $old_description)
-        wp_update_user(array('ID' => $wp_user->ID, 'description' => $new_description));
-    }
-  }
-
-
-  // Get e107 news and save them as WordPress posts
-  function importNewsAndCategories() {
-    global $wpdb;
-
-    // Phase 1: import categories
-
-    // Get category list
-    $category_list = $this->getE107CategoryList();
-
-    foreach ($category_list as $category) {
-      extract($category);
-      $cat_id = category_exists($category_name);
-      if (!$cat_id) {
-        $new_cat = array();
-        $new_cat['cat_name'] = $category_name;
-        $cat_id = wp_insert_category($new_cat);
-      }
-      $this->category_mapping[$category_id] = (int) $cat_id;
-    }
-
-    // Phase 2: Convert news to post
-
-    // Get news list
-    $news_list = $this->getE107NewsList();
-
-    foreach ($news_list as $news) {
-      extract($news);
-      $news_id = (int) $news_id;
-
-      // Special actions for extended news
-      if ($this->e107_extended_news == 'import_all')
-        $news_body = $news_body."\n\n".$news_extended;
-      elseif ($this->e107_extended_news == 'ignore_body')
-        $news_body = $news_extended;
-
-      // Update author role if necessary;
-      // If the user has the minimum role (aka subscriber) he is not able to post
-      //   news. In this case, we increase his role by one level (aka contributor).
-      $author_id = $this->user_mapping[$news_author];
-      $author = new WP_User($author_id);
-      if (! $author->has_cap('edit_posts'))
-        $author->set_role('contributor');
-
-      // Save e107 news in WordPress database
-      $post_id = wp_insert_post(array(
-          'post_author'    => $author_id                          // use the new wordpress user ID
-        , 'post_date'      => $this->mysql_date($news_datestamp)
-        , 'post_date_gmt'  => $this->mysql_date($news_datestamp)
-        , 'post_content'   => $wpdb->escape($news_body)
-        , 'post_title'     => $wpdb->escape($news_title)
-        , 'post_status'    => 'publish'                           // News are always published in e107
-        , 'comment_status' => $news_allow_comments                // TODO: get global config to set this value dynamiccaly
-        , 'ping_status'    => 'open'                              // XXX is there such a concept in e107 ?
-        , 'comment_count'  => $news_comment_total
-        ));
-
-      // Link post to category
-      $news_category = (int) $news_category;
-      if (array_key_exists($news_category, $this->category_mapping)) {
-        $cats = array();
-        $cats[] = $this->category_mapping[$news_category];
-        wp_set_post_categories($post_id, $cats);
-      }
+      // Save e107 comment in WordPress database
+      $ret_id = wp_insert_comment($comment_data);
 
       // Update post mapping
-      $this->news_mapping[$news_id] = (int) $post_id;
+      $this->comment_mapping[$comment_id] = (int) $ret_id;
     }
   }
 
 
-  // Convert static pages to WordPress pages
-  function importPages() {
-    global $wpdb;
-
-    // Get static pages list
-    $page_list = $this->getE107PageList();
-
-    foreach ($page_list as $page) {
-      extract($page);
-      $page_id = (int) $page_id;
-
-      // Set the status of the post to 'publish' or 'private'.
-      // There is no 'draft' in e107.
-      $post_status = 'publish';
-      if ($page_class != '0')
-        $post_status = 'private';
-
-      // Update author role if necessary;
-      // If the user has the minimum role (aka subscriber) he is not able to post
-      //   pages. In this case, we raise is role by 1 level (aka contributor).
-      if (array_key_exists($page_author, $this->user_mapping)) {
-        $author_id = $this->user_mapping[$page_author];
-        $author = new WP_User($author_id);
-      } else {
-        // Can't find the original user, use the current one.
-        $author = wp_get_current_user();
-      }
-      if (!$author->has_cap('edit_posts'))
-        $author->set_role('contributor');
-      // If user is the author of a private page give him the 'editor' role else he can't view private pages
-      if (($post_status == 'private') and (!$author->has_cap('read_private_pages')))
-        $author->set_role('editor');
-
-      // Define comment status
-      if (!$page_comment_flag) {
-        $comment_status = 'closed';
-      } else {
-        $comment_status = 'open';
-      }
-
-      // Save e107 static page in WordPress database
-      $ret_id = wp_insert_post(array(
-          'post_author'    => $author->ID
-        , 'post_date'      => $this->mysql_date($page_datestamp)
-        , 'post_date_gmt'  => $this->mysql_date($page_datestamp)
-        , 'post_content'   => $wpdb->escape($page_text)
-        , 'post_title'     => $wpdb->escape($page_title)
-        , 'post_status'    => $post_status
-        , 'post_type'      => 'page'
-        , 'comment_status' => $comment_status
-        , 'ping_status'    => 'closed'               // XXX is there a global variable in WordPress or e107 to guess this ?
-        ));
-
-      // Update page mapping
-      $this->page_mapping[$page_id] = (int) $ret_id;
-    }
-  }
-
-
-  // Import e107 comments as WordPress comments
-  function importComments() {
-    global $wpdb;
-
-    // Get News list
-    $comment_list = $this->getE107CommentList();
-
-    foreach ($comment_list as $comment) {
-      extract($comment);
-      $comment_id      = (int) $comment_id;
-      $comment_item_id = (int) $comment_item_id;
-
-      // Get the post_id from $news_mapping or $pages_mapping depending of the comment type
-      if ($comment_type == 'page' and $this->e107_import_pages) {
-        $post_id = $this->page_mapping[$comment_item_id];
-      } elseif ($comment_type == '0' and $this->e107_import_news) {
-        $post_id = $this->news_mapping[$comment_item_id];
-      } else {
-        // Do not import this comment: its either a non-news or non-page comment, or the user choosed to skip news and/or pages comments import
-        continue;
-      }
-
-      // Don't import comments not linked with news
-      $post_status = get_post_status($post_id);
-      if ($post_status != False) {
-
-        // Get author details from WordPress if registered.
-        $author_name  = substr($comment_author, strpos($comment_author, '.') + 1);
-        $author_id    = (int) strrev(substr(strrev($comment_author), strpos(strrev($comment_author), '.') + 1));
-        $author_ip    = $this->ip_hex2dec($comment_ip);
-        $author_email = $comment_author_email;
-        unset($author_url);
-
-        // Registered user
-        if (array_key_exists($author_id, $this->user_mapping)) {
-          $author_id = $this->user_mapping[$author_id];
-          $author = new WP_User($author_id);
-          $author_name  = $author->display_name;
-          $author_email = $author->user_email;
-          $author_url   = $author->user_url;
-        // Unregistered user
-        } else {
-          unset($author_id);
-          // Sometimes $author_name is of given as email address. In this case, try to guess the user name.
-          if ($author_email == '' and filter_var($author_name, FILTER_VALIDATE_EMAIL)) {
-            $author_email = $author_name;
-            $author_name = substr($author_name, 0, strpos($author_name, '@'));
-          }
-        }
-
-        // Build up comment data array
-        $comment_data = array(
-            'comment_post_ID'      => empty($post_id          ) ? '' : $post_id
-          , 'comment_author'       => empty($author_name      ) ? '' : $wpdb->escape($author_name)
-          , 'comment_author_email' => empty($author_email     ) ? '' : $wpdb->escape($author_email)
-          , 'comment_author_url'   => empty($author_url       ) ? '' : $wpdb->escape($author_url)
-          , 'comment_author_IP'    => empty($author_ip        ) ? '' : $author_ip
-          , 'comment_date'         => empty($comment_datestamp) ? '' : $this->mysql_date($comment_datestamp)  //XXX ask or get the time offset ?
-          , 'comment_date_gmt'     => empty($comment_datestamp) ? '' : $this->mysql_date($comment_datestamp)  //XXX ask or get the time offset ?
-          , 'comment_content'      => empty($comment_comment  ) ? '' : $wpdb->escape($comment_comment)
-          , 'comment_approved'     => empty($comment_blocked  ) ? '' : ! (int) $comment_blocked
-          , 'user_id'              => empty($author_id        ) ? '' : $author_id
-          , 'user_ID'              => empty($author_id        ) ? '' : $author_id
-          , 'filtered'             => True
-          );
-
-        // Clean-up the array
-        foreach ($comment_data as $k=>$v)
-          if (strlen($v) <= 0)
-            unset($comment_data[$k]);
-
-        // Save e107 comment in WordPress database
-        $ret_id = wp_insert_comment($comment_data);
-
-        // Update post mapping
-        $this->comment_mapping[$comment_id] = (int) $ret_id;
-      }
-    }
-  }
-
-
-  // Import e107 forums to bbPress WordPress plugin
+  // Import all e107 forums to bbPress plugin
   function importForums() {
-    global $wpdb;
-
     // Group users by class
     $user_classes = array();
     $user_list = $this->getE107UserList();
@@ -733,232 +736,238 @@ class e107_Import extends WP_Importer {
         $user_classes[$user_class] = $updated_user_list;
       }
     }
-
-    // Get all forum
+    // Import all forum
     $forum_list = $this->getE107ForumList();
+    foreach ($forum_list as $forum)
+      importForum($forum, $user_classes);
+  }
 
-    foreach ($forum_list as $forum) {
-      extract($forum);
-      $forum_id         = (int) $forum_id;
-      $forum_parent     = (int) $forum_parent;
-      $forum_moderators = (int) $forum_moderators;
 
-      // Create a list of potential author based on all moderators
-      $potential_authors = array();
+  // Migrate one forum to bbPress plugin using its e107 data
+  function importForum($forum, $user_classes) {
+    global $wpdb;
+    extract($forum);
+    $forum_id         = (int) $forum_id;
+    $forum_parent     = (int) $forum_parent;
+    $forum_moderators = (int) $forum_moderators;
 
-      // If moderator ID is not 254 then moderators are defined as a e107 user class.
-      // Else, do nothing: it means moderators are all e107 admins, which is the default bbPress behaviour.
-      if ($forum_moderators != 254 and array_key_exists($forum_moderators, $user_classes)) {
-        // Migrate moderator roles from e107 users to WordPress
-        foreach ($user_classes[$forum_moderators] as $moderator) {
-          $mod_id = (int) $this->user_mapping[$moderator];
-          $potential_authors[] = $mod_id;
-          $mod_user = new WP_User($mod_id);
-          $mod_role = array_shift($mod_user->roles);
-          // Increase user role to forum moderator only if user has no role nor moderate capability
-          if ((empty($mod_role) or $mod_role == 'subscriber') and !$mod_user->has_cap('moderate'))
-            $mod_user->set_role('bbp_moderator');
-        }
+    // Create a list of potential author based on all moderators
+    $potential_authors = array();
+
+    // If moderator ID is not 254 then moderators are defined as a e107 user class.
+    // Else, do nothing: it means moderators are all e107 admins, which is the default bbPress behaviour.
+    if ($forum_moderators != 254 and array_key_exists($forum_moderators, $user_classes)) {
+      // Migrate moderator roles from e107 users to WordPress
+      foreach ($user_classes[$forum_moderators] as $moderator) {
+        $mod_id = (int) $this->user_mapping[$moderator];
+        $potential_authors[] = $mod_id;
+        $mod_user = new WP_User($mod_id);
+        $mod_role = array_shift($mod_user->roles);
+        // Increase user role to forum moderator only if user has no role nor moderate capability
+        if ((empty($mod_role) or $mod_role == 'subscriber') and !$mod_user->has_cap('moderate'))
+          $mod_user->set_role('bbp_moderator');
       }
-
-      // Set the author of the forum: the oldest moderator or the oldest admin.
-      if (!empty($potential_authors)) {
-        ksort($potential_authors);
-        $author_id = array_shift($potential_authors);
-      } else {
-        $user_ids = $this->getWPUserIDs();
-        foreach ($user_ids as $user_id) {
-          if (user_can($user_id, 'publish_forums')) {
-            $author_id = $user_id;
-            break;
-          }
-        }
-      }
-
-      // Calculate forum's parent
-      $updated_parent = 0;
-      if (array_key_exists($forum_parent, $this->forum_mapping)) {
-        $updated_parent = (int) $this->forum_mapping[$forum_parent];
-      }
-
-      // Save e107 forum in WordPress database
-      $ret_id = wp_insert_post(array(
-          'post_author'    => $author_id
-        , 'post_date'      => $this->mysql_date($forum_datestamp)  //XXX ask or get the time offset ?
-        , 'post_date_gmt'  => $this->mysql_date($forum_datestamp)  //XXX ask or get the time offset ?
-        , 'post_content'   => $forum_description
-        , 'post_title'     => $forum_name
-        , 'post_name'      => sanitize_title($forum_name)
-        , 'post_type'      => bbp_get_forum_post_type()
-        , 'comment_status' => 'closed'
-        , 'ping_status'    => 'closed'
-        , 'post_parent'    => $updated_parent
-        , 'menu_order'     => (int) $forum_order
-        ));
-
-      // Update forum mapping
-      $this->forum_mapping[$forum_id] = (int) $ret_id;
-
-      // Set forum visibility.
-      //   0 -> Everyone (public)
-      // 253 -> Members
-      // 254 -> Admin
-      // 255 -> No One (inactive)
-      //   X -> user class ID
-      if ($forum_class == 0) {
-        bbp_open_forum($ret_id);
-        bbp_publicize_forum($ret_id);
-      } elseif ($forum_class == 254 or $forum_class == 255) {
-        bbp_close_forum($ret_id);
-        bbp_privatize_forum($ret_id);
-      } elseif ($forum_class == 253) {
-        bbp_open_forum($ret_id);
-        bbp_privatize_forum($ret_id);
-      } else {
-        bbp_open_forum($ret_id);
-        bbp_privatize_forum($ret_id);
-      }
-
-      // TODO: $forum_postclass is for "Post permission (indicates who can post to the forum)"
-      //   0 -> Everyone (public)
-      // 253 -> Members
-      // 254 -> Admin
-      // 255 -> No One (inactive)
-      //   X -> user class ID
-
-      // Set forum type
-      if ($forum_parent == 0) {
-        // The forum is a category
-        bbp_categorize_forum($ret_id);
-      } else {
-        // The forum is a normal forum
-        bbp_normalize_forum($ret_id);
-      }
-
-      // XXX How to handle e107's $forum_sub field ?
-
-      // Publish the forum
-      wp_publish_post($ret_id);
     }
+
+    // Set the author of the forum: the oldest moderator or the oldest admin.
+    if (!empty($potential_authors)) {
+      ksort($potential_authors);
+      $author_id = array_shift($potential_authors);
+    } else {
+      $user_ids = $this->getWPUserIDs();
+      foreach ($user_ids as $user_id) {
+        if (user_can($user_id, 'publish_forums')) {
+          $author_id = $user_id;
+          break;
+        }
+      }
+    }
+
+    // Calculate forum's parent
+    $updated_parent = 0;
+    if (array_key_exists($forum_parent, $this->forum_mapping)) {
+      $updated_parent = (int) $this->forum_mapping[$forum_parent];
+    }
+
+    // Save e107 forum in WordPress database
+    $ret_id = wp_insert_post(array(
+        'post_author'    => $author_id
+      , 'post_date'      => $this->mysql_date($forum_datestamp)  //XXX ask or get the time offset ?
+      , 'post_date_gmt'  => $this->mysql_date($forum_datestamp)  //XXX ask or get the time offset ?
+      , 'post_content'   => $forum_description
+      , 'post_title'     => $forum_name
+      , 'post_name'      => sanitize_title($forum_name)
+      , 'post_type'      => bbp_get_forum_post_type()
+      , 'comment_status' => 'closed'
+      , 'ping_status'    => 'closed'
+      , 'post_parent'    => $updated_parent
+      , 'menu_order'     => (int) $forum_order
+      ));
+
+    // Update forum mapping
+    $this->forum_mapping[$forum_id] = (int) $ret_id;
+
+    // Set forum visibility.
+    //   0 -> Everyone (public)
+    // 253 -> Members
+    // 254 -> Admin
+    // 255 -> No One (inactive)
+    //   X -> user class ID
+    if ($forum_class == 0) {
+      bbp_open_forum($ret_id);
+      bbp_publicize_forum($ret_id);
+    } elseif ($forum_class == 254 or $forum_class == 255) {
+      bbp_close_forum($ret_id);
+      bbp_privatize_forum($ret_id);
+    } elseif ($forum_class == 253) {
+      bbp_open_forum($ret_id);
+      bbp_privatize_forum($ret_id);
+    } else {
+      bbp_open_forum($ret_id);
+      bbp_privatize_forum($ret_id);
+    }
+
+    // TODO: $forum_postclass is for "Post permission (indicates who can post to the forum)"
+    //   0 -> Everyone (public)
+    // 253 -> Members
+    // 254 -> Admin
+    // 255 -> No One (inactive)
+    //   X -> user class ID
+
+    // Set forum type
+    if ($forum_parent == 0) {
+      // The forum is a category
+      bbp_categorize_forum($ret_id);
+    } else {
+      // The forum is a normal forum
+      bbp_normalize_forum($ret_id);
+    }
+
+    // XXX How to handle e107's $forum_sub field ?
+
+    // Publish the forum
+    wp_publish_post($ret_id);
+  }
+
+
+  // Import all e107 forum threads to bbPress plugin
+  function importForumThreads() {
+    $forum_post_list = $this->getE107ForumPostList();
+    foreach ($forum_post_list as $thread)
+      importForumThread($thread);
   }
 
 
   // Import e107 forum content to bbPress WordPress plugin
   // This method mimick bbp_new_topic_handler() and bbp_new_reply_handler()
-  function importForumThreads() {
+  function importForumThread($thread) {
     global $wpdb;
+    extract($thread);
+    $thread_id       = (int) $thread_id;
+    $thread_forum_id = (int) $thread_forum_id;
+    $thread_parent   = (int) $thread_parent;
+    $thread_s        = (int) $thread_s;
+    $thread_active   = (int) $thread_active;
 
-    // Get all forum posts
-    $forum_post_list = $this->getE107ForumPostList();
-
-    foreach ($forum_post_list as $thread) {
-      extract($thread);
-      $thread_id       = (int) $thread_id;
-      $thread_forum_id = (int) $thread_forum_id;
-      $thread_parent   = (int) $thread_parent;
-      $thread_s        = (int) $thread_s;
-      $thread_active   = (int) $thread_active;
-
-      // Compute thread author's new ID
-      $author_fragments = explode(".", $thread_user, 2);
-      $author_id        = (int) $author_fragments[0];
-      $author_name      = $author_fragments[1];
-      $author_ip        = '';
-      // Author is anonymous, its name and IP are intertwined
-      if ($author_id == 0) {
-        $last_valid_cut = 0;
-        for ($cut_index=1; $cut_index<strlen($author_name); $cut_index++) {
-          if (filter_var(substr($author_name, -$cut_index), FILTER_VALIDATE_IP))
-            $last_valid_cut = $cut_index;
-        }
-        $author_ip = substr($author_name, -$last_valid_cut);
-        $author_name = substr($author_name, 0, -$last_valid_cut);
-      // Author is not anonymous, we should find him in WordPress
-      } else {
-        if (array_key_exists($author_id, $this->user_mapping)) {
-          $author_id = (int) $this->user_mapping[$author_id];
-        } else{
-          // Some users had an account but were deleted for any other reason.
-          // In this case, let's declare them anonymous. $author_name is still set.
-          $author_id = 0;
-        }
+    // Compute thread author's new ID
+    $author_fragments = explode(".", $thread_user, 2);
+    $author_id        = (int) $author_fragments[0];
+    $author_name      = $author_fragments[1];
+    $author_ip        = '';
+    // Author is anonymous, its name and IP are intertwined
+    if ($author_id == 0) {
+      $last_valid_cut = 0;
+      for ($cut_index=1; $cut_index<strlen($author_name); $cut_index++) {
+        if (filter_var(substr($author_name, -$cut_index), FILTER_VALIDATE_IP))
+          $last_valid_cut = $cut_index;
       }
-
-      // Top message of threads are topics, attached to a forum.
-      // Others are replies, attached to a topic.
-      if ($thread_parent > 0) {
-        $post_type_id = bbp_get_reply_post_type();
-        $thread_parent_id = (int) $this->forum_post_mapping[$thread_parent];
-      } else {
-        $post_type_id = bbp_get_topic_post_type();
-        $thread_parent_id = $this->forum_mapping[$thread_forum_id];
+      $author_ip = substr($author_name, -$last_valid_cut);
+      $author_name = substr($author_name, 0, -$last_valid_cut);
+    // Author is not anonymous, we should find him in WordPress
+    } else {
+      if (array_key_exists($author_id, $this->user_mapping)) {
+        $author_id = (int) $this->user_mapping[$author_id];
+      } else{
+        // Some users had an account but were deleted for any other reason.
+        // In this case, let's declare them anonymous. $author_name is still set.
+        $author_id = 0;
       }
-
-      // Apply pre filters
-      $post_title   = apply_filters('bbp_new_'.$post_type_id.'_pre_title'  , $thread_name);
-      $post_content = apply_filters('bbp_new_'.$post_type_id.'_pre_content', $thread_thread);
-
-      // Get creation date
-      $post_date = $this->mysql_date($thread_datestamp);  //XXX ask or get the time offset ?
-      // TODO: How-to handle $thread_edit_datestamp ?
-
-      // Save e107 forum in WordPress database
-      $ret_id = wp_insert_post(array(
-          'post_author'    => $author_id
-        , 'post_date'      => $post_date
-        , 'post_date_gmt'  => $post_date
-        , 'post_content'   => $post_content
-        , 'post_title'     => $post_title
-        , 'post_name'      => sanitize_title($post_title)
-        , 'post_type'      => $post_type_id
-        , 'comment_status' => 'closed'
-        , 'ping_status'    => 'closed'
-        , 'post_parent'    => $thread_parent_id
-        ));
-
-      // Update forum post mapping
-      $this->forum_post_mapping[$thread_id] = (int) $ret_id;
-
-      // Publish the post
-      wp_publish_post($ret_id);
-
-      // Sticky threads stays sticky, Announcements are promoted super-sticky.
-      if ($thread_s == 1) {
-        bbp_stick_topic($ret_id);
-      } elseif ($thread_s > 2) {
-        bbp_stick_topic($ret_id, True);
-      }
-
-      // Update inserted post with Anonymous related data.
-      // Both bbp_anonymous_name and bbp_anonymous_email are required, that's why we use dummy default values.
-      $anonymous_data = array();
-      if ($author_id == 0) {
-        $anonymous_data = array( 'bbp_anonymous_name'  => empty($author_name) ? 'Anonymous user' : $author_name
-                               , 'bbp_anonymous_ip'    => empty($author_ip  ) ? '192.0.2.0'      : $author_ip   # See RFC 5735
-                               , 'bbp_anonymous_email' => 'anonymous@example.com'
-                               // Website is optionnal in bbPress
-                               );
-      }
-
-      // Update reply metadata
-      if (bbp_is_topic($ret_id)) {
-        $forum_id = $thread_parent_id;
-        do_action('bbp_new_topic', $ret_id, $forum_id, $anonymous_data, $author_id);
-        // Fix the last active time autommaticaly set by bbp_new_topic
-        bbp_update_topic_last_active_time($ret_id, $post_date);
-        bbp_update_topic_walker($ret_id, $post_date, $forum_id, 0, False);
-      } else {
-        $topic_id = $thread_parent_id;
-        $forum_id = bbp_get_topic_forum_id($topic_id);
-        do_action('bbp_new_reply', $ret_id, $topic_id, $forum_id, $anonymous_data, $author_id);
-        // Fix the last active time autommaticaly set by bbp_new_reply
-        bbp_update_reply_walker($ret_id, $post_date, $forum_id, $topic_id, False);
-      }
-
-      // Close the topic if necessary
-      if ($thread_active < 1)
-        bbp_close_topic($ret_id);
     }
+
+    // Top message of threads are topics, attached to a forum.
+    // Others are replies, attached to a topic.
+    if ($thread_parent > 0) {
+      $post_type_id = bbp_get_reply_post_type();
+      $thread_parent_id = (int) $this->forum_post_mapping[$thread_parent];
+    } else {
+      $post_type_id = bbp_get_topic_post_type();
+      $thread_parent_id = $this->forum_mapping[$thread_forum_id];
+    }
+
+    // Apply pre filters
+    $post_title   = apply_filters('bbp_new_'.$post_type_id.'_pre_title'  , $thread_name);
+    $post_content = apply_filters('bbp_new_'.$post_type_id.'_pre_content', $thread_thread);
+
+    // Get creation date
+    $post_date = $this->mysql_date($thread_datestamp);  //XXX ask or get the time offset ?
+    // TODO: How-to handle $thread_edit_datestamp ?
+
+    // Save e107 forum in WordPress database
+    $ret_id = wp_insert_post(array(
+        'post_author'    => $author_id
+      , 'post_date'      => $post_date
+      , 'post_date_gmt'  => $post_date
+      , 'post_content'   => $post_content
+      , 'post_title'     => $post_title
+      , 'post_name'      => sanitize_title($post_title)
+      , 'post_type'      => $post_type_id
+      , 'comment_status' => 'closed'
+      , 'ping_status'    => 'closed'
+      , 'post_parent'    => $thread_parent_id
+      ));
+
+    // Update forum post mapping
+    $this->forum_post_mapping[$thread_id] = (int) $ret_id;
+
+    // Publish the post
+    wp_publish_post($ret_id);
+
+    // Sticky threads stays sticky, Announcements are promoted super-sticky.
+    if ($thread_s == 1) {
+      bbp_stick_topic($ret_id);
+    } elseif ($thread_s > 2) {
+      bbp_stick_topic($ret_id, True);
+    }
+
+    // Update inserted post with Anonymous related data.
+    // Both bbp_anonymous_name and bbp_anonymous_email are required, that's why we use dummy default values.
+    $anonymous_data = array();
+    if ($author_id == 0) {
+      $anonymous_data = array( 'bbp_anonymous_name'  => empty($author_name) ? 'Anonymous user' : $author_name
+                             , 'bbp_anonymous_ip'    => empty($author_ip  ) ? '192.0.2.0'      : $author_ip   # See RFC 5735
+                             , 'bbp_anonymous_email' => 'anonymous@example.com'
+                             // Website is optionnal in bbPress
+                             );
+    }
+
+    // Update reply metadata
+    if (bbp_is_topic($ret_id)) {
+      $forum_id = $thread_parent_id;
+      do_action('bbp_new_topic', $ret_id, $forum_id, $anonymous_data, $author_id);
+      // Fix the last active time autommaticaly set by bbp_new_topic
+      bbp_update_topic_last_active_time($ret_id, $post_date);
+      bbp_update_topic_walker($ret_id, $post_date, $forum_id, 0, False);
+    } else {
+      $topic_id = $thread_parent_id;
+      $forum_id = bbp_get_topic_forum_id($topic_id);
+      do_action('bbp_new_reply', $ret_id, $topic_id, $forum_id, $anonymous_data, $author_id);
+      // Fix the last active time autommaticaly set by bbp_new_reply
+      bbp_update_reply_walker($ret_id, $post_date, $forum_id, $topic_id, False);
+    }
+
+    // Close the topic if necessary
+    if ($thread_active < 1)
+      bbp_close_topic($ret_id);
   }
 
 
@@ -1336,7 +1345,7 @@ class e107_Import extends WP_Importer {
         <tr valign="top">
           <th scope="row"><?php _e('Do you want to inform each user of their new credentials ?', 'e107-importer'); ?></th>
           <td>
-            <label for="send-mail"><input name="e107_mail_user" type="radio" id="send-mail" value="send_mail"/> <?php _e('Yes: reset each password and send each user a mail to inform them.', 'e107-importer'); ?></label><br/>
+            <label for="mail-user"><input name="e107_mail_user" type="radio" id="mail-user" value="mail_user"/> <?php _e('Yes: reset each password and send each user a mail to inform them.', 'e107-importer'); ?></label><br/>
             <label for="no-mail"><input name="e107_mail_user" type="radio" id="no-mail" value="no_mail" checked="checked"/> <?php _e('No: reset each password but don\'t send a mail to users.', 'e107-importer'); ?></label><br/>
           </td>
         </tr>
@@ -1458,6 +1467,7 @@ class e107_Import extends WP_Importer {
         $this->$o = $_POST[$o];
 
     // Normalize boolean options
+    $this->e107_mail_user     == 'mail_user'     ? $this->e107_mail_user     = True : $this->e107_mail_user     = False;
     $this->e107_import_news   == 'import_news'   ? $this->e107_import_news   = True : $this->e107_import_news   = False;
     $this->e107_import_pages  == 'import_pages'  ? $this->e107_import_pages  = True : $this->e107_import_pages  = False;
     $this->e107_import_forums == 'import_forums' ? $this->e107_import_forums = True : $this->e107_import_forums = False;
