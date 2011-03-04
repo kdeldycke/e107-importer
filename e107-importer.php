@@ -409,7 +409,7 @@ class e107_Import extends WP_Importer {
     // Get user list
     $user_list = $this->getE107UserList();
     foreach ($user_list as $user)
-      importUser($user);
+      $this->importUser($user);
   }
 
 
@@ -509,11 +509,11 @@ class e107_Import extends WP_Importer {
     // Import categories
     $category_list = $this->getE107CategoryList();
     foreach ($category_list as $category)
-      importCategory($category);
+      $this->importCategory($category);
     // Import news
     $news_list = $this->getE107NewsList();
     foreach ($news_list as $news)
-      importNews($news);
+      $this->importNews($news);
   }
 
 
@@ -580,7 +580,7 @@ class e107_Import extends WP_Importer {
   function importPages() {
     $page_list = $this->getE107PageList();
     foreach ($page_list as $page)
-      importPage($page);
+      $this->importPage($page);
   }
 
 
@@ -641,7 +641,7 @@ class e107_Import extends WP_Importer {
   function importComments() {
     $comment_list = $this->getE107CommentList();
     foreach ($comment_list as $comment)
-      importComment($comment);
+      $this->importComment($comment);
   }
 
 
@@ -739,7 +739,7 @@ class e107_Import extends WP_Importer {
     // Import all forum
     $forum_list = $this->getE107ForumList();
     foreach ($forum_list as $forum)
-      importForum($forum, $user_classes);
+      $this->importForum($forum, $user_classes);
   }
 
 
@@ -854,7 +854,7 @@ class e107_Import extends WP_Importer {
   function importForumThreads() {
     $forum_post_list = $this->getE107ForumPostList();
     foreach ($forum_post_list as $thread)
-      importForumThread($thread);
+      $this->importForumThread($thread);
   }
 
 
