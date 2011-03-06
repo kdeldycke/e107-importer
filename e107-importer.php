@@ -1627,6 +1627,7 @@ class e107_Import extends WP_Importer {
       <?php if ($this->e107_import_news) { ?>
         <li><?php _e('Replace e107 constants in news...', 'e107-importer'); ?></li>
         <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'title'  , 'constants'); ?>
+        <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'excerpt', 'constants'); ?>
         <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', 'constants'); ?>
       <?php } ?>
       <?php if ($this->e107_import_pages) { ?>
@@ -1656,8 +1657,9 @@ class e107_Import extends WP_Importer {
           <li><?php _e('Parse BBCode using the original e107 parser...', 'e107-importer'); ?></li>
         <?php } ?>
         <?php if ($this->e107_import_news) { ?>
-          <li><?php _e('Parse news title and content...', 'e107-importer'); ?></li>
+          <li><?php _e('Parse news title, excerpt and content...', 'e107-importer'); ?></li>
           <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'title'  , $this->e107_bbcode_parser); ?>
+          <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'excerpt', $this->e107_bbcode_parser); ?>
           <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
         <?php } ?>
         <?php if ($this->e107_import_pages) { ?>
