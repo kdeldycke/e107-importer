@@ -1110,46 +1110,49 @@ class e107_Import extends WP_Importer {
       }
       $content_property = $content_type.'_'.$property;
       $content = $content_object->$content_property;
-      $new_content = $content;
 
-      // Apply the specified transformation
-      $local_image_upload = False;
-      switch ($parser) {
-        case 'constants':
-          // Replace all {e_SOMETHING} e107's constants to fully qualified URLs
-          $new_content = $this->e107_parser->replaceConstants($content, $nonrelative = "full", $all = True);
-          break;
-        case 'bbcode':
-          // Transform BBCode to HTML using original e107 parser
-          $new_content = $this->e107_parser->toHTML($content, $parseBB = True);
-          break;
-        case 'clean_markup':
-          // Transform BBCode to HTML using original e107 parser
-          $new_content = $this->e107_parser->toHTML($content, $parseBB = True);
-          // Clean-up markup produced by e107's BBCode parser
-          $new_content = $this->cleanUpMarkup($new_content);
-          break;
-        case 'upload_local_images':
-          $local_image_upload = True;
-        case 'upload_all_images':
-          $ret = $this->importImages($content, $content_id, $local_image_upload);
-          $new_content = $ret[0];
-          $counter = (empty($counter)) ? $ret[1] : $counter + $ret[1];
-          break;
-      }
+      if (!empty($content)) {
+        $new_content = $content;
 
-      // Update WordPress content
-      if ($new_content != $content) {
-        if ($content_type == 'comment') {
-          wp_update_comment(array(
-              'comment_ID'      => $content_id
-            , $content_property => $wpdb->escape($new_content)
-            ));
-        } else {
-          wp_update_post(array(
-              'ID'              => $content_id
-            , $content_property => $wpdb->escape($new_content)
-            ));
+        // Apply the specified transformation
+        $local_image_upload = False;
+        switch ($parser) {
+          case 'constants':
+            // Replace all {e_SOMETHING} e107's constants to fully qualified URLs
+            $new_content = $this->e107_parser->replaceConstants($content, $nonrelative = "full", $all = True);
+            break;
+          case 'bbcode':
+            // Transform BBCode to HTML using original e107 parser
+            $new_content = $this->e107_parser->toHTML($content, $parseBB = True);
+            break;
+          case 'clean_markup':
+            // Transform BBCode to HTML using original e107 parser
+            $new_content = $this->e107_parser->toHTML($content, $parseBB = True);
+            // Clean-up markup produced by e107's BBCode parser
+            $new_content = $this->cleanUpMarkup($new_content);
+            break;
+          case 'upload_local_images':
+            $local_image_upload = True;
+          case 'upload_all_images':
+            $ret = $this->importImages($content, $content_id, $local_image_upload);
+            $new_content = $ret[0];
+            $counter = (empty($counter)) ? $ret[1] : $counter + $ret[1];
+            break;
+        }
+
+        // Update WordPress content
+        if ($new_content != $content) {
+          if ($content_type == 'comment') {
+            wp_update_comment(array(
+                'comment_ID'      => $content_id
+              , $content_property => $wpdb->escape($new_content)
+              ));
+          } else {
+            wp_update_post(array(
+                'ID'              => $content_id
+              , $content_property => $wpdb->escape($new_content)
+              ));
+          }
         }
       }
     }
