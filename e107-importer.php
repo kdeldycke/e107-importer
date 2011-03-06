@@ -558,15 +558,18 @@ class e107_Import extends WP_Importer {
     // Map extended news to excerpt
     $news_body     = trim($news_body);
     $news_extended = trim($news_extended);
-    if empty($news_body):
+    if (empty($news_body)) {
       $news_body = $news_extended;
-    if $news_body == $news_extended:
+    }
+    if ($news_body == $news_extended) {
       $news_extended = '';
-    if empty($news_extended):
+    }
+    if (empty($news_extended)) {
       $post_data['post_content'] = $wpdb->escape($news_body);
-    else:
+    } else {
       $post_data['post_excerpt'] = $wpdb->escape($news_body);
       $post_data['post_content'] = $wpdb->escape($news_extended);
+    }
 
     // Save e107 news in WordPress database
     $post_id = wp_insert_post($post_data);
