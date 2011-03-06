@@ -92,6 +92,29 @@ class e107_Import extends WP_Importer {
   }
 
 
+  // A method to simplify a string by removing spaces, returns and tags fo easy comparison
+  function simplifyString($s) {
+    // Remove BBCode tags
+    // TODO: inner content of matching tag pairs should be deleted.
+    //       Exemple: [left][img]http://www.sillyjokes.co.uk/billy-bobs/gallery/cavemen.jpg[/img][/left]
+    //       become : httpwwwsillyjokescoukbillybobsgallerycavemenjpgimg
+    //       but should be transformed to a blanck string.
+    $s = preg_replace('/\[.*?\]/', '', $s);
+    // Remove HTML tags
+    $s = preg_replace('/<.*?>/', '', $s);
+    // Remove everything but word characters (letters, digits, and underscores)
+    $s = preg_replace('/\W/', '', $s);
+    // Lower case for easier comparison
+    return strtolower($s);
+  }
+
+
+  // Are the 2 strings similar ?
+  function areStringSimilar($a, $b) {
+    return $this->simplifyString($a) == $this->simplifyString($b) ? True : False;
+  }
+
+
   // Generic code to initialize the e107 context
   function inite107Context() {
     /* Some part of the code below is copy of (and/or inspired by) code from the e107 project, licensed
@@ -556,12 +579,8 @@ class e107_Import extends WP_Importer {
       );
 
     // Map extended news to excerpt
-    $news_body     = trim($news_body);
-    $news_extended = trim($news_extended);
-    if (empty($news_body)) {
+    if ($this->areStringSimilar($news_body, $news_extended)) {
       $news_body = $news_extended;
-    }
-    if ($news_body == $news_extended) {
       $news_extended = '';
     }
     if (empty($news_extended)) {
