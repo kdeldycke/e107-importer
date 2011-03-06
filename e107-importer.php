@@ -1252,7 +1252,6 @@ class e107_Import extends WP_Importer {
 
         // Download remote file and attach it to the post
         $new_tag = media_sideload_image($img_url, $post_id);
-        $image_counter++;
 
         if (is_wp_error($new_tag)) {
           ?>
@@ -1265,6 +1264,7 @@ class e107_Import extends WP_Importer {
         } else {
           // Update post content with the new image tag pointing to the local image
           $html_content = str_replace($img_tag, $new_tag, $html_content);
+          $image_counter++;
           // TODO: save image original path and its final permalink to not upload file twice
         }
       }
