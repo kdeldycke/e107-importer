@@ -1217,65 +1217,56 @@ class e107_Import extends WP_Importer {
     if ($local_only == True)
       $allowed_domains[] = $this->e107_pref['siteurl'];
 
-    // Locate all <img/> tags and import them into WordPress
-    // Look at http://kevin.deldycke.com/2007/03/ultimate-regular-expression-for-html-tag-parsing-with-php/ for details about this regex
-    $img_regex = "/<\s*img((\s+\w+(\s*=\s*(?:\".*?\"|'.*?'|[^'\">\s]+))?)+\s*|\s*)\/?>/i";
-    preg_match_all($img_regex, $html_content, $matches, PREG_SET_ORDER);
-    foreach ($matches as $val) {
-      $img_tag = $val[0];
+    if (preg_match_all('/<\s*img\s+(.+?)>/i', $html_content, $matches, PREG_SET_ORDER)) {
+      foreach ($matches as $match) {
+        $img_tag   = $match[0];
+        $img_attrs = $match[1];
+        foreach (wp_kses_hair($img_attrs, array('http', 'https')) as $attr)
+          $img[$attr['name']] = $attr['value'];
+        $img_url = $img['src'];
 
-      // Get image URL from the src attribute
-      $src_regex = "/\s+src\s*=\s*(?:\"(.*?)\"|'(.*?)'|[^'\">\s]+)/i"; // This regex is a variation of the main one
-      preg_match_all($src_regex, $img_tag, $src_matches, PREG_SET_ORDER);
-      // URL is in the second or the third index of the array depending of the quotes (double or single)
-      $img_url = '';
-      for ($i = 1; $i <= 2 and strlen($img_url) == 0; $i += 1)
-        if (sizeof($src_matches[0]) > $i)
-          $img_url = $src_matches[0][$i];
+        // If url doesn't start with "http[s]://", add e107 site url in front to build an absolute url
+        $http_prefix_regex = '/^https?:\/\//i';
+        if (! preg_match($http_prefix_regex, $img_url))
+          $img_url = SITEURL.$img_url;
 
-      // Clean-up the URL
-      // If url doesn't start with "http[s]://", add e107 site url in front to build an absolute url
-      $http_prefix_regex = '/^https?:\/\//i';
-      if (! preg_match($http_prefix_regex, $img_url))
-        $img_url = SITEURL.$img_url;
-
-      // Only import files from authorized domains
-      $domain_ok = True;
-      if ($allowed_domains && is_array($allowed_domains) && sizeof($allowed_domains) > 0) {
-        $domain_ok = False;
-        foreach ($allowed_domains as $domain) {
-          $domain = $this->deleteTrailingChar($domain, '/');
-          if (substr($img_url, 0, strlen($domain)) == $domain) {
-            $domain_ok = True;
-            break;
+        // Only import files from authorized domains
+        $domain_ok = True;
+        if ($allowed_domains && is_array($allowed_domains) && sizeof($allowed_domains) > 0) {
+          $domain_ok = False;
+          foreach ($allowed_domains as $domain) {
+            $domain = $this->deleteTrailingChar($domain, '/');
+            if (substr($img_url, 0, strlen($domain)) == $domain) {
+              $domain_ok = True;
+              break;
+            }
           }
         }
-      }
-      if (!$domain_ok)
-        continue;
+        if (!$domain_ok)
+          continue;
 
-      //$img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
-      // URLs with spaces are not considered valid by WordPress (see: http://core.trac.wordpress.org/ticket/16330#comment:5 )
-      // Replace spaces by their percent-encoding equivalent
-      $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
+        //$img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
+        // URLs with spaces are not considered valid by WordPress (see: http://core.trac.wordpress.org/ticket/16330#comment:5 )
+        // Replace spaces by their percent-encoding equivalent
+        $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
 
-      // Download remote file and attach it to the post
-      $new_tag = media_sideload_image($img_url, $post_id);
-      $image_counter++;
+        // Download remote file and attach it to the post
+        $new_tag = media_sideload_image($img_url, $post_id);
+        $image_counter++;
 
-      if (is_wp_error($new_tag)) {
-        ?>
-        <li>
-          <?php printf(__('Error while trying to upload image <code>%s</code>:', 'e107-importer'), $img_url); ?><br/>
-          <?php printf(__('<pre>%s</pre>', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
-          <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
-        </li>
-        <?php
-      } else {
-        // Update post content with the new image tag pointing to the local image
-        $html_content = str_replace($img_tag, $new_tag, $html_content);
-
-        // TODO: save image original path and its final permalink to not upload file twice
+        if (is_wp_error($new_tag)) {
+          ?>
+          <li>
+            <?php printf(__('Error while trying to upload image <code>%s</code>:', 'e107-importer'), $img_url); ?><br/>
+            <?php printf(__('<pre>%s</pre>', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
+            <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
+          </li>
+          <?php
+        } else {
+          // Update post content with the new image tag pointing to the local image
+          $html_content = str_replace($img_tag, $new_tag, $html_content);
+          // TODO: save image original path and its final permalink to not upload file twice
+        }
       }
     }
 
@@ -1447,7 +1438,7 @@ class e107_Import extends WP_Importer {
       </table>
 
       <h3><?php _e('Images Upload', 'e107-importer'); ?></h3>
-      <p><?php _e('This tool can find image URLs embedded in news and pages, then upload them to this blog autommaticcaly.', 'e107-importer'); ?></p>
+      <p><?php _e('This tool can find image URLs embedded in news, pages, content and forums, then upload them to this blog automatically. But this will only work if you have selected the e107 BBCode parser above.', 'e107-importer'); ?></p>
       <table class="form-table">
         <tr valign="top">
           <th scope="row"><?php _e('Do you want to upload image files ?', 'e107-importer'); ?></th>

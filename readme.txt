@@ -137,6 +137,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 * Fix variable bleeding when importing items in batches.
 * Automate handling of e107 extended news as WordPress supports excerpt.
 * Parse BBCode and replace e107 constants in news excerpt.
+* Use internal WordPress library (kses) to parse HTML in the image upload step.
 
 = 1.1 =
 * Add import of forums and threads to bbPress WordPress plugin.
