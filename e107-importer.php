@@ -44,7 +44,6 @@ class e107_Import extends WP_Importer {
   var $e107_content_ownership;
   var $e107_mail_user;
   var $e107_import_news;
-  var $e107_extended_news;
   var $e107_import_pages;
   var $e107_bbcode_parser;
   var $e107_import_images;
@@ -536,12 +535,6 @@ class e107_Import extends WP_Importer {
     extract($news);
     $news_id = (int) $news_id;
 
-    // Special actions for extended news
-    if ($this->e107_extended_news == 'import_all')
-      $news_body = $news_body."\n\n".$news_extended;
-    elseif ($this->e107_extended_news == 'ignore_body')
-      $news_body = $news_extended;
-
     // Update author role if necessary;
     // If the user has the minimum role (aka subscriber) he is not able to post
     //   news. In this case, we increase his role by one level (aka contributor).
@@ -550,18 +543,33 @@ class e107_Import extends WP_Importer {
     if (! $author->has_cap('edit_posts'))
       $author->set_role('contributor');
 
-    // Save e107 news in WordPress database
-    $post_id = wp_insert_post(array(
+    // Build post data
+    $post_data = array(
         'post_author'    => $author_id                          // use the new wordpress user ID
       , 'post_date'      => $this->mysql_date($news_datestamp)
       , 'post_date_gmt'  => $this->mysql_date($news_datestamp)
-      , 'post_content'   => $wpdb->escape($news_body)
       , 'post_title'     => $wpdb->escape($news_title)
       , 'post_status'    => 'publish'                           // News are always published in e107
       , 'comment_status' => $news_allow_comments                // TODO: get global config to set this value dynamiccaly
       , 'ping_status'    => 'open'                              // XXX is there such a concept in e107 ?
       , 'comment_count'  => $news_comment_total
-      ));
+      );
+
+    // Map extended news to excerpt
+    $news_body     = trim($news_body);
+    $news_extended = trim($news_extended);
+    if empty($news_body):
+      $news_body = $news_extended;
+    if $news_body == $news_extended:
+      $news_extended = '';
+    if empty($news_extended):
+      $post_data['post_content'] = $wpdb->escape($news_body);
+    else:
+      $post_data['post_excerpt'] = $wpdb->escape($news_body);
+      $post_data['post_content'] = $wpdb->escape($news_extended);
+
+    // Save e107 news in WordPress database
+    $post_id = wp_insert_post($post_data);
 
     // Link post to category
     $news_category = (int) $news_category;
@@ -1367,17 +1375,6 @@ class e107_Import extends WP_Importer {
           </td>
         </tr>
       </table>
-      <p><?php _e('WordPress doesn\'t support extended news.', 'e107-importer'); ?></p>
-      <table class="form-table">
-        <tr valign="top">
-          <th scope="row"><?php _e('Do you want to import the extended part of all e107 news ?', 'e107-importer'); ?></th>
-          <td>
-            <label for="import-all"><input name="e107_extended_news" type="radio" id="import-all" value="import_all"/> <?php _e('Yes: import both extended part and body and merge them.', 'e107-importer'); ?></label><br/>
-            <label for="ignore-body"><input name="e107_extended_news" type="radio" id="ignore-body" value="ignore_body"/> <?php _e('Yes, but: ignore body and import extended part only.', 'e107-importer'); ?></label><br/>
-            <label for="ignore-extended"><input name="e107_extended_news" type="radio" id="ignore-extended" value="ignore_extended" checked="checked"/> <?php _e('No: ignore extended part of news, import the body only.', 'e107-importer'); ?></label><br/>
-          </td>
-        </tr>
-      </table>
 
       <h3><?php _e('Pages', 'e107-importer'); ?></h3>
       <table class="form-table">
@@ -1454,7 +1451,6 @@ class e107_Import extends WP_Importer {
                               , 'e107_content_ownership'
                               , 'e107_mail_user'
                               , 'e107_import_news'
-                              , 'e107_extended_news'
                               , 'e107_import_pages'
                               , 'e107_import_forums'
                               , 'e107_bbcode_parser'

@@ -135,6 +135,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 = 1.2 =
 * Upgrade e107 code to match latest 0.7.25-rc1.
 * Fix variable bleeding when importing items in batches.
+* Automate handling of e107 extended news as WordPress supports excerpt.
 
 = 1.1 =
 * Add import of forums and threads to bbPress WordPress plugin.
