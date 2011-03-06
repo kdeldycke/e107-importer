@@ -55,6 +55,7 @@ class e107_Import extends WP_Importer {
   var $comment_mapping    = array();
   var $forum_mapping      = array();
   var $forum_post_mapping = array();
+  var $image_mapping      = array();
 
   // Initialized in initImportContext()
   var $e107_pref;
@@ -1230,43 +1231,48 @@ class e107_Import extends WP_Importer {
         if (! preg_match($http_prefix_regex, $img_url))
           $img_url = SITEURL.$img_url;
 
-        // Only import files from authorized domains
-        $domain_ok = True;
-        if ($allowed_domains && is_array($allowed_domains) && sizeof($allowed_domains) > 0) {
-          $domain_ok = False;
-          foreach ($allowed_domains as $domain) {
-            $domain = $this->deleteTrailingChar($domain, '/');
-            if (substr($img_url, 0, strlen($domain)) == $domain) {
-              $domain_ok = True;
-              break;
+        // If the image was not already processed, uploaded it to WordPress
+        if (!array_key_exists($img_url, $this->image_mapping)) {
+          // Only import files from authorized domains
+          $domain_ok = True;
+          if ($allowed_domains && is_array($allowed_domains) && sizeof($allowed_domains) > 0) {
+            $domain_ok = False;
+            foreach ($allowed_domains as $domain) {
+              $domain = $this->deleteTrailingChar($domain, '/');
+              if (substr($img_url, 0, strlen($domain)) == $domain) {
+                $domain_ok = True;
+                break;
+              }
             }
           }
-        }
-        if (!$domain_ok)
-          continue;
-
-        //$img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
-        // URLs with spaces are not considered valid by WordPress (see: http://core.trac.wordpress.org/ticket/16330#comment:5 )
-        // Replace spaces by their percent-encoding equivalent
-        $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
-
-        // Download remote file and attach it to the post
-        $new_tag = media_sideload_image($img_url, $post_id);
-
-        if (is_wp_error($new_tag)) {
-          ?>
-          <li>
-            <?php printf(__('Error while trying to upload image <code>%s</code>:', 'e107-importer'), $img_url); ?><br/>
-            <?php printf(__('<pre>%s</pre>', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
-            <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
-          </li>
-          <?php
+          if (!$domain_ok)
+            continue;
+          //$img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
+          // URLs with spaces are not considered valid by WordPress (see: http://core.trac.wordpress.org/ticket/16330#comment:5 )
+          // Replace spaces by their percent-encoding equivalent
+          $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
+          // Download remote file and attach it to the post
+          $new_tag = media_sideload_image($img_url, $post_id);
+          if (is_wp_error($new_tag)) {
+            ?>
+            <li>
+              <?php printf(__('Error while trying to upload image <code>%s</code>:', 'e107-importer'), $img_url); ?><br/>
+              <?php printf(__('<pre>%s</pre>', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
+              <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
+            </li>
+            <?php
+            continue;
+          }
+          // Image was successfully uploaded, update the mapping
+          $this->image_mapping[$img_url] = $new_tag;
         } else {
-          // Update post content with the new image tag pointing to the local image
-          $html_content = str_replace($img_tag, $new_tag, $html_content);
-          $image_counter++;
-          // TODO: save image original path and its final permalink to not upload file twice
+          // Image was already uploaded, use the previous upload
+          $new_tag = $this->image_mapping[$img_url];
         }
+
+        // Update post content with the new image tag pointing to the local image
+        $html_content = str_replace($img_tag, $new_tag, $html_content);
+        $image_counter++;
       }
     }
 
