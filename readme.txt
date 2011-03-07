@@ -139,6 +139,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 * Parse BBCode and replace e107 constants in news excerpt.
 * Use internal WordPress library (kses) to parse HTML in the image upload step.
 * Do not upload the same images more than once.
+* Add a new enhanced BBCode parser on top of the one from e107. Make it the default parser.
 
 = 1.1 =
 * Add import of forums and threads to bbPress WordPress plugin.

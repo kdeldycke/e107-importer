@@ -103,6 +103,7 @@ class e107_Import extends WP_Importer {
     $s = preg_replace('/\[.*?\]/', '', $s);
     // Remove HTML tags
     $s = preg_replace('/<.*?>/', '', $s);
+    //$s = wp_strip_all_tags($s, $remove_breaks = True);
     // Remove everything but word characters (letters, digits, and underscores)
     $s = preg_replace('/\W/', '', $s);
     // Lower case for easier comparison
@@ -390,7 +391,6 @@ class e107_Import extends WP_Importer {
 
   // Import e107 preferences (aka global config)
   function importPreferences() {
-    global $wpdb;
     update_option('blogname'            ,  $this->e107_pref['sitename']);
     update_option('admin_email'         ,  $this->e107_pref['siteadminemail']);
     update_option('users_can_register'  ,  $this->e107_pref['user_reg']);
@@ -438,7 +438,6 @@ class e107_Import extends WP_Importer {
 
   // Migrate one user to WordPress using its e107 data
   function importUser($user) {
-    global $wpdb;
     extract($user);
     $user_id = (int) $user_id;
 
@@ -465,15 +464,15 @@ class e107_Import extends WP_Importer {
       $display_name = $user_loginname;
 
     $user_data = array(
-        'first_name'      => empty($first_name   ) ? '' : $wpdb->escape($first_name)
-      , 'last_name'       => empty($last_name    ) ? '' : $wpdb->escape($last_name)
-      , 'nickname'        => empty($user_name    ) ? '' : $wpdb->escape($user_name)
-      , 'display_name'    => empty($display_name ) ? '' : $wpdb->escape($display_name)
-      , 'user_email'      => empty($user_email   ) ? '' : $wpdb->escape($user_email)
+        'first_name'      => empty($first_name   ) ? '' : esc_sql($first_name)
+      , 'last_name'       => empty($last_name    ) ? '' : esc_sql($last_name)
+      , 'nickname'        => empty($user_name    ) ? '' : esc_sql($user_name)
+      , 'display_name'    => empty($display_name ) ? '' : esc_sql($display_name)
+      , 'user_email'      => empty($user_email   ) ? '' : esc_sql($user_email)
       , 'user_registered' => empty($user_join    ) ? '' : $this->mysql_date($user_join)
-      , 'user_url'        => empty($user_homepage) ? '' : $wpdb->escape($user_homepage)
-      , 'aim'             => empty($user_aim     ) ? '' : $wpdb->escape($user_aim)
-      , 'yim'             => empty($user_msn     ) ? '' : $wpdb->escape($user_msn)  // Put MSN contact here because they have merged with Yahoo!: http://slashdot.org/articles/05/10/12/0227207.shtml
+      , 'user_url'        => empty($user_homepage) ? '' : esc_sql($user_homepage)
+      , 'aim'             => empty($user_aim     ) ? '' : esc_sql($user_aim)
+      , 'yim'             => empty($user_msn     ) ? '' : esc_sql($user_msn)  // Put MSN contact here because they have merged with Yahoo!: http://slashdot.org/articles/05/10/12/0227207.shtml
       );
 
     // In case of an update, do not reset previous user profile properties by an empty value
@@ -495,9 +494,9 @@ class e107_Import extends WP_Importer {
     if (!$wp_user_ID) {
       // New password is required because we can't decrypt e107 password
       $new_password = wp_generate_password(12, False);
-      $user_data['user_pass'] = $wpdb->escape($new_password);
+      $user_data['user_pass'] = esc_sql($new_password);
       // Don't reset login name on user update
-      $user_data['user_login'] = $wpdb->escape($user_loginname);
+      $user_data['user_login'] = esc_sql($user_loginname);
       $ret_id = wp_insert_user($user_data);
       // Send mail notification to users to warn them of a new password (and new login because of UTF-8)
       if ($this->e107_mail_user)
@@ -555,7 +554,6 @@ class e107_Import extends WP_Importer {
 
   // Migrate one news to WordPress using its e107 data
   function importNews($news) {
-    global $wpdb;
     extract($news);
     $news_id = (int) $news_id;
 
@@ -572,7 +570,7 @@ class e107_Import extends WP_Importer {
         'post_author'    => $author_id                          // use the new wordpress user ID
       , 'post_date'      => $this->mysql_date($news_datestamp)
       , 'post_date_gmt'  => $this->mysql_date($news_datestamp)
-      , 'post_title'     => $wpdb->escape($news_title)
+      , 'post_title'     => esc_sql($news_title)
       , 'post_status'    => 'publish'                           // News are always published in e107
       , 'comment_status' => $news_allow_comments                // TODO: get global config to set this value dynamiccaly
       , 'ping_status'    => 'open'                              // XXX is there such a concept in e107 ?
@@ -585,10 +583,10 @@ class e107_Import extends WP_Importer {
       $news_extended = '';
     }
     if (empty($news_extended)) {
-      $post_data['post_content'] = $wpdb->escape($news_body);
+      $post_data['post_content'] = esc_sql($news_body);
     } else {
-      $post_data['post_excerpt'] = $wpdb->escape($news_body);
-      $post_data['post_content'] = $wpdb->escape($news_extended);
+      $post_data['post_excerpt'] = esc_sql($news_body);
+      $post_data['post_content'] = esc_sql($news_extended);
     }
 
     // Save e107 news in WordPress database
@@ -617,7 +615,6 @@ class e107_Import extends WP_Importer {
 
   // Migrate one page to WordPress using its e107 data
   function importPage($page) {
-    global $wpdb;
     extract($page);
     $page_id = (int) $page_id;
 
@@ -655,8 +652,8 @@ class e107_Import extends WP_Importer {
         'post_author'    => $author->ID
       , 'post_date'      => $this->mysql_date($page_datestamp)
       , 'post_date_gmt'  => $this->mysql_date($page_datestamp)
-      , 'post_content'   => $wpdb->escape($page_text)
-      , 'post_title'     => $wpdb->escape($page_title)
+      , 'post_content'   => esc_sql($page_text)
+      , 'post_title'     => esc_sql($page_title)
       , 'post_status'    => $post_status
       , 'post_type'      => 'page'
       , 'comment_status' => $comment_status
@@ -678,7 +675,6 @@ class e107_Import extends WP_Importer {
 
   // Migrate one comment to WordPress using its e107 data
   function importComment($comment) {
-    global $wpdb;
     extract($comment);
     $comment_id      = (int) $comment_id;
     $comment_item_id = (int) $comment_item_id;
@@ -724,13 +720,13 @@ class e107_Import extends WP_Importer {
       // Build up comment data array
       $comment_data = array(
           'comment_post_ID'      => empty($post_id          ) ? '' : $post_id
-        , 'comment_author'       => empty($author_name      ) ? '' : $wpdb->escape($author_name)
-        , 'comment_author_email' => empty($author_email     ) ? '' : $wpdb->escape($author_email)
-        , 'comment_author_url'   => empty($author_url       ) ? '' : $wpdb->escape($author_url)
+        , 'comment_author'       => empty($author_name      ) ? '' : esc_sql($author_name)
+        , 'comment_author_email' => empty($author_email     ) ? '' : esc_sql($author_email)
+        , 'comment_author_url'   => empty($author_url       ) ? '' : esc_sql($author_url)
         , 'comment_author_IP'    => empty($author_ip        ) ? '' : $author_ip
         , 'comment_date'         => empty($comment_datestamp) ? '' : $this->mysql_date($comment_datestamp)  //XXX ask or get the time offset ?
         , 'comment_date_gmt'     => empty($comment_datestamp) ? '' : $this->mysql_date($comment_datestamp)  //XXX ask or get the time offset ?
-        , 'comment_content'      => empty($comment_comment  ) ? '' : $wpdb->escape($comment_comment)
+        , 'comment_content'      => empty($comment_comment  ) ? '' : esc_sql($comment_comment)
         , 'comment_approved'     => empty($comment_blocked  ) ? '' : ! (int) $comment_blocked
         , 'user_id'              => empty($author_id        ) ? '' : $author_id
         , 'user_ID'              => empty($author_id        ) ? '' : $author_id
@@ -776,7 +772,6 @@ class e107_Import extends WP_Importer {
 
   // Migrate one forum to bbPress plugin using its e107 data
   function importForum($forum, $user_classes) {
-    global $wpdb;
     extract($forum);
     $forum_id         = (int) $forum_id;
     $forum_parent     = (int) $forum_parent;
@@ -892,7 +887,6 @@ class e107_Import extends WP_Importer {
   // Import e107 forum content to bbPress WordPress plugin
   // This method mimick bbp_new_topic_handler() and bbp_new_reply_handler()
   function importForumThread($thread) {
-    global $wpdb;
     extract($thread);
     $thread_id       = (int) $thread_id;
     $thread_forum_id = (int) $thread_forum_id;
@@ -1015,7 +1009,6 @@ class e107_Import extends WP_Importer {
   // This method replace old e107 URLs embeded in news, pages and comments by WP permalinks
   // TODO: merge with parseAndUpdate() method
   function replaceWithPermalinks() {
-    global $wpdb;
     // Associate each mapping with their related regexp
     // TODO: Load mappings from the e107-redirector.php plugin
     $redirect_rules = array(
@@ -1101,7 +1094,6 @@ class e107_Import extends WP_Importer {
     // $content_type  can be 'post' or 'comment'.
     // $property      is the name of the property we would like to apply the parser to (only tested on 'title' and 'content').
     // $parser        is either 'bbcode' for e107 BBCode parsing or 'constants' for e107 constants replacement. 'clean_markup' is like 'bbcode' but add an extra step to clean the resulting markup.
-    global $wpdb;
 
     foreach ($content_ids as $content_id) {
       if ($content_type == 'comment') {
@@ -1146,12 +1138,12 @@ class e107_Import extends WP_Importer {
           if ($content_type == 'comment') {
             wp_update_comment(array(
                 'comment_ID'      => $content_id
-              , $content_property => $wpdb->escape($new_content)
+              , $content_property => esc_sql($new_content)
               ));
           } else {
             wp_update_post(array(
                 'ID'              => $content_id
-              , $content_property => $wpdb->escape($new_content)
+              , $content_property => esc_sql($new_content)
               ));
           }
         }
@@ -1166,27 +1158,30 @@ class e107_Import extends WP_Importer {
 
   // Clean-up markup produced by e107's BBCode parser
   function cleanUpMarkup($content) {
+    $new_content = $content;
+    $new_content = normalize_whitespace($new_content);
+    $new_content = wpautop($new_content);
+    $new_content = wp_kses_data($new_content);
+    $new_content = preg_replace("/\s*\n+\s*/", "\n\n", $new_content);
+
+    $content_transforms = array(
+      // Replace "<b>...</b>" with "<strong>...</strong>"
+        '/<\s*b\s*>/i'   => '<strong>'
+      , '/<\/\s*b\s*>/i' => '</strong>'
+      // Replace "<i>...</i>" with "<em>...</em>"
+      , '/<\s*i\s*>/i'   => '<em>'
+      , '/<\/\s*i\s*>/i' => '</em>'
+      );
+
+    foreach ($content_transforms as $regexp => $replacement) {
+      if (preg_match_all($regexp, $new_content, $matches, PREG_SET_ORDER)) {
+        foreach ($matches as $tag) {
+          $new_content = str_replace($tag, $replacement, $new_content);
+        }
+      }
+    }
+
     /*
-    // cleanup HTML and semantics enhancements
-
-    "<br />" -> "\n"
-    "<br /><br />" -> "\n\n"
-    "<br /><br /><br />" -> "\n\n"
-    ...
-
-    "<em class='bbcode italic'>" -> <em>
-
-    "class='bbcode'" -> ''
-
-    "<strong class='bbcode bold'>" -> "<strong>"
-
-    " class='bbcode underline'" -> ''
-
-    "alt=''"
-
-    "style='vertical-align:middle; border:0'"
-
-    "style='vertical-align:middle; border:0'"
 
     *
     *
@@ -1204,7 +1199,7 @@ class e107_Import extends WP_Importer {
     -> wiki style lists
 
     */
-    $new_content = $content;
+
     return $new_content;
   }
 
@@ -1282,7 +1277,6 @@ class e107_Import extends WP_Importer {
 
   // Update the e107 Redirector plugin with content mapping
   function updateRedirectorSettings($keyword, $data) {
-    global $wpdb;
     $option_name = 'e107_redirector_'.$keyword;
     if (!get_option($option_name))
       add_option($option_name);
@@ -1436,9 +1430,9 @@ class e107_Import extends WP_Importer {
         <tr valign="top">
           <th scope="row"><?php _e('Which kind of <a href="http://wikipedia.org/wiki/Bbcode">BBCode</a> parser you want to use ?', 'e107-importer'); ?></th>
           <td>
-            <label for="bbcode"><input name="e107_bbcode_parser" type="radio" id="bbcode" value="bbcode" checked="checked"/> <?php _e('e107\'s parser (content will be rendered exactly as they appear in e107).', 'e107-importer'); ?></label><br/>
-            <!--label for="clean-markup"><input name="e107_bbcode_parser" type="radio" id="clean-markup" value="clean_markup"/--> <!--?php _e('Enhanced parser (try to create HTML code similar to what WordPress produce by default).', 'e107-importer'); ?></label><br/-->
-            <label for="none"><input name="e107_bbcode_parser" type="radio" id="none" value="none"/> <?php _e('Do not translate BBCode to HTML and let them appear as is.', 'e107-importer'); ?></label><br/>
+            <label for="clean-markup"><input name="e107_bbcode_parser" type="radio" id="clean-markup" value="clean_markup"  checked="checked"/> <?php _e('Enhanced parser (try to create HTML code similar to what WordPress produce by default).', 'e107-importer'); ?></label><br/>
+            <label for="bbcode"><input name="e107_bbcode_parser" type="radio" id="bbcode" value="bbcode"/> <?php _e('e107\'s parser (produce the same HTML as in e107).', 'e107-importer'); ?></label><br/>
+            <label for="none"><input name="e107_bbcode_parser" type="radio" id="none" value="none"/> <?php _e('Do not transform BBCode to HTML and let them appear as is.', 'e107-importer'); ?></label><br/>
           </td>
         </tr>
       </table>
