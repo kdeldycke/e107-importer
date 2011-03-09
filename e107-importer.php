@@ -273,6 +273,9 @@ class e107_Import extends WP_Importer {
   function connectToE107DB() {
     $this->e107db = mysql_connect($this->e107_db_host, $this->e107_db_user, $this->e107_db_pass) or
       wp_die("Can't connect to e107 database server: " . mysql_error());
+    // Force UTF-8 querying
+    @mysql_query("SET NAMES `utf8`", $this->e107db);
+    //@mysql_query("SET CHARACTER SET `utf8`", $this->e107db);
     $this->e107_db_prefix = $this->e107_db_name.'`.`'.$this->e107_db_prefix;
     set_magic_quotes_runtime(0);
   }
