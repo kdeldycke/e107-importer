@@ -1130,7 +1130,7 @@ class e107_Import extends WP_Importer {
           case 'upload_local_images':
             $local_image_upload = True;
           case 'upload_all_images':
-            $ret = $this->importImages($content, $content_id, $local_image_upload);
+            $ret = $this->importImages($content, $content_id, $content_type, $local_image_upload);
             $new_content = $ret[0];
             $counter = (empty($counter)) ? $ret[1] : $counter + $ret[1];
             break;
@@ -1208,13 +1208,20 @@ class e107_Import extends WP_Importer {
 
 
   // This method import all images embedded in HTML content
-  function importImages($html_content, $post_id, $local_only = False) {
+  function importImages($html_content, $content_id, $content_type, $local_only = False) {
     $image_counter = 0;
 
     // Build the list of authorized domains from which we are allowed to import images
     $allowed_domains = array();
     if ($local_only == True)
       $allowed_domains[] = $this->e107_pref['siteurl'];
+
+    // An attachment can only belongs to a post, not a comment. Use parent post in the latter case.
+    if ($content_type == 'comment') {
+      $post_id = get_comment($content_id)->comment_post_ID;
+    } else {
+      $post_id = $content_id;
+    }
 
     if (preg_match_all('/<\s*img\s+(.+?)>/i', $html_content, $matches, PREG_SET_ORDER)) {
       foreach ($matches as $match) {
