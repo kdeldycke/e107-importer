@@ -1318,7 +1318,7 @@ class e107_Import extends WP_Importer {
     <form action="admin.php?import=e107&amp;action=import" method="post">
       <?php wp_nonce_field('import-e107'); ?>
 
-      <h3><?php _e('e107 Database', 'e107-importer'); ?></h3>
+      <h3><?php _e('e107 database', 'e107-importer'); ?></h3>
       <p><?php _e('Parameters below must match your actual e107 MySQL database connexion settings.', 'e107-importer'); ?></p>
       <table class="form-table">
         <tr valign="top">
@@ -1343,7 +1343,7 @@ class e107_Import extends WP_Importer {
         </tr>
       </table>
 
-      <h3><?php _e('Site Preferences', 'e107-importer'); ?></h3>
+      <h3><?php _e('Site preferences', 'e107-importer'); ?></h3>
       <p><?php _e('This importer can read the preferences set for e107 and apply them to this current blog. Supported preferences are: site title, site description, admin e-mail address, open user registration, users registration for comment, emoticons graphical convertion, number of posts per pages and timezone offset.', 'e107-importer'); ?></p>
       <table class="form-table">
         <tr valign="top">
@@ -1440,14 +1440,14 @@ class e107_Import extends WP_Importer {
         </tr>
       </table>
 
-      <h3><?php _e('Images Upload', 'e107-importer'); ?></h3>
+      <h3><?php _e('Images upload', 'e107-importer'); ?></h3>
       <p><?php _e('This tool can find image URLs embedded in news, pages, content and forums, then upload them to this blog automatically. But this will only work if you have selected the e107 BBCode parser above.', 'e107-importer'); ?></p>
       <table class="form-table">
         <tr valign="top">
           <th scope="row"><?php _e('Do you want to upload image files ?', 'e107-importer'); ?></th>
           <td>
             <label for="upload-all-images"><input name="e107_import_images" type="radio" id="upload-all-images" value="upload_all_images"/> <?php _e('Yes: upload all images, even those located on external sites.', 'e107-importer'); ?></label><br/>
-            <label for="upload_local_images"><input name="e107_import_images" type="radio" id="upload-local-images" value="upload_local_images" checked="checked"/> <?php _e('Yes, but: upload local files from the e107 site only, not external images.', 'e107-importer'); ?></label><br/>
+            <label for="upload-local-images"><input name="e107_import_images" type="radio" id="upload-local-images" value="upload_local_images" checked="checked"/> <?php _e('Yes, but: upload local files from the e107 site only, not external images.', 'e107-importer'); ?></label><br/>
             <label for="no-upload"><input name="e107_import_images" type="radio" id="no-upload" value="no_upload"/> <?php _e('No: do not upload image files to WordPress.', 'e107-importer'); ?></label><br/>
           </td>
         </tr>
@@ -1490,14 +1490,14 @@ class e107_Import extends WP_Importer {
     $this->header();
     ?>
 
-    <h3><?php _e('e107 Database', 'e107-importer'); ?></h3>
+    <h3><?php _e('e107 database', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
       <li><?php _e('Connecting...', 'e107-importer'); ?></li>
       <?php $this->connectToE107DB(); ?>
       <li><?php _e('Connected.', 'e107-importer'); ?></li>
     </ul>
 
-    <h3><?php _e('Site Preferences', 'e107-importer'); ?></h3>
+    <h3><?php _e('Site preferences', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
       <li><?php _e('Load preferences...', 'e107-importer'); ?></li>
       <?php $this->loadE107Preferences(); ?>
@@ -1616,7 +1616,7 @@ class e107_Import extends WP_Importer {
       <?php } ?>
     </ul>
 
-    <h3><?php _e('Content Parsing', 'e107-importer'); ?></h3>
+    <h3><?php _e('Content parsing', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
       <li><?php _e('Initialize e107 context...', 'e107-importer'); ?></li>
       <?php $this->inite107Context(); ?>
@@ -1690,7 +1690,7 @@ class e107_Import extends WP_Importer {
           <li><?php printf(__('Only upload local images comming from <code>%s</code>.', 'e107-importer'), $this->e107_pref['siteurl']); ?></li>
         <?php } ?>
         <?php if ($this->e107_import_news) { ?>
-          <li><?php _e('Import images embedded in news content ...', 'e107-importer'); ?></li>
+          <li><?php _e('Import images embedded in news content...', 'e107-importer'); ?></li>
           <?php $images = $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', $this->e107_import_images); ?>
           <li><?php printf(__('%s images uploaded from news.', 'e107-importer'), $images); ?></li>
         <?php } ?>
@@ -1719,7 +1719,7 @@ class e107_Import extends WP_Importer {
       <li><?php _e('Not implemented yet.', 'e107-importer'); ?><!--?php _e('All internal links updated.', 'e107-importer'); ?--></li>
     </ul>
 
-    <h3><?php _e('e107 Redirector', 'e107-importer'); ?></h3>
+    <h3><?php _e('e107 redirector', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
       <li><?php _e('Activate plugin...', 'e107-importer'); ?></li>
       <?php activate_plugin(E107_REDIRECTOR_PLUGIN, '', False, True); ?>
