@@ -117,6 +117,30 @@ class e107_Import extends WP_Importer {
   }
 
 
+  // Return a dictionnary of all HTML tags of a given kind and their attributes
+  function extract_html_tags($html_content, $tag_name, $allowed_protocols=array()) {
+    // Default list of protocols copied from wp-includes/kses.php:wp_kses()
+    if (empty($allowed_protocols))
+      $allowed_protocols = array ('http', 'https', 'ftp', 'ftps', 'mailto', 'news', 'irc', 'gopher', 'nntp', 'feed', 'telnet', 'mms', 'rtsp', 'svn');
+    $tag_list = array();
+    $tag_regexp = '/<\s*'.$tag_name.'\s+(.+?)>/i';
+    if (preg_match_all($tag_regexp, $html_content, $matches, PREG_SET_ORDER)) {
+      foreach ($matches as $match) {
+        // Parse attributes
+        $attributes = array();
+        foreach (wp_kses_hair($match[1], $allowed_protocols) as $attr)
+          $attributes[$attr['name']] = $attr['value'];
+        // Group all data of the tag in one array
+        $tag_list[] = array( 'tag_string'       => $match[0]
+                           , 'attribute_string' => $match[1]
+                           , 'attributes'       => $attributes
+                           );
+      }
+    }
+    return $tag_list;
+  }
+
+
   // Generic code to initialize the e107 context
   function inite107Context() {
     /* Some part of the code below is copy of (and/or inspired by) code from the e107 project, licensed
@@ -1209,6 +1233,7 @@ class e107_Import extends WP_Importer {
 
   // This method import all images embedded in HTML content
   function importImages($html_content, $content_id, $content_type, $local_only = False) {
+    global $wpdb;
     $image_counter = 0;
 
     // Build the list of authorized domains from which we are allowed to import images
@@ -1217,68 +1242,73 @@ class e107_Import extends WP_Importer {
       $allowed_domains[] = $this->e107_pref['siteurl'];
 
     // An attachment can only belongs to a post, not a comment. Use parent post in the latter case.
-    if ($content_type == 'comment') {
+    if ($content_type == 'comment')
       $post_id = get_comment($content_id)->comment_post_ID;
-    } else {
+    else
       $post_id = $content_id;
-    }
 
-    if (preg_match_all('/<\s*img\s+(.+?)>/i', $html_content, $matches, PREG_SET_ORDER)) {
-      foreach ($matches as $match) {
-        $img_tag   = $match[0];
-        $img_attrs = $match[1];
-        foreach (wp_kses_hair($img_attrs, array('http', 'https')) as $attr)
-          $img[$attr['name']] = $attr['value'];
-        $img_url = $img['src'];
+    foreach ($this->extract_html_tags($html_content, 'img', array('http', 'https')) as $tag) {
+      $img_tag   = $tag['tag_string'];
+      $img_attrs = $tag['attribute_string'];
+      $img_url   = $tag['attributes']['src'];
 
-        // If url doesn't start with "http[s]://", add e107 site url in front to build an absolute url
-        $http_prefix_regex = '/^https?:\/\//i';
-        if (! preg_match($http_prefix_regex, $img_url))
-          $img_url = SITEURL.$img_url;
+      // If url doesn't start with "http[s]://", add e107 site url in front to build an absolute url
+      if (! preg_match('/^https?:\/\//i', $img_url))
+        $img_url = SITEURL.$img_url;
 
-        // If the image was not already processed, uploaded it to WordPress
-        if (!array_key_exists($img_url, $this->image_mapping)) {
-          // Only import files from authorized domains
-          $domain_ok = True;
-          if ($allowed_domains && is_array($allowed_domains) && sizeof($allowed_domains) > 0) {
-            $domain_ok = False;
-            foreach ($allowed_domains as $domain) {
-              $domain = $this->deleteTrailingChar($domain, '/');
-              if (substr($img_url, 0, strlen($domain)) == $domain) {
-                $domain_ok = True;
-                break;
-              }
+      // If the image was already uploaded, use the previous upload, else remotely upload it
+      if (array_key_exists($img_url, $this->image_mapping)) {
+        $new_tag = $this->image_mapping[$img_url];
+
+      } else {
+        // Only import files from authorized domains
+        $domain_ok = True;
+        // TODO: use parse_url() for better comparison
+        if ($allowed_domains && is_array($allowed_domains) && sizeof($allowed_domains) > 0) {
+          $domain_ok = False;
+          foreach ($allowed_domains as $domain) {
+            $domain = $this->deleteTrailingChar($domain, '/');
+            if (substr($img_url, 0, strlen($domain)) == $domain) {
+              $domain_ok = True;
+              break;
             }
           }
-          if (!$domain_ok)
-            continue;
-          //$img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
-          // URLs with spaces are not considered valid by WordPress (see: http://core.trac.wordpress.org/ticket/16330#comment:5 )
-          // Replace spaces by their percent-encoding equivalent
-          $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
-          // Download remote file and attach it to the post
-          $new_tag = media_sideload_image($img_url, $post_id);
-          if (is_wp_error($new_tag)) {
-            ?>
-            <li>
-              <?php printf(__('Error while trying to upload image <code>%s</code>:', 'e107-importer'), $img_url); ?><br/>
-              <?php printf(__('<pre>%s</pre>', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
-              <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
-            </li>
-            <?php
-            continue;
+        }
+        if (!$domain_ok)
+          continue;
+
+        // Get image description from the alt or title attribute
+        $img_desc = '';
+        foreach (array('alt', 'title') as $desc_tag)
+          if (array_key_exists($desc_tag, $tag['attributes']) and !empty($tag['attributes'][$desc_tag])) {
+            $img_desc = $tag['attributes'][$desc_tag];
+            break;
           }
-          // Image was successfully uploaded, update the mapping
-          $this->image_mapping[$img_url] = $new_tag;
-        } else {
-          // Image was already uploaded, use the previous upload
-          $new_tag = $this->image_mapping[$img_url];
+
+        //$img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
+        // URLs with spaces are not considered valid by WordPress (see: http://core.trac.wordpress.org/ticket/16330#comment:5 )
+        // Replace spaces by their percent-encoding equivalent
+        $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
+        // Download remote file and attach it to the post
+        $new_tag = media_sideload_image($img_url, $post_id, $img_desc);
+        if (is_wp_error($new_tag)) {
+          ?>
+          <li>
+            <?php printf(__('Error while trying to upload image <code>%s</code>:', 'e107-importer'), $img_url); ?><br/>
+            <?php printf(__('<pre>%s</pre>', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
+            <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
+          </li>
+          <?php
+          continue;
         }
 
-        // Update post content with the new image tag pointing to the local image
-        $html_content = str_replace($img_tag, $new_tag, $html_content);
-        $image_counter++;
+        // Image was successfully uploaded, update the mapping
+        $this->image_mapping[$img_url] = $new_tag;
       }
+
+      // Update post content with the new image tag pointing to the local image
+      $html_content = str_replace($img_tag, $new_tag, $html_content);
+      $image_counter++;
     }
 
     return array($html_content, $image_counter);
@@ -1706,15 +1736,16 @@ class e107_Import extends WP_Importer {
           <?php $images = $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', $this->e107_import_images); ?>
         <li><?php printf(__('%s images uploaded from pages.', 'e107-importer'), $images); ?></li>
         <?php } ?>
-        <?php if ($this->e107_import_news or $this->e107_import_pages) { ?>
-          <li><?php _e('Import images embedded in comments...', 'e107-importer'); ?></li>
-          <?php $images = $this->parseAndUpdate(array_values($this->comment_mapping), 'comment', 'content', $this->e107_import_images); ?>
-          <li><?php printf(__('%s images uploaded from comments.', 'e107-importer'), $images); ?></li>
-        <?php } ?>
         <?php if ($this->e107_import_forums) { ?>
           <li><?php _e('Import images embedded in forum thread content...', 'e107-importer'); ?></li>
           <?php $images = $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'content', $this->e107_import_images); ?>
           <li><?php printf(__('%s images uploaded from forum threads.', 'e107-importer'), $images); ?></li>
+        <?php } ?>
+        <!-- Import images of comment-like content after all posts to have images attached to posts in priority -->
+        <?php if ($this->e107_import_news or $this->e107_import_pages) { ?>
+          <li><?php _e('Import images embedded in comments...', 'e107-importer'); ?></li>
+          <?php $images = $this->parseAndUpdate(array_values($this->comment_mapping), 'comment', 'content', $this->e107_import_images); ?>
+          <li><?php printf(__('%s images uploaded from comments.', 'e107-importer'), $images); ?></li>
         <?php } ?>
       <?php } ?>
     </ul>
