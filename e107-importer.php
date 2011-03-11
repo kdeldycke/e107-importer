@@ -157,6 +157,13 @@ class e107_Import extends WP_Importer {
   }
 
 
+  function get_attachment_id_from_url($url) {
+    global $wpdb;
+    $query = "SELECT ID FROM {$wpdb->posts} WHERE guid='$url'";
+    return $wpdb->get_var($query);
+  }
+
+
   // Generic code to initialize the e107 context
   function inite107Context() {
     /* Some part of the code below is copy of (and/or inspired by) code from the e107 project, licensed
@@ -1267,7 +1274,11 @@ class e107_Import extends WP_Importer {
     else
       $post_id = $content_id;
 
-    foreach ($this->extract_html_tags($html_content, 'img', array('http', 'https')) as $tag) {
+    // Extract image tags from the HTML
+    $img_tag_list = $this->extract_html_tags($html_content, 'img', array('http', 'https'));
+
+    // Upload images and update the mapping
+    foreach ($img_tag_list as $tag) {
       $img_tag   = $tag['tag_string'];
       $img_attrs = $tag['attribute_string'];
       $img_url   = $tag['attributes']['src'];
@@ -1280,67 +1291,90 @@ class e107_Import extends WP_Importer {
       if (!preg_match('/^https?:\/\//i', $img_url))
         $img_url = SITEURL.$img_url;
 
-      // If the image was already uploaded, use the previous upload, else remotely upload it
-      if (array_key_exists($img_url, $this->image_mapping)) {
-        $attachment_id = $this->image_mapping[$img_url];
+      // If the image was already uploaded, skip it
+      if (array_key_exists($img_url, $this->image_mapping))
+        continue;
 
+      // Only import files from authorized domains
+      $domain_ok = True;
+      // TODO: use parse_url() for better comparison
+      if ($allowed_domains && is_array($allowed_domains) && sizeof($allowed_domains) > 0) {
+        $domain_ok = False;
+        foreach ($allowed_domains as $domain) {
+          $domain = $this->deleteTrailingChar($domain, '/');
+          if (substr($img_url, 0, strlen($domain)) == $domain) {
+            $domain_ok = True;
+            break;
+          }
+        }
+      }
+      if (!$domain_ok)
+        continue;
+
+      // Get image description from the alt or title attribute
+      $img_desc = '';
+      foreach (array('alt', 'title') as $desc_tag)
+        if (array_key_exists($desc_tag, $tag['attributes']) and !empty($tag['attributes'][$desc_tag])) {
+          $img_desc = $tag['attributes'][$desc_tag];
+          break;
+        }
+
+      // URLs with spaces are not considered valid by WordPress (see: http://core.trac.wordpress.org/ticket/16330#comment:5 )
+      // Replace spaces by their percent-encoding equivalent
+      //$img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
+      $img_fixed_url = str_replace(' ', '%20', html_entity_decode($img_url));
+      // Download remote file and attach it to the post
+      $new_tag = media_sideload_image($img_fixed_url, $post_id, $img_desc);
+      if (is_wp_error($new_tag)) {
+        ?>
+        <li>
+          <?php printf(__('Error while trying to upload image <code>%s</code> encountered in HTML tag <code>%s</code>. Here is the error message:', 'e107-importer'), $img_fixed_url, htmlspecialchars($img_tag)); ?><br/>
+          <?php printf(__('<pre>%s</pre>', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
+          <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
+        </li>
+        <?php
+        continue;
+      }
+
+      // Extract the image URL to get the attachment ID
+      $new_tag_data = $this->extract_html_tags($new_tag, 'img');
+      $new_tag_url = $new_tag_data[0]['attributes']['src'];
+
+      // Get the attachment ID from the uploaded image URL
+      $attachment_id = url_to_postid($new_tag_url);
+      // url_to_postid() may not work if rewrite rules are not activated. See http://core.trac.wordpress.org/ticket/16830 .
+      // Let's try another approach
+      if (empty($attachment_id))
+        $attachment_id = $this->get_attachment_id_from_url($new_tag_url);
+
+      // Image was successfully uploaded, update the mapping
+      // The reference to the newly WordPress-uploaded image in the mapping can either be the attachment ID or the new tag.
+      $this->image_mapping[$img_url] = empty($attachment_id) ? $new_tag : (int)$attachment_id;
+    }
+
+    // Replace old image tags by new ones
+    foreach ($img_tag_list as $tag) {
+      $img_tag = $tag['tag_string'];
+      $img_url = $tag['attributes']['src'];
+
+      // The image tag is not in our mapping, skip its replacement
+      if (!array_key_exists($img_url, $this->image_mapping))
+        continue;
+
+      // The reference to the newly WordPress-uploaded image in the mapping is the new HTML tag, unless it's an integer, in which case it's the attachment ID.
+      $new_tag = $this->image_mapping[$img_url];
+      if (is_int($new_tag)) {
+        $attachment_id = $new_tag;
+        // Get a proper image tag from the attachment ID
+        $new_tag = wp_get_attachment_image($attachment_id, 'full');
         // Update the link between attachment and the post
         // This ends with an uploaded image attached to the post the image was initially used in when it was both used in comments and posts
         if ($content_type != 'comment')
-          link_attachment_to_post($attachment_id, $post_id);
-
-      } else {
-        // Only import files from authorized domains
-        $domain_ok = True;
-        // TODO: use parse_url() for better comparison
-        if ($allowed_domains && is_array($allowed_domains) && sizeof($allowed_domains) > 0) {
-          $domain_ok = False;
-          foreach ($allowed_domains as $domain) {
-            $domain = $this->deleteTrailingChar($domain, '/');
-            if (substr($img_url, 0, strlen($domain)) == $domain) {
-              $domain_ok = True;
-              break;
-            }
-          }
-        }
-        if (!$domain_ok)
-          continue;
-
-        // Get image description from the alt or title attribute
-        $img_desc = '';
-        foreach (array('alt', 'title') as $desc_tag)
-          if (array_key_exists($desc_tag, $tag['attributes']) and !empty($tag['attributes'][$desc_tag])) {
-            $img_desc = $tag['attributes'][$desc_tag];
-            break;
-          }
-
-        // URLs with spaces are not considered valid by WordPress (see: http://core.trac.wordpress.org/ticket/16330#comment:5 )
-        // Replace spaces by their percent-encoding equivalent
-        //$img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
-        $img_fixed_url = str_replace(' ', '%20', html_entity_decode($img_url));
-        // Download remote file and attach it to the post
-        $new_tag = media_sideload_image($img_fixed_url, $post_id, $img_desc);
-        if (is_wp_error($new_tag)) {
-          ?>
-          <li>
-            <?php printf(__('Error while trying to upload image <code>%s</code> encountered in HTML tag <code>%s</code>. Here is the error message:', 'e107-importer'), $img_fixed_url, htmlspecialchars($img_tag)); ?><br/>
-            <?php printf(__('<pre>%s</pre>', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
-            <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
-          </li>
-          <?php
-          continue;
-        }
-
-        // Extract the image URL to get the attachment ID
-        $new_tag_data = $this->extract_html_tags($new_tag, 'img');
-        $attachment_id = url_to_postid($new_tag_data[0]['attributes']['src']);
-
-        // Image was successfully uploaded, update the mapping
-        $this->image_mapping[$img_url] = $attachment_id;
+          $this->link_attachment_to_post($attachment_id, $post_id);
       }
 
       // Update post content with the new image tag pointing to the local image
-      $html_content = str_replace($img_tag, wp_get_attachment_image($attachment_id, 'full'), $html_content);
+      $html_content = str_replace($img_tag, $new_tag, $html_content);
       $image_counter++;
     }
 
