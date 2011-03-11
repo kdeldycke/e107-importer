@@ -30,6 +30,16 @@ define("E107_REDIRECTOR_PLUGIN", 'e107-importer/e107-redirector.php');
 define("BBPRESS_PLUGIN"        , 'bbpress/bbpress.php');
 
 
+// Define a dummy class mimicking e107_handlers/e107_class.php:e107
+// This is necessary as it is used by e107_files/bbcode/img.bb to compute some paths
+class redefined_e107 {
+  var $base_path;
+  function redefined_e107() {
+    $this->base_path = '';
+  }
+}
+
+
 if ( class_exists( 'WP_Importer' ) ) {
 class e107_Import extends WP_Importer {
   // Class wide variables
@@ -175,6 +185,10 @@ class e107_Import extends WP_Importer {
 
     // Don't know why but in certain cases e_IMAGE was not defined
     define("e_IMAGE" , $IMAGES_DIRECTORY);
+
+    // Create a dummy e107 instance to accomodate the img BBCode parser
+    global $e107;
+    $e107 = new redefined_e107();
 
     // Set user-related globals referenced in e_parse_class.php
     define("ADMIN" , True);  // Will replace {e_ADMIN} constant with $ADMIN_DIRECTORY
