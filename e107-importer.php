@@ -741,7 +741,7 @@ class e107_Import extends WP_Importer {
       $post_id = $this->news_mapping[$comment_item_id];
     } else {
       // Do not import this comment: its either a non-news or non-page comment, or the user choosed to skip news and/or pages comments import
-      continue;
+      return;
     }
 
     // Don't import comments not linked with news
@@ -1214,18 +1214,26 @@ class e107_Import extends WP_Importer {
   // Clean-up markup produced by e107's BBCode parser
   function cleanUpMarkup($content) {
     $new_content = $content;
-    $new_content = normalize_whitespace($new_content);
-    $new_content = wpautop($new_content);
+
+    // Filter bad HTML
     $new_content = wp_kses_post($new_content);
-    $new_content = preg_replace("/\s*\n+\s*/", "\n\n", $new_content);
+
+    // Normalize paragraphs and line-breaks to <p>
+    $new_content = wpautop($new_content);
 
     $content_transforms = array(
       // Replace "<b>...</b>" with "<strong>...</strong>"
-        '/<\s*b\s*>/i'   => '<strong>'
-      , '/<\/\s*b\s*>/i' => '</strong>'
+        '/<\s*b\s*>/i'    => '<strong>'
+      , '/<\/\s*b\s*>/i'  => '</strong>'
       // Replace "<i>...</i>" with "<em>...</em>"
-      , '/<\s*i\s*>/i'   => '<em>'
-      , '/<\/\s*i\s*>/i' => '</em>'
+      , '/<\s*i\s*>/i'    => '<em>'
+      , '/<\/\s*i\s*>/i'  => '</em>'
+      // Translate back <p> to natural '\n' line-breaking
+      , '/<\s*p\s*>/i'    => "\n"
+      , '/<\/\s*p\s*>/i'  => "\n"
+      // Translate back <br> to natural '\n' line-breaking
+      , '/<\s*br\s*>/i'   => "\n"
+      , '/<\s*br\s*\/>/i' => "\n"
       );
 
     foreach ($content_transforms as $regexp => $replacement) {
@@ -1235,6 +1243,13 @@ class e107_Import extends WP_Importer {
         }
       }
     }
+
+    // Normalize \n line-breaks
+    $new_content = normalize_whitespace($new_content);
+    $new_content = preg_replace("/\s*\n+\s*/", "\n\n", $new_content);
+
+    // Remove heading and trailing \n
+    $new_content = trim(trim($new_content), "\n");
 
     /*
 
