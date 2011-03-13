@@ -1216,7 +1216,7 @@ class e107_Import extends WP_Importer {
     $new_content = $content;
     $new_content = normalize_whitespace($new_content);
     $new_content = wpautop($new_content);
-    $new_content = wp_kses_data($new_content);
+    $new_content = wp_kses_post($new_content);
     $new_content = preg_replace("/\s*\n+\s*/", "\n\n", $new_content);
 
     $content_transforms = array(
