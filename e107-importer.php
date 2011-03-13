@@ -151,6 +151,33 @@ class e107_Import extends WP_Importer {
   }
 
 
+  // Return the domain name of a URL, discarding sub-domains
+  function get_domain_name($url) {
+    $domain = '';
+    $host = parse_url($url, PHP_URL_HOST);
+    $d = array_reverse(explode(".", $host));
+    if (isset($d[0]))
+      $domain = $d[0];
+    if (isset($d[1]))
+      $domain = $d[1].'.'.$domain;
+    return $domain;
+  }
+
+
+  // Build the list of authorized domains (past and current local domains) from which we are allowed to import content
+  function get_local_domains() {
+    $domain_list = array();
+    $url_list = array( $this->e107_pref['siteurl']
+                     , SITEURL
+                     , get_option('siteurl')
+                     , get_option('home')
+                     );
+    foreach ($url_list as $url)
+      $domain_list[] = $this->get_domain_name($url);
+    return array_unique($domain_list);
+  }
+
+
   function link_attachment_to_post($attachment_id, $post_id) {
     global $wpdb;
     return $wpdb->update($wpdb->posts, array('post_parent' => $post_id), array('ID' => $attachment_id));
@@ -305,7 +332,7 @@ class e107_Import extends WP_Importer {
     // Turn-off profanity filter
     $this->e107_pref['profanity_filter'] = False;
 
-    // Disable all extra HTML rendering hooks like the one comming from e107 Linkwords plugin
+    // Disable all extra HTML rendering hooks like the one coming from e107 Linkwords plugin
     $this->e107_pref['tohtml_hook'] = '';
 
     // Set global SITEURL as it's used by replaceConstants() method
@@ -1180,11 +1207,12 @@ class e107_Import extends WP_Importer {
             $new_content = $this->cleanUpMarkup($new_content);
             break;
           case 'upload_local_images':
-            $local_image_upload = True;
+            $domain_list = $this->get_local_domains();
           case 'upload_all_images':
-            $ret = $this->importImages($content, $content_id, $content_type, $local_image_upload);
-            $new_content = $ret[0];
-            $counter = (empty($counter)) ? $ret[1] : $counter + $ret[1];
+            $domain_list = (isset($domain_list)) ? $domain_list : array();
+            $results = $this->importImages($content, $content_id, $content_type, $domain_list);
+            $new_content = $results[0];
+            $counter = (empty($counter)) ? $results[1] : $counter + $results[1];
             break;
         }
 
@@ -1206,7 +1234,7 @@ class e107_Import extends WP_Importer {
     }
 
     // Return our generic counter variables
-    if (!empty($counter))
+    if (isset($counter))
       return $counter;
   }
 
@@ -1273,13 +1301,8 @@ class e107_Import extends WP_Importer {
 
 
   // This method import all images embedded in HTML content
-  function importImages($html_content, $content_id, $content_type, $local_only = False) {
+  function importImages($html_content, $content_id, $content_type, $allowed_domains = array()) {
     $image_counter = 0;
-
-    // Build the list of authorized domains from which we are allowed to import images
-    $allowed_domains = array();
-    if ($local_only == True)
-      $allowed_domains[] = $this->e107_pref['siteurl'];
 
     // An attachment can only belongs to a post, not a comment. Use parent post in the latter case.
     if ($content_type == 'comment')
@@ -1309,19 +1332,9 @@ class e107_Import extends WP_Importer {
         continue;
 
       // Only import files from authorized domains
-      $domain_ok = True;
-      // TODO: use parse_url() for better comparison
-      if ($allowed_domains && is_array($allowed_domains) && sizeof($allowed_domains) > 0) {
-        $domain_ok = False;
-        foreach ($allowed_domains as $domain) {
-          $domain = $this->deleteTrailingChar($domain, '/');
-          if (substr($img_url, 0, strlen($domain)) == $domain) {
-            $domain_ok = True;
-            break;
-          }
-        }
-      }
-      if (!$domain_ok)
+      if (   is_array($allowed_domains)
+         and !empty($allowed_domains)
+         and !in_array($this->get_domain_name($img_url), $allowed_domains))
         continue;
 
       // Get image description from the alt or title attribute
@@ -1526,7 +1539,7 @@ class e107_Import extends WP_Importer {
       <h3><?php _e('Forums', 'e107-importer'); ?></h3>
       <p><?php _e('e107 forums can be imported to <a href="http://wordpress.org/extend/plugins/bbpress/">bbPress plugin</a>.', 'e107-importer'); ?></p>
       <?php if (!array_key_exists(BBPRESS_PLUGIN, get_plugins())) { ?>
-        <p><?php _e('bbPress plugin is not available on your system. If you want to import forums, please install it first before comming back to this screen. ', 'e107-importer'); ?></p>
+        <p><?php _e('bbPress plugin is not available on your system. If you want to import forums, please install it first before coming back to this screen. ', 'e107-importer'); ?></p>
       <?php } elseif (!is_plugin_active(BBPRESS_PLUGIN)) { ?>
         <p><?php _e('bbPress plugin is available on your system, but is not active. It will be activated automaticcaly if you choose to import forums below.', 'e107-importer'); ?></p>
       <?php } else { ?>
@@ -1564,7 +1577,7 @@ class e107_Import extends WP_Importer {
           <th scope="row"><?php _e('Do you want to upload image files ?', 'e107-importer'); ?></th>
           <td>
             <label for="upload-all-images"><input name="e107_import_images" type="radio" id="upload-all-images" value="upload_all_images"/> <?php _e('Yes: upload all images, even those located on external sites.', 'e107-importer'); ?></label><br/>
-            <label for="upload-local-images"><input name="e107_import_images" type="radio" id="upload-local-images" value="upload_local_images" checked="checked"/> <?php _e('Yes, but: upload local files from the e107 site only, not external images.', 'e107-importer'); ?></label><br/>
+            <label for="upload-local-images"><input name="e107_import_images" type="radio" id="upload-local-images" value="upload_local_images" checked="checked"/> <?php _e('Yes, but: only upload files coming from the old e107 site or the current WordPress blog, and ignore all other images.', 'e107-importer'); ?></label><br/>
             <label for="no-upload"><input name="e107_import_images" type="radio" id="no-upload" value="no_upload"/> <?php _e('No: do not upload image files to WordPress.', 'e107-importer'); ?></label><br/>
           </td>
         </tr>
@@ -1806,7 +1819,7 @@ class e107_Import extends WP_Importer {
       <?php } else { ?>
         <li><?php _e('Upload images...', 'e107-importer'); ?></li>
         <?php if ($this->e107_import_images == 'upload_local_images') { ?>
-          <li><?php printf(__('Only upload local images comming from <code>%s</code>.', 'e107-importer'), $this->e107_pref['siteurl']); ?></li>
+          <li><?php printf(__('Only upload local images coming from <code>%s</code>.', 'e107-importer'), implode("</code>, <code>", $this->get_local_domains())); ?></li>
         <?php } ?>
         <?php if ($this->e107_import_news) { ?>
           <li><?php _e('Import images embedded in news content...', 'e107-importer'); ?></li>
