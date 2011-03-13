@@ -131,9 +131,9 @@ class e107_Import extends WP_Importer {
   function extract_html_tags($html_content, $tag_name, $allowed_protocols=array()) {
     // Default list of protocols copied from wp-includes/kses.php:wp_kses()
     if (empty($allowed_protocols))
-      $allowed_protocols = array ('http', 'https', 'ftp', 'ftps', 'mailto', 'news', 'irc', 'gopher', 'nntp', 'feed', 'telnet', 'mms', 'rtsp', 'svn');
+      $allowed_protocols = array('http', 'https', 'ftp', 'ftps', 'mailto', 'news', 'irc', 'gopher', 'nntp', 'feed', 'telnet', 'mms', 'rtsp', 'svn');
     $tag_list = array();
-    $tag_regexp = '/<\s*'.$tag_name.'\s+(.+?)>/i';
+    $tag_regexp = '/<\/?\s*'.$tag_name.'\s+(.+?)>/i';
     if (preg_match_all($tag_regexp, $html_content, $matches, PREG_SET_ORDER)) {
       foreach ($matches as $match) {
         // Parse attributes
