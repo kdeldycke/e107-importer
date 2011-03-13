@@ -1228,12 +1228,10 @@ class e107_Import extends WP_Importer {
       // Replace "<i>...</i>" with "<em>...</em>"
       , '/<\s*i\s*>/i'    => '<em>'
       , '/<\/\s*i\s*>/i'  => '</em>'
-      // Translate back <p> to natural '\n' line-breaking
-      , '/<\s*p\s*>/i'    => "\n"
-      , '/<\/\s*p\s*>/i'  => "\n"
-      // Translate back <br> to natural '\n' line-breaking
-      , '/<\s*br\s*>/i'   => "\n"
-      , '/<\s*br\s*\/>/i' => "\n"
+      // Translate back each <p> and </p> to natural '\n' line-breaking
+      , '/<\/?\s*p\s*>/i'    => "\n"
+      // Translate back each <br> and <br/> to natural '\n' line-breaking
+      , '/<\s*br\s*\/?>/i'   => "\n"
       );
 
     foreach ($content_transforms as $regexp => $replacement) {
