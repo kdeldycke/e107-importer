@@ -1560,7 +1560,7 @@ class e107_Import extends WP_Importer {
       </table>
 
       <h3><?php _e('Images upload', 'e107-importer'); ?></h3>
-      <p><?php _e('This tool can find image URLs embedded in news, pages, content and forums, then upload them to this blog automatically. But this will only work if you have selected the e107 BBCode parser above.', 'e107-importer'); ?></p>
+      <p><?php _e('This tool can find image URLs embedded in news, pages, content and forums, then upload them to this blog automatically. This will only work if e107 BBCode are parsed (see option above).', 'e107-importer'); ?></p>
       <table class="form-table">
         <tr valign="top">
           <th scope="row"><?php _e('Do you want to upload image files ?', 'e107-importer'); ?></th>
@@ -1802,7 +1802,9 @@ class e107_Import extends WP_Importer {
     <h3><?php _e('Images', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
       <?php if ($this->e107_import_images == 'no_upload') { ?>
-        <li><?php _e('Image upload skipped.', 'e107-importer'); ?></li>
+        <li><?php _e('Image upload skipped by user.', 'e107-importer'); ?></li>
+      <?php } elseif ($this->e107_bbcode_parser == 'none') { ?>
+        <li><?php _e('Image upload skipped because BBCode are not parsed.', 'e107-importer'); ?></li>
       <?php } else { ?>
         <li><?php _e('Upload images...', 'e107-importer'); ?></li>
         <?php if ($this->e107_import_images == 'upload_local_images') { ?>
