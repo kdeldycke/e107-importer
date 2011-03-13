@@ -1315,21 +1315,22 @@ class e107_Import extends WP_Importer {
 
     // Upload images and update the mapping
     foreach ($img_tag_list as $tag) {
-      $img_tag   = $tag['tag_string'];
-      $img_attrs = $tag['attribute_string'];
-      $img_url   = $tag['attributes']['src'];
+      $img_tag     = $tag['tag_string'];
+      $img_attrs   = $tag['attribute_string'];
+      $img_url_ref = $tag['attributes']['src'];
+      $img_url = $img_url_ref;
 
       // Skip empty image tags
       if (empty($img_url))
         continue;
 
+      // If the image was already uploaded, skip it
+      if (array_key_exists($img_url_ref, $this->image_mapping))
+        continue;
+
       // If url doesn't start with "http[s]://", add e107 site url in front to build an absolute url
       if (!preg_match('/^https?:\/\//i', $img_url))
         $img_url = SITEURL.$img_url;
-
-      // If the image was already uploaded, skip it
-      if (array_key_exists($img_url, $this->image_mapping))
-        continue;
 
       // Only import files from authorized domains
       if (   is_array($allowed_domains)
@@ -1348,13 +1349,13 @@ class e107_Import extends WP_Importer {
       // URLs with spaces are not considered valid by WordPress (see: http://core.trac.wordpress.org/ticket/16330#comment:5 )
       // Replace spaces by their percent-encoding equivalent
       //$img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
-      $img_fixed_url = str_replace(' ', '%20', html_entity_decode($img_url));
+      $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
       // Download remote file and attach it to the post
-      $new_tag = media_sideload_image($img_fixed_url, $post_id, $img_desc);
+      $new_tag = media_sideload_image($img_url, $post_id, $img_desc);
       if (is_wp_error($new_tag)) {
         ?>
         <li>
-          <?php printf(__('Error while trying to upload image <code>%s</code> encountered in HTML tag <code>%s</code>. Here is the error message:', 'e107-importer'), $img_fixed_url, htmlspecialchars($img_tag)); ?><br/>
+          <?php printf(__('Error while trying to upload image <code>%s</code> encountered in HTML tag <code>%s</code>. Here is the error message:', 'e107-importer'), $img_url, htmlspecialchars($img_tag)); ?><br/>
           <?php printf(__('<pre>%s</pre>', 'e107-importer'), $new_tag->get_error_message()); ?><br/>
           <?php _e('Ignore this image upload and proceed with the next...', 'e107-importer'); ?>
         </li>
@@ -1375,7 +1376,7 @@ class e107_Import extends WP_Importer {
 
       // Image was successfully uploaded, update the mapping
       // The reference to the newly WordPress-uploaded image in the mapping can either be the attachment ID or the new tag.
-      $this->image_mapping[$img_url] = empty($attachment_id) ? $new_tag : (int)$attachment_id;
+      $this->image_mapping[$img_url_ref] = empty($attachment_id) ? $new_tag : (int)$attachment_id;
     }
 
     // Replace old image tags by new ones
