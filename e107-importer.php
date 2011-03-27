@@ -1246,6 +1246,12 @@ class e107_Import extends WP_Importer {
     // Filter bad HTML
     $new_content = wp_kses_post($new_content);
 
+    // Remove image tags pointing to no images
+    $img_tag_list = $this->extract_html_tags($new_content, 'img');
+    foreach ($img_tag_list as $tag)
+      if (!array_key_exists('src', $tag['attributes']) or empty($tag['attributes']['src']))
+        $new_content = str_replace($tag['tag_string'], '', $new_content);
+
     // Normalize paragraphs and line-breaks to <p>
     $new_content = wpautop($new_content);
 
