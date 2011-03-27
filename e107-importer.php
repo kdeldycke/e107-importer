@@ -1224,6 +1224,8 @@ class e107_Import extends WP_Importer {
               , $content_property => esc_sql($new_content)
               ));
           } else {
+            // Create a revision first
+            wp_save_post_revision($content_id);
             wp_update_post(array(
                 'ID'              => $content_id
               , $content_property => esc_sql($new_content)
