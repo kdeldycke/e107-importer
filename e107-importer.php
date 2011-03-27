@@ -1801,7 +1801,7 @@ class e107_Import extends WP_Importer {
           <?php $this->parseAndUpdate(array_values($this->comment_mapping), 'comment', 'content', $this->e107_bbcode_parser); ?>
         <?php } ?>
         <?php if ($this->e107_import_forums) { ?>
-          <li><?php _e('Pars forums title and content...', 'e107-importer'); ?></li>
+          <li><?php _e('Parse forums title and content...', 'e107-importer'); ?></li>
           <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'title', $this->e107_bbcode_parser); ?>
           <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
           <li><?php _e('Parse forum threads title and content...', 'e107-importer'); ?></li>
