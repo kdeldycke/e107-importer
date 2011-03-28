@@ -1296,6 +1296,15 @@ class e107_Import extends WP_Importer {
             $tag['attributes'][$attr_name] = implode(" ", $attr_values);
           }
         }
+        // De-obfuscate mailto links
+        // Catch and fix href='"+"user"+"@"+"domain.com";self.close();'
+        if ($tag_name == 'a' and array_key_exists('href', $tag['attributes'])) {
+          $url = $tag['attributes']['href'];
+          if (substr_count($url, '"+"') == 3) {
+            $fragments = explode('"', $url);
+            $tag['attributes']['href'] = "mailto:$fragments[2]@$fragments[6]";
+          }
+        }
         // Recreate the tag
         $new_tag  = "<$tag_name";
         foreach ($tag['attributes'] as $attribute => $value)
