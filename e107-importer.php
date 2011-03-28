@@ -103,6 +103,17 @@ class e107_Import extends WP_Importer {
   }
 
 
+  // An utility method to replace a bunch of matching regexps by constant strings
+  // Mainly used in content parsing and markup clean-up
+  function massRegexpReplace($string, $rules) {
+    foreach ($rules as $regexp => $replacement)
+      if (preg_match_all($regexp, $string, $matches, PREG_SET_ORDER))
+        foreach ($matches as $tag)
+          $string = str_replace($tag, $replacement, $string);
+    return $string;
+  }
+
+
   // A method to simplify a string by removing spaces, returns and tags fo easy comparison
   function simplifyString($s) {
     // Remove BBCode tags
@@ -1201,10 +1212,12 @@ class e107_Import extends WP_Importer {
             $new_content = $this->e107_parser->toHTML($content, $parseBB = True);
             break;
           case 'clean_markup':
+            // Some advanced cleaning needs to parse BBCode
+            $new_content = $this->preCleanUpMarkup($content);
             // Transform BBCode to HTML using original e107 parser
-            $new_content = $this->e107_parser->toHTML($content, $parseBB = True);
+            $new_content = $this->e107_parser->toHTML($new_content, $parseBB = True);
             // Clean-up markup produced by e107's BBCode parser
-            $new_content = $this->cleanUpMarkup($new_content);
+            $new_content = $this->postCleanUpMarkup($new_content);
             break;
           case 'upload_local_images':
             $domain_list = $this->get_local_domains();
@@ -1241,8 +1254,23 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Clean-up markup produced by e107's BBCode parser
-  function cleanUpMarkup($content) {
+  // Clean-up BBCode before feeding it to the e107's parser
+  function preCleanUpMarkup($content) {
+    $new_content = $content;
+
+    $content_transforms = array(
+      // Replace "[blockquote]...[/blockquote]" with "<blockquote>...</blockquote>"
+        '/\[\s*blockquote\s*\]/i'    => '<blockquote>'
+      , '/\[\/\s*blockquote\s*\]/i'  => '</blockquote>'
+      );
+    $new_content = $this->massRegexpReplace($new_content, $content_transforms);
+
+    return $new_content;
+  }
+
+
+  // Clean-up HTML markup produced by e107's BBCode parser
+  function postCleanUpMarkup($content) {
     $new_content = $content;
 
     // Filter bad HTML
@@ -1300,14 +1328,7 @@ class e107_Import extends WP_Importer {
       // Translate back each <br> and <br/> to natural '\n' line-breaking
       , '/<\s*br\s*\/?>/i'   => "\n"
       );
-
-    foreach ($content_transforms as $regexp => $replacement) {
-      if (preg_match_all($regexp, $new_content, $matches, PREG_SET_ORDER)) {
-        foreach ($matches as $tag) {
-          $new_content = str_replace($tag, $replacement, $new_content);
-        }
-      }
-    }
+    $new_content = $this->massRegexpReplace($new_content, $content_transforms);
 
     // Normalize \n line-breaks
     $new_content = normalize_whitespace($new_content);
