@@ -1256,7 +1256,7 @@ class e107_Import extends WP_Importer {
 
     // Clean up some attributes in a selected number of tags
     $tag_list = array('a', 'img', 'ul', 'li', 'ol', 'span');
-    $laundry_list = array('class' => array('bbcode'), 'rel' => array('external'));
+    $laundry_list = array('class' => array('bbcode', 'underline'), 'rel' => array('external'));
     foreach ($tag_list as $tag_name) {
       $img_tag_list = $this->extract_html_tags($new_content, $tag_name);
       foreach ($img_tag_list as $tag) {
