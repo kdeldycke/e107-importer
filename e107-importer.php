@@ -1254,6 +1254,36 @@ class e107_Import extends WP_Importer {
       if (!array_key_exists('src', $tag['attributes']) or empty($tag['attributes']['src']))
         $new_content = str_replace($tag['tag_string'], '', $new_content);
 
+    // Clean up some attributes in a selected number of tags
+    $tag_list = array('a', 'img', 'ul', 'li', 'ol', 'span');
+    foreach ($tag_list as $tag_name) {
+      $img_tag_list = $this->extract_html_tags($new_content, $tag_name);
+      foreach ($img_tag_list as $tag) {
+        // Remove 'bbcode' CSS class
+        if (array_key_exists('class', $tag['attributes'])) {
+          $css_classes = array_filter(array_unique(explode(" ", $tag['attributes']['class'])));
+          $css_classes = array_diff($css_classes, array('bbcode'));
+          $tag['attributes']['class'] = implode(" ", $css_classes);
+        }
+        // Recreate the tag
+        $new_tag  = "<$tag_name";
+        foreach ($tag['attributes'] as $attribute => $value)
+          // This condition remove empty tags like class='' and alt=''
+          if (!empty($value)) {
+            // Choose the right kind of quote
+            $quote = '"';
+            if (strpos($value, $quote) !== False)
+              $quote = '\'';
+            $new_tag .= " $attribute=$quote$value$quote";
+          }
+        $new_tag .= ">";
+        // Replace the original tag by its clean-up version
+        $new_content = str_replace($tag['tag_string'], $new_tag, $new_content);
+      }
+    }
+
+    // TODO: remove [rel] => external
+
     // Normalize paragraphs and line-breaks to <p>
     $new_content = wpautop($new_content);
 
