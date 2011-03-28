@@ -1215,7 +1215,7 @@ class e107_Import extends WP_Importer {
             // Some advanced cleaning needs to parse BBCode
             $new_content = $this->preCleanUpMarkup($content);
             // Transform BBCode to HTML using original e107 parser
-            $new_content = $this->e107_parser->toHTML($new_content, $parseBB = True);
+            $new_content = $this->e107_parser->toHTML($new_content, $parseBB = True, 'no_make_clickable');
             // Clean-up markup produced by e107's BBCode parser
             $new_content = $this->postCleanUpMarkup($new_content);
             break;
