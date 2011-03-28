@@ -1256,14 +1256,17 @@ class e107_Import extends WP_Importer {
 
     // Clean up some attributes in a selected number of tags
     $tag_list = array('a', 'img', 'ul', 'li', 'ol', 'span');
+    $laundry_list = array('class' => array('bbcode'), 'rel' => array('external'));
     foreach ($tag_list as $tag_name) {
       $img_tag_list = $this->extract_html_tags($new_content, $tag_name);
       foreach ($img_tag_list as $tag) {
-        // Remove 'bbcode' CSS class
-        if (array_key_exists('class', $tag['attributes'])) {
-          $css_classes = array_filter(array_unique(explode(" ", $tag['attributes']['class'])));
-          $css_classes = array_diff($css_classes, array('bbcode'));
-          $tag['attributes']['class'] = implode(" ", $css_classes);
+        // Remove some attributes values
+        foreach ($laundry_list as $attr_name => $values) {
+          if (array_key_exists($attr_name, $tag['attributes'])) {
+            $attr_values = array_filter(array_unique(explode(" ", $tag['attributes'][$attr_name])));
+            $attr_values = array_diff($attr_values, $values);
+            $tag['attributes'][$attr_name] = implode(" ", $attr_values);
+          }
         }
         // Recreate the tag
         $new_tag  = "<$tag_name";
@@ -1281,8 +1284,6 @@ class e107_Import extends WP_Importer {
         $new_content = str_replace($tag['tag_string'], $new_tag, $new_content);
       }
     }
-
-    // TODO: remove [rel] => external
 
     // Normalize paragraphs and line-breaks to <p>
     $new_content = wpautop($new_content);
