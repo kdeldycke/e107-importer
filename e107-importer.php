@@ -1260,10 +1260,12 @@ class e107_Import extends WP_Importer {
 
     $content_transforms = array(
       // Replace "[blockquote]...[/blockquote]" with "<blockquote>...</blockquote>"
-        '/\[\s*blockquote\s*\]/i'    => '<blockquote>'
-      , '/\[\/\s*blockquote\s*\]/i'  => '</blockquote>'
+        '/\[\s*blockquote\s*\]/i'   => '<blockquote>'
+      , '/\[\/\s*blockquote\s*\]/i' => '</blockquote>'
+      // Fix malformated [link="URL"] and [link=&quot;URL&quot;] BBCodes (e107 parser fails on double quotes)
+      , '/\[\s*link\s*=\s*("|&quot;)(.*?)\1\s*\]/i' => '[link=\2]'
       );
-    $new_content = $this->massRegexpReplace($new_content, $content_transforms);
+    $new_content = preg_replace(array_keys($content_transforms), array_values($content_transforms), $new_content);
 
     return $new_content;
   }
