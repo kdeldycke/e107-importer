@@ -103,17 +103,6 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // An utility method to replace a bunch of matching regexps by constant strings
-  // Mainly used in content parsing and markup clean-up
-  function massRegexpReplace($string, $rules) {
-    foreach ($rules as $regexp => $replacement)
-      if (preg_match_all($regexp, $string, $matches, PREG_SET_ORDER))
-        foreach ($matches as $tag)
-          $string = str_replace($tag, $replacement, $string);
-    return $string;
-  }
-
-
   // A method to simplify a string by removing spaces, returns and tags fo easy comparison
   function simplifyString($s) {
     // Remove BBCode tags
@@ -1336,7 +1325,7 @@ class e107_Import extends WP_Importer {
       // Translate back each <br> and <br/> to natural '\n' line-breaking
       , '/<\s*br\s*\/?>/i'   => "\n"
       );
-    $new_content = $this->massRegexpReplace($new_content, $content_transforms);
+    $new_content = preg_replace(array_keys($content_transforms), array_values($content_transforms), $new_content);
 
     // Normalize \n line-breaks
     $new_content = normalize_whitespace($new_content);
