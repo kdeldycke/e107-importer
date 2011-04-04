@@ -1299,7 +1299,7 @@ class e107_Import extends WP_Importer {
         // Recreate the tag
         $new_tag  = "<$tag_name";
         foreach ($tag['attributes'] as $attribute => $value)
-          // This condition remove empty tags like class='' and alt=''
+          // This condition remove empty tag attributes like class='' and alt=''
           if (!empty($value)) {
             // Choose the right kind of quote
             $quote = '"';
