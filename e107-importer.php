@@ -1315,15 +1315,15 @@ class e107_Import extends WP_Importer {
 
     $content_transforms = array(
       // Replace "<b>...</b>" with "<strong>...</strong>"
-        '/<\s*b\s*>/i'    => '<strong>'
-      , '/<\/\s*b\s*>/i'  => '</strong>'
+        '/<\s*b\s*>/i'   => '<strong>'
+      , '/<\/\s*b\s*>/i' => '</strong>'
       // Replace "<i>...</i>" with "<em>...</em>"
-      , '/<\s*i\s*>/i'    => '<em>'
-      , '/<\/\s*i\s*>/i'  => '</em>'
+      , '/<\s*i\s*>/i'   => '<em>'
+      , '/<\/\s*i\s*>/i' => '</em>'
       // Translate back each <p> and </p> to natural '\n' line-breaking
-      , '/<\/?\s*p\s*>/i'    => "\n"
+      , '/<\/?\s*p\s*>/i' => "\n"
       // Translate back each <br> and <br/> to natural '\n' line-breaking
-      , '/<\s*br\s*\/?>/i'   => "\n"
+      , '/<\s*br\s*\/?>/i' => "\n"
       );
     $new_content = preg_replace(array_keys($content_transforms), array_values($content_transforms), $new_content);
 
