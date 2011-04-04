@@ -1327,16 +1327,10 @@ class e107_Import extends WP_Importer {
       // Remove empty <li>(...)</li>
       , '/<\s*li\s*>\s*<\/\s*li\s*>/i' => ''
       // Remove spaces before and after all list elements
-      , '/\s*<\s*ul\s*>\s*/i'   => "\n<ul>"
-      , '/\s*<\s*ol\s*>\s*/i'   => "\n<ol>"
-      , '/\s*<\s*li\s*>\s*/i'   => "\n<li>"
-      , '/\s*<\/\s*ul\s*>\s*/i' => '</ul>'
-      , '/\s*<\/\s*ol\s*>\s*/i' => '</ol>'
-      , '/\s*<\/\s*li\s*>\s*/i' => '</li>'
+      , '/\s*<\s*(ul|ol|li)\s*>\s*/i'   => "\n<\\1>"
+      , '/\s*<\/\s*(ul|ol|li)\s*>\s*/i' => '</\1>'
       // Add a break after closing list element: transform "</li>" to "</li>\n"
-      , '/<\/\s*ul\s*>/i' => "</ul>\n"
-      , '/<\/\s*ol\s*>/i' => "</ol>\n"
-      , '/<\/\s*li\s*>/i' => "</li>\n"
+      , '/<\/\s*(ul|ol|li)\s*>/i' => "</\\1>\n"
       );
     $new_content = preg_replace(array_keys($content_transforms), array_values($content_transforms), $new_content);
 
