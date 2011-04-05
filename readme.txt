@@ -219,7 +219,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 == Upgrade Notice ==
 
 = 1.2 =
-Upgraded against e107 0.7.25-rc1.
+Upgraded against e107 0.7.25-rc1. Add new enhanced BBCode parser.
 
 = 1.1 =
 Add import of forums and threads. User, news and pages import now optional.
