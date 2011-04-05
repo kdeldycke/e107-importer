@@ -79,16 +79,6 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Delete all occurrences of a given char at the end of the string
-  function deleteTrailingChar($s, $c) {
-    $s = (string) $s;
-    $c = (string) $c;
-    while ($s[strlen($s)-1] == $c)
-      $s = substr($s, 0, strlen($s)-1);
-    return $s;
-  }
-
-
   // Convert hexadecimal IP address string to decimal
   function ip_hex2dec($hex_ip) {
     if (strlen($hex_ip) != 8)
@@ -315,7 +305,7 @@ class e107_Import extends WP_Importer {
     // Set global SITEURL as it's used by replaceConstants() method
     $site_url = $this->e107_pref['siteurl'];
     // Normalize URL: it must end with a single slash
-    define("SITEURL", $this->deleteTrailingChar($site_url, '/').'/');
+    define("SITEURL", rtrim($site_url, '/').'/');
 
     // Required to make default e107 methods aware of preferences
     global $pref;
@@ -1120,7 +1110,7 @@ class e107_Import extends WP_Importer {
     // Transform the site url string to make it regexp compatible
     $siteurl_regexp = $this->e107_pref['siteurl'];
     // Delete trailing slashes
-    $siteurl_regexp = $this->deleteTrailingChar($siteurl_regexp, '/');
+    $siteurl_regexp = rtrim($siteurl_regexp, '/');
     // Escape all slashes with anti-slash
     $siteurl_regexp = str_replace('/', '\/', $siteurl_regexp);
     // Escape all dots
