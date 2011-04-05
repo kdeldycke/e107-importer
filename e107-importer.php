@@ -54,6 +54,7 @@ class e107_Import extends WP_Importer {
   var $e107_content_ownership;
   var $e107_mail_user;
   var $e107_import_news;
+  var $e107_extended_news;
   var $e107_import_pages;
   var $e107_bbcode_parser;
   var $e107_import_images;
@@ -100,30 +101,6 @@ class e107_Import extends WP_Importer {
     $dec_ip .= '.';
     $dec_ip .= (string) hexdec(substr($hex_ip, 6, 2));
     return $dec_ip;
-  }
-
-
-  // A method to simplify a string by removing spaces, returns and tags fo easy comparison
-  function simplifyString($s) {
-    // Remove BBCode tags
-    // TODO: inner content of matching tag pairs should be deleted.
-    //       Exemple: [left][img]http://www.sillyjokes.co.uk/billy-bobs/gallery/cavemen.jpg[/img][/left]
-    //       become : httpwwwsillyjokescoukbillybobsgallerycavemenjpgimg
-    //       but should be transformed to a blanck string.
-    $s = preg_replace('/\[.*?\]/', '', $s);
-    // Remove HTML tags
-    $s = preg_replace('/<.*?>/', '', $s);
-    //$s = wp_strip_all_tags($s, $remove_breaks = True);
-    // Remove everything but word characters (letters, digits, and underscores)
-    $s = preg_replace('/\W/', '', $s);
-    // Lower case for easier comparison
-    return strtolower($s);
-  }
-
-
-  // Are the 2 strings similar ?
-  function areStringSimilar($a, $b) {
-    return $this->simplifyString($a) == $this->simplifyString($b) ? True : False;
   }
 
 
@@ -659,16 +636,41 @@ class e107_Import extends WP_Importer {
       , 'comment_count'  => $news_comment_total
       );
 
-    // Map extended news to excerpt
-    if ($this->areStringSimilar($news_body, $news_extended)) {
-      $news_body = $news_extended;
-      $news_extended = '';
-    }
-    if (empty($news_extended)) {
-      $post_data['post_content'] = esc_sql($news_body);
-    } else {
-      $post_data['post_excerpt'] = esc_sql($news_body);
-      $post_data['post_content'] = esc_sql($news_extended);
+    // Put body and extended part of news to either main content or excerpt
+    $news_body     = trim($news_body);
+    $news_extended = trim($news_extended);
+    switch ($this->e107_extended_news) {
+      case 'use_excerpt':
+        if (empty($news_extended)) {
+          $post_data['post_content'] = esc_sql($news_body);
+        } else {
+          $post_data['post_excerpt'] = esc_sql($news_body);
+          $post_data['post_content'] = esc_sql($news_extended);
+        }
+        break;
+      case 'body_merge':
+        if (empty($news_body)) {
+          $post_data['post_content'] = esc_sql($news_extended);
+        } elseif (empty($news_extended)) {
+          $post_data['post_content'] = esc_sql($news_body);
+        } else {
+          $post_data['post_content'] = esc_sql($news_body."\n\n<!--more-->\n\n".$news_extended);
+        }
+        break;
+      case 'ignore_body':
+        if (empty($news_extended)) {
+          $post_data['post_content'] = esc_sql($news_body);
+        } else {
+          $post_data['post_content'] = esc_sql($news_extended);
+        }
+        break;
+      case 'ignore_extended':
+        if (empty($news_body)) {
+          $post_data['post_content'] = esc_sql($news_extended);
+        } else {
+          $post_data['post_content'] = esc_sql($news_body);
+        }
+        break;
     }
 
     // Save e107 news in WordPress database
@@ -1589,6 +1591,15 @@ class e107_Import extends WP_Importer {
             <label for="skip-news"><input name="e107_import_news" type="radio" id="skip-news" value="skip-news"/> <?php _e('No: do not import news nor their comments or categories.', 'e107-importer'); ?></label><br/>
           </td>
         </tr>
+        <tr valign="top">
+          <th scope="row"><?php _e('How do you want to treat the extended part of e107 news ?', 'e107-importer'); ?></th>
+          <td>
+            <label for="use-excerpt"><input name="e107_extended_news" type="radio" id="use-excerpt" value="use_excerpt" checked="checked"/> <?php _e('Use e107 news body as excerpt and e107 extended part as main content.', 'e107-importer'); ?></label><br/>
+            <label for="body-merge"><input name="e107_extended_news" type="radio" id="body-merge" value="body_merge"/> <?php _e('Merge the body and the extended part to the main content, separated by the <code>&lt;!--more--&gt;</code> tag.', 'e107-importer'); ?></label><br/>
+            <label for="ignore-body"><input name="e107_extended_news" type="radio" id="ignore-body" value="ignore_body"/> <?php _e('Ignore the news body and import the extended part only.', 'e107-importer'); ?></label><br/>
+            <label for="ignore-extended"><input name="e107_extended_news" type="radio" id="ignore-extended" value="ignore_extended"/> <?php _e('Ignore extended part of news, only import the body.', 'e107-importer'); ?></label><br/>
+          </td>
+        </tr>
       </table>
 
       <h3><?php _e('Pages', 'e107-importer'); ?></h3>
@@ -1666,6 +1677,7 @@ class e107_Import extends WP_Importer {
                               , 'e107_content_ownership'
                               , 'e107_mail_user'
                               , 'e107_import_news'
+                              , 'e107_extended_news'
                               , 'e107_import_pages'
                               , 'e107_import_forums'
                               , 'e107_bbcode_parser'
