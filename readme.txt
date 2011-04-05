@@ -111,7 +111,7 @@ FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugin
 
 Here is a list of e107 and WordPress versions I tested my plugin with:
 
-* e107-importer 1.3 : e107 0.7.25-rc1 / WordPress 3.1 / bbPress plugin SVN r2992
+* e107-importer 1.3 : e107 0.7.25-rc1 / WordPress 3.1.1 / bbPress plugin SVN r2992
 * e107-importer 1.2 : e107 0.7.25-rc1 / WordPress 3.1 / bbPress plugin SVN r2992
 * e107-importer 1.1 : e107 0.7.24 / WordPress 3.1 / bbPress plugin SVN r2942
 * e107-importer 1.0 : e107 0.7.24 / WordPress 3.1-RC3
