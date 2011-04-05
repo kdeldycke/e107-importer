@@ -4,7 +4,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: importer, e107, cms, migration
 Requires at least: 3.1
 Tested up to: 3.1
-Stable tag: 1.1
+Stable tag: 1.2
 License: GPLv2
 
 e107 import plugin for WordPress.
