@@ -996,7 +996,7 @@ class e107_Import extends WP_Importer {
     } else {
       if (array_key_exists($author_id, $this->user_mapping)) {
         $author_id = (int) $this->user_mapping[$author_id];
-      } else{
+      } else {
         // Some users had an account but were deleted for any other reason.
         // In this case, let's declare them anonymous. $author_name is still set.
         $author_id = 0;
