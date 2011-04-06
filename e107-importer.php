@@ -435,6 +435,35 @@ class e107_Import extends WP_Importer {
     if (get_option('e107_redirector_forum_mapping'))      $this->forum_mapping      = get_option('e107_redirector_forum_mapping');
     if (get_option('e107_redirector_forum_post_mapping')) $this->forum_post_mapping = get_option('e107_redirector_forum_post_mapping');
     if (get_option('e107_redirector_image_mapping'))      $this->image_mapping      = get_option('e107_redirector_image_mapping');
+
+    $mapping_list = array(
+        array('name' => 'news_mapping'      , 'types' => 'post'                                                     )
+      , array('name' => 'category_mapping'  , 'types' => 'category'                                                 )
+      , array('name' => 'page_mapping'      , 'types' => 'page'                                                     )
+      , array('name' => 'comment_mapping'   , 'types' => 'comment'                                                  )
+      , array('name' => 'user_mapping'      , 'types' => 'user'                                                     )
+//      , array('name' => 'forum_mapping'     , 'types' => bbp_get_forum_post_type()                                  )
+//      , array('name' => 'forum_post_mapping', 'types' => array(bbp_get_reply_post_type(), bbp_get_topic_post_type()))
+      , array('name' => 'image_mapping'     , 'types' => 'attachment'                                               )
+      );
+    // List of content types that are not based on posts
+    $non_post_types = array('category', 'comment', 'user');
+
+    // Purge existing mapping entries which have invalid content destination
+    foreach ($mapping_list as $map_data) {
+      $map_type = $map_data['types'];
+      if (!in_array($map_type, $non_post_types)) {
+        $map_name = $map_data['name'];
+        $cleaned_map = array();
+        foreach ($this->$map_name as $source => $post_id) {
+          if (get_post_type($post_id) == $map_type) {
+            $cleaned_map[$source] = $post_id;
+          }
+        }
+        $this->$map_name = $cleaned_map;
+      }
+    }
+
   }
 
 

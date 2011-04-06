@@ -131,6 +131,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 
 = 1.3 =
 * Redirect imported images to attachments.
+* Purge invalid mapping entries on import.
 
 = 1.2 =
 * Upgrade e107 code to match latest 0.7.25-rc1.
