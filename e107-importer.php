@@ -425,17 +425,9 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Load pre-existing e107 Redirector mappings
+  // Load pre-existing e107 Redirector mappings and clean them
   function loadE107Mapping() {
-    if (get_option('e107_redirector_news_mapping'))       $this->news_mapping       = get_option('e107_redirector_news_mapping');
-    if (get_option('e107_redirector_category_mapping'))   $this->category_mapping   = get_option('e107_redirector_category_mapping');
-    if (get_option('e107_redirector_page_mapping'))       $this->page_mapping       = get_option('e107_redirector_page_mapping');
-    if (get_option('e107_redirector_comment_mapping'))    $this->comment_mapping    = get_option('e107_redirector_comment_mapping');
-    if (get_option('e107_redirector_user_mapping'))       $this->user_mapping       = get_option('e107_redirector_user_mapping');
-    if (get_option('e107_redirector_forum_mapping'))      $this->forum_mapping      = get_option('e107_redirector_forum_mapping');
-    if (get_option('e107_redirector_forum_post_mapping')) $this->forum_post_mapping = get_option('e107_redirector_forum_post_mapping');
-    if (get_option('e107_redirector_image_mapping'))      $this->image_mapping      = get_option('e107_redirector_image_mapping');
-
+    // Here is the list of mappings and the type of WordPress content they can point to
     $mapping_list = array(
         array('name' => 'news_mapping'      , 'types' => array('post')                                              )
       , array('name' => 'category_mapping'  , 'types' => array('category')                                          )
@@ -446,8 +438,18 @@ class e107_Import extends WP_Importer {
       , array('name' => 'forum_post_mapping', 'types' => array(bbp_get_reply_post_type(), bbp_get_topic_post_type()))
       , array('name' => 'image_mapping'     , 'types' => array('attachment')                                        )
       );
+
     // List of content types that are not based on posts
     $non_post_types = array('category', 'comment', 'user');
+
+    // Load pre-existing mappings
+    foreach ($mapping_list as $map_data) {
+      $map_name = $map_data['name'];
+      $option_name = 'e107_redirector_'.$map_name;
+      if (get_option($option_name)) {
+        $this->$map_name = get_option($option_name);
+      }
+    }
 
     // Purge existing mapping entries which have invalid content destination
     foreach ($mapping_list as $map_data) {
@@ -463,7 +465,6 @@ class e107_Import extends WP_Importer {
         $this->$map_name = $cleaned_map;
       }
     }
-
   }
 
 
@@ -1740,9 +1741,9 @@ class e107_Import extends WP_Importer {
 
     <h3><?php _e('Content mapping', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
-      <li><?php _e('Load pre-existing e107 content mapping...', 'e107-importer'); ?></li>
+      <li><?php _e('Load pre-existing e107 content mapping and clean them up...', 'e107-importer'); ?></li>
       <?php $this->loadE107Mapping(); ?>
-      <li><?php _e('Existing content mapping from previous imports loaded.', 'e107-importer'); ?></li>
+      <li><?php _e('Existing content mapping from previous imports loaded and cleaned up.', 'e107-importer'); ?></li>
     </ul>
 
     <h3><?php _e('Users', 'e107-importer'); ?></h3>
