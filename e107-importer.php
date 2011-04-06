@@ -1910,6 +1910,9 @@ class e107_Import extends WP_Importer {
           <?php $images = $this->parseAndUpdate(array_values($this->comment_mapping), 'comment', 'content', $this->e107_import_images); ?>
           <li><?php printf(__('%s images uploaded from comments.', 'e107-importer'), $images); ?></li>
         <?php } ?>
+        <li><?php _e('Update redirection plugin with image mapping...', 'e107-importer'); ?></li>
+        <?php $this->updateRedirectorSettings('image_mapping', $this->image_mapping); ?>
+        <li><?php _e('Old image URLs are now redirected.', 'e107-importer'); ?></li>
       <?php } ?>
     </ul>
 

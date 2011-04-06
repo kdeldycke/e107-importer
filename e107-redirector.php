@@ -13,6 +13,13 @@ License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 
 class e107_Redirector {
 
+
+  // This method encode all non-alphanumerical characters of an URL path but keeps slashes
+  function normalize_urlpath($urlpath) {
+    return str_replace('%2F', '/', rawurlencode(rawurldecode($urlpath)));
+  }
+
+
   function execute() {
     // Requested URL
     $requested = $_SERVER['REQUEST_URI'];
@@ -25,6 +32,7 @@ class e107_Redirector {
     $user_mapping       = array();
     $forum_mapping      = array();
     $forum_post_mapping = array();
+    $image_mapping      = array();
 
     // Load mappings
     if (get_option('e107_redirector_news_mapping'))       $news_mapping       = get_option('e107_redirector_news_mapping');
@@ -34,6 +42,7 @@ class e107_Redirector {
     if (get_option('e107_redirector_user_mapping'))       $user_mapping       = get_option('e107_redirector_user_mapping');
     if (get_option('e107_redirector_forum_mapping'))      $forum_mapping      = get_option('e107_redirector_forum_mapping');
     if (get_option('e107_redirector_forum_post_mapping')) $forum_post_mapping = get_option('e107_redirector_forum_post_mapping');
+    if (get_option('e107_redirector_image_mapping'))      $image_mapping      = get_option('e107_redirector_image_mapping');
 
     // Final destination
     $link = '';
@@ -223,6 +232,31 @@ class e107_Redirector {
       // Redirect to proper WordPress feed
         $wordpress_feed = $feed_content.$feed_type.'_url';
         wp_redirect(get_bloginfo($wordpress_feed), $status = 301);
+      }
+    }
+
+    // Normalize image URLs in the mapping: strip domains and unencode characters
+    $image_regexps = array();
+    foreach ($image_mapping as $orig_url => $attachment_id) {
+      $img_path = $orig_url;
+      // Add a dummy domain to relative and absolute URLs to let parse_url work
+      if (!preg_match('/^https?:\/\//i', $img_path))
+        $img_path = "http://example.com/".$img_path;
+      $img_path = parse_url($img_path, PHP_URL_PATH);
+      $img_path = trim($img_path, '/');
+      // Build up the matching regular expression
+      $img_regexp = str_replace('%2F', '/', rawurlencode(rawurldecode($img_path)));
+      $img_regexp = str_replace('/', '\/', $img_regexp);
+      $img_regexp = str_replace('.', '\.', $img_regexp);
+      $img_regexp = '/^.*'.$img_regexp.'.*$/i';
+      $image_regexps[$img_regexp] = $attachment_id;
+    }
+    // Redirect images
+    foreach ($image_regexps as $regexp => $attachment_id) {
+      $normalized_url = str_replace('%2F', '/', rawurlencode(rawurldecode($requested)));
+      if (preg_match($regexp, $normalized_url)) {
+        $image_data = wp_get_attachment_image_src($attachment_id, $size='full');
+        wp_redirect($image_data[0], $status = 301);
       }
     }
 
