@@ -1437,7 +1437,9 @@ class e107_Import extends WP_Importer {
       //$img_url = "http://home.nordnet.fr/francois.jankowski/pochette avant thumb.jpg";
       $img_url = str_replace(' ', '%20', html_entity_decode($img_url));
       // Download remote file and attach it to the post
-      // XXX Known issue: wrong upload /year/month/ folder (see: http://core.trac.wordpress.org/ticket/16777 )
+      // XXX Known issues:
+      //  * http://core.trac.wordpress.org/ticket/16777 => wrong upload /year/month/ folder
+      //  * http://core.trac.wordpress.org/ticket/17061 => undetected 301-redirected non-images
       $new_tag = media_sideload_image($img_url, $post_id, $img_desc);
       if (is_wp_error($new_tag)) {
         ?>
