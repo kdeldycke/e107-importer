@@ -100,6 +100,7 @@ class e107_Import extends WP_Importer {
     if (empty($allowed_protocols))
       $allowed_protocols = array('http', 'https', 'ftp', 'ftps', 'mailto', 'news', 'irc', 'gopher', 'nntp', 'feed', 'telnet', 'mms', 'rtsp', 'svn');
     $tag_list = array();
+    $tag_name = strtolower($tag_name);
     $tag_regexp = '/<\/?\s*'.$tag_name.'\s+(.+?)>/i';
     if (preg_match_all($tag_regexp, $html_content, $matches, PREG_SET_ORDER)) {
       foreach ($matches as $match) {
@@ -109,6 +110,7 @@ class e107_Import extends WP_Importer {
           $attributes[$attr['name']] = $attr['value'];
         // Group all data of the tag in one array
         $tag_list[] = array( 'tag_string'       => $match[0]
+                           , 'tag_name'         => $tag_name
                            , 'attribute_string' => $match[1]
                            , 'attributes'       => $attributes
                            );
@@ -119,9 +121,10 @@ class e107_Import extends WP_Importer {
 
 
   // This method is the mirror of the above as it regenerate an html tag
-  function build_html_tag($tag_name, $tag) {
-    $new_tag = "<$tag_name";
-    foreach ($tag['attributes'] as $attribute => $value)
+  // This method take as input the same tag structure produced by extract_html_tags()
+  function build_html_tag($tag_data) {
+    $new_tag = "<".$tag_data['tag_name'];
+    foreach ($tag_data['attributes'] as $attribute => $value)
       // This condition remove empty tag attributes like class='' and alt=''
       if (!empty($value)) {
         // Choose the right kind of quote
@@ -1328,7 +1331,7 @@ class e107_Import extends WP_Importer {
         }
         // De-obfuscate mailto links
         // Catch and fix href='"+"user"+"@"+"domain.com";self.close();'
-        if ($tag_name == 'a' and array_key_exists('href', $tag['attributes'])) {
+        if ($tag['tag_name'] == 'a' and array_key_exists('href', $tag['attributes'])) {
           $url = $tag['attributes']['href'];
           if (substr_count($url, '"+"') == 3) {
             $fragments = explode('"', $url);
@@ -1336,7 +1339,7 @@ class e107_Import extends WP_Importer {
           }
         }
         // Recreate the tag
-        $new_tag = $this->build_html_tag($tag_name, $tag);
+        $new_tag = $this->build_html_tag($tag);
         // Replace the original tag by its clean-up version
         $new_content = str_replace($tag['tag_string'], $new_tag, $new_content);
       }
