@@ -13,7 +13,7 @@ License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 
 class e107_Redirector {
 
-  // All mappings starts as empty arrays
+  // e107 to WordPress content mapping
   var $user_mapping;
   var $news_mapping;
   var $category_mapping;
