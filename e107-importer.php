@@ -118,6 +118,23 @@ class e107_Import extends WP_Importer {
   }
 
 
+  // This method is the mirror of the above as it regenerate an html tag
+  function build_html_tag($tag_name, $tag) {
+    $new_tag = "<$tag_name";
+    foreach ($tag['attributes'] as $attribute => $value)
+      // This condition remove empty tag attributes like class='' and alt=''
+      if (!empty($value)) {
+        // Choose the right kind of quote
+        $quote = '"';
+        if (strpos($value, $quote) !== False)
+          $quote = '\'';
+        $new_tag .= " $attribute=$quote$value$quote";
+      }
+    $new_tag .= ">";
+    return $new_tag;
+  }
+
+
   // Return the domain name of a URL, discarding sub-domains
   function get_domain_name($url) {
     $domain = '';
@@ -1319,17 +1336,7 @@ class e107_Import extends WP_Importer {
           }
         }
         // Recreate the tag
-        $new_tag  = "<$tag_name";
-        foreach ($tag['attributes'] as $attribute => $value)
-          // This condition remove empty tag attributes like class='' and alt=''
-          if (!empty($value)) {
-            // Choose the right kind of quote
-            $quote = '"';
-            if (strpos($value, $quote) !== False)
-              $quote = '\'';
-            $new_tag .= " $attribute=$quote$value$quote";
-          }
-        $new_tag .= ">";
+        $new_tag = $this->build_html_tag($tag_name, $tag);
         // Replace the original tag by its clean-up version
         $new_content = str_replace($tag['tag_string'], $new_tag, $new_content);
       }
