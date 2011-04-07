@@ -90,6 +90,7 @@ class e107_Redirector {
           }
         }
         $this->$map_name = $cleaned_map;
+        $this->update_mapping($map_name, $this->$map_name);
       }
     }
   }
