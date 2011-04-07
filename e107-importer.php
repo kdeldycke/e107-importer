@@ -446,12 +446,6 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Load pre-existing e107 Redirector mappings and clean them
-  function load_mappings() {
-    e107_Redirector::load_mappings();
-  }
-
-
   // Import e107 preferences (aka global config)
   function import_preferences() {
     update_option('blogname'            ,  $this->e107_pref['sitename']);
@@ -1472,12 +1466,6 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // Update the e107 Redirector plugin with content mapping
-  function update_redirector_settings($keyword, $data) {
-    e107_Redirector::update_mapping($keyword, $data);
-  }
-
-
   function start() {
     // Get requested action
     if (!empty($_GET['action']))
@@ -1715,7 +1703,7 @@ class e107_Import extends WP_Importer {
     <h3><?php _e('Content mapping', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
       <li><?php _e('Load pre-existing e107 content mapping and clean them up...', 'e107-importer'); ?></li>
-      <?php $this->load_mappings(); ?>
+      <?php e107_Redirector::load_mappings(); ?>
       <li><?php _e('Existing content mapping from previous imports loaded and cleaned up.', 'e107-importer'); ?></li>
     </ul>
 
@@ -1737,7 +1725,7 @@ class e107_Import extends WP_Importer {
         <li><?php printf(__('%s users imported.', 'e107-importer'), sizeof($this->user_mapping)); ?></li>
       <?php } ?>
       <li><?php _e('Update redirection plugin with user mapping...', 'e107-importer'); ?></li>
-      <?php $this->update_redirector_settings('user_mapping', $this->user_mapping); ?>
+      <?php e107_Redirector::update_mapping('user_mapping', $this->user_mapping); ?>
       <li><?php _e('Old user URLs are now redirected.', 'e107-importer'); ?></li>
     </ul>
 
@@ -1749,10 +1737,10 @@ class e107_Import extends WP_Importer {
         <li><?php printf(__('%s news imported.', 'e107-importer'), sizeof($this->news_mapping)); ?></li>
         <li><?php printf(__('%s categories imported.', 'e107-importer'), sizeof($this->category_mapping)); ?></li>
         <li><?php _e('Update redirection plugin with news mapping...', 'e107-importer'); ?></li>
-        <?php $this->update_redirector_settings('news_mapping', $this->news_mapping); ?>
+        <?php e107_Redirector::update_mapping('news_mapping', $this->news_mapping); ?>
         <li><?php _e('Old news URLs are now redirected to permalinks.', 'e107-importer'); ?></li>
         <li><?php _e('Update redirection plugin with category mapping...', 'e107-importer'); ?></li>
-        <?php $this->update_redirector_settings('category_mapping', $this->category_mapping); ?>
+        <?php e107_Redirector::update_mapping('category_mapping', $this->category_mapping); ?>
         <li><?php _e('Old news category URLs are now redirected to permalinks.', 'e107-importer'); ?></li>
       <?php } else { ?>
         <li><?php _e('e107 news and categories import skipped.', 'e107-importer'); ?></li>
@@ -1766,7 +1754,7 @@ class e107_Import extends WP_Importer {
         <?php $this->import_pages(); ?>
         <li><?php printf(__('%s pages imported.', 'e107-importer'), sizeof($this->page_mapping)); ?></li>
         <li><?php _e('Update redirection plugin with page mapping...', 'e107-importer'); ?></li>
-        <?php $this->update_redirector_settings('page_mapping', $this->page_mapping); ?>
+        <?php e107_Redirector::update_mapping('page_mapping', $this->page_mapping); ?>
         <li><?php _e('Old page URLs are now redirected to permalinks.', 'e107-importer'); ?></li>
       <?php } else { ?>
         <li><?php _e('e107 pages import skipped.', 'e107-importer'); ?></li>
@@ -1786,7 +1774,7 @@ class e107_Import extends WP_Importer {
         <?php $this->import_comments(); ?>
         <li><?php printf(__('%s comments imported.', 'e107-importer'), sizeof($this->comment_mapping)); ?></li>
         <li><?php _e('Update redirection plugin with comment mapping...', 'e107-importer'); ?></li>
-        <?php $this->update_redirector_settings('comment_mapping', $this->comment_mapping); ?>
+        <?php e107_Redirector::update_mapping('comment_mapping', $this->comment_mapping); ?>
         <li><?php _e('Old comments URLs are now redirected.', 'e107-importer'); ?></li>
       <?php } ?>
     </ul>
@@ -1806,8 +1794,8 @@ class e107_Import extends WP_Importer {
         <?php $this->import_forum_threads(); ?>
         <li><?php printf(__('%s forum posts imported.', 'e107-importer'), sizeof($this->forum_post_mapping)); ?></li>
         <li><?php _e('Update redirection plugin with forum and forum post mapping...', 'e107-importer'); ?></li>
-        <?php $this->update_redirector_settings('forum_mapping',      $this->forum_mapping); ?>
-        <?php $this->update_redirector_settings('forum_post_mapping', $this->forum_post_mapping); ?>
+        <?php e107_Redirector::update_mapping('forum_mapping',      $this->forum_mapping); ?>
+        <?php e107_Redirector::update_mapping('forum_post_mapping', $this->forum_post_mapping); ?>
         <li><?php _e('Old forum URLs are now redirected.', 'e107-importer'); ?></li>
         <li><?php _e('Recount forum stats...', 'e107-importer'); ?></li>
         <?php $this->recount_forum_stats(); ?>
@@ -1914,7 +1902,7 @@ class e107_Import extends WP_Importer {
           <li><?php printf(__('%s images uploaded from comments.', 'e107-importer'), $images); ?></li>
         <?php } ?>
         <li><?php _e('Update redirection plugin with image mapping...', 'e107-importer'); ?></li>
-        <?php $this->update_redirector_settings('image_mapping', $this->image_mapping); ?>
+        <?php e107_Redirector::update_mapping('image_mapping', $this->image_mapping); ?>
         <li><?php _e('Old image URLs are now redirected.', 'e107-importer'); ?></li>
       <?php } ?>
     </ul>
