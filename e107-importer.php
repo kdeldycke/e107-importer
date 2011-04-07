@@ -447,44 +447,7 @@ class e107_Import extends WP_Importer {
 
   // Load pre-existing e107 Redirector mappings and clean them
   function loadE107Mapping() {
-    // Here is the list of mappings and the type of WordPress content they can point to
-    $mapping_list = array(
-        array('name' => 'news_mapping'      , 'types' => array('post')                                              )
-      , array('name' => 'category_mapping'  , 'types' => array('category')                                          )
-      , array('name' => 'page_mapping'      , 'types' => array('page')                                              )
-      , array('name' => 'comment_mapping'   , 'types' => array('comment')                                           )
-      , array('name' => 'user_mapping'      , 'types' => array('user')                                              )
-      , array('name' => 'forum_mapping'     , 'types' => array(bbp_get_forum_post_type())                           )
-      , array('name' => 'forum_post_mapping', 'types' => array(bbp_get_reply_post_type(), bbp_get_topic_post_type()))
-      , array('name' => 'image_mapping'     , 'types' => array('attachment')                                        )
-      );
-
-    // List of content types that are not based on posts
-    $non_post_types = array('category', 'comment', 'user');
-
-    // Load pre-existing mappings
-    foreach ($mapping_list as $map_data) {
-      $map_name = $map_data['name'];
-      $option_name = 'e107_redirector_'.$map_name;
-      if (get_option($option_name)) {
-        $this->$map_name = get_option($option_name);
-      }
-    }
-
-    // Purge existing mapping entries which have invalid content destination
-    foreach ($mapping_list as $map_data) {
-      $allowed_types = $map_data['types'];
-      if (sizeof(array_intersect($allowed_types, $non_post_types)) == 0) {
-        $map_name = $map_data['name'];
-        $cleaned_map = array();
-        foreach ($this->$map_name as $source => $post_id) {
-          if (in_array(get_post_type($post_id), $allowed_types)) {
-            $cleaned_map[$source] = $post_id;
-          }
-        }
-        $this->$map_name = $cleaned_map;
-      }
-    }
+    e107_Redirector::loadE107Mapping();
   }
 
 
