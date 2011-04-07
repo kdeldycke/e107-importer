@@ -13,6 +13,16 @@ License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 
 class e107_Redirector {
 
+  // All mappings starts as empty arrays
+  var $user_mapping       = array();
+  var $news_mapping       = array();
+  var $category_mapping   = array();
+  var $page_mapping       = array();
+  var $comment_mapping    = array();
+  var $forum_mapping      = array();
+  var $forum_post_mapping = array();
+  var $image_mapping      = array();
+
 
   // PHP5 constructor
   function __construct() {
@@ -32,29 +42,55 @@ class e107_Redirector {
   }
 
 
+  // Load pre-existing mappings and clean them
+  function loadE107Mapping() {
+    // Here is the list of mappings and the type of WordPress content they can point to
+    $mapping_list = array(
+        array('name' => 'news_mapping'      , 'types' => array('post')                                              )
+      , array('name' => 'category_mapping'  , 'types' => array('category')                                          )
+      , array('name' => 'page_mapping'      , 'types' => array('page')                                              )
+      , array('name' => 'comment_mapping'   , 'types' => array('comment')                                           )
+      , array('name' => 'user_mapping'      , 'types' => array('user')                                              )
+      , array('name' => 'forum_mapping'     , 'types' => array(bbp_get_forum_post_type())                           )
+      , array('name' => 'forum_post_mapping', 'types' => array(bbp_get_reply_post_type(), bbp_get_topic_post_type()))
+      , array('name' => 'image_mapping'     , 'types' => array('attachment')                                        )
+      );
+
+    // List of content types that are not based on posts
+    $non_post_types = array('category', 'comment', 'user');
+
+    // Load pre-existing mappings
+    foreach ($mapping_list as $map_data) {
+      $map_name = $map_data['name'];
+      $option_name = 'e107_redirector_'.$map_name;
+      if (get_option($option_name)) {
+        $this->$map_name = get_option($option_name);
+      }
+    }
+
+    // Purge existing mapping entries which have invalid content destination
+    foreach ($mapping_list as $map_data) {
+      $allowed_types = $map_data['types'];
+      if (sizeof(array_intersect($allowed_types, $non_post_types)) == 0) {
+        $map_name = $map_data['name'];
+        $cleaned_map = array();
+        foreach ($this->$map_name as $source => $post_id) {
+          if (in_array(get_post_type($post_id), $allowed_types)) {
+            $cleaned_map[$source] = $post_id;
+          }
+        }
+        $this->$map_name = $cleaned_map;
+      }
+    }
+  }
+
+
   function execute() {
     // Requested URL
     $requested = $_SERVER['REQUEST_URI'];
 
-    // Initialize mappings
-    $news_mapping       = array();
-    $category_mapping   = array();
-    $page_mapping       = array();
-    $comment_mapping    = array();
-    $user_mapping       = array();
-    $forum_mapping      = array();
-    $forum_post_mapping = array();
-    $image_mapping      = array();
-
     // Load mappings
-    if (get_option('e107_redirector_news_mapping'))       $news_mapping       = get_option('e107_redirector_news_mapping');
-    if (get_option('e107_redirector_category_mapping'))   $category_mapping   = get_option('e107_redirector_category_mapping');
-    if (get_option('e107_redirector_page_mapping'))       $page_mapping       = get_option('e107_redirector_page_mapping');
-    if (get_option('e107_redirector_comment_mapping'))    $comment_mapping    = get_option('e107_redirector_comment_mapping');
-    if (get_option('e107_redirector_user_mapping'))       $user_mapping       = get_option('e107_redirector_user_mapping');
-    if (get_option('e107_redirector_forum_mapping'))      $forum_mapping      = get_option('e107_redirector_forum_mapping');
-    if (get_option('e107_redirector_forum_post_mapping')) $forum_post_mapping = get_option('e107_redirector_forum_post_mapping');
-    if (get_option('e107_redirector_image_mapping'))      $image_mapping      = get_option('e107_redirector_image_mapping');
+    $this->loadE107Mapping();
 
     // Final destination
     $link = '';
@@ -62,7 +98,7 @@ class e107_Redirector {
     // Associate each mapping with their related regexp
     $redirect_rules = array(
       array( 'type'    => 'post'
-           , 'mapping' => $news_mapping
+           , 'mapping' => $this->news_mapping
            , 'rules'   => array( '/^.*\/comment\.php(?:%3F|\?)comment\.news\.(\d+).*$/i'
                                    # /comment.php?comment.news.138
                                    # /comment.php?comment.news.138&dfsd
@@ -75,13 +111,13 @@ class e107_Redirector {
                                )
            ),
       array( 'type'    => 'category'
-           , 'mapping' => $category_mapping
+           , 'mapping' => $this->category_mapping
            , 'rules'   => array( '/^.*\/news\.php(?:%3F|\?)cat\.(\d+).*$/i'
                                    # /news.php?cat.3
                                )
            ),
       array( 'type'    => 'post'
-           , 'mapping' => $page_mapping
+           , 'mapping' => $this->page_mapping
            , 'rules'   => array( '/^.*\/page\.php(?:%3F|\?)(\d+).*$/i'
                                    # /page.php?16
                                    # /page.php?16&res=1680x1050
@@ -89,12 +125,12 @@ class e107_Redirector {
                                )
            ),
       array( 'type'    => 'comment'
-           , 'mapping' => $comment_mapping
+           , 'mapping' => $this->comment_mapping
            , 'rules'   => array( # XXX Looks like there is no direct link to comments in e107
                                )
            ),
       array( 'type'    => 'user'
-           , 'mapping' => $user_mapping
+           , 'mapping' => $this->user_mapping
            , 'rules'   => array( '/^.*\/user\.php(?:%3F|\?)id\.(\d+).*$/i'
                                    # /user.php?id.29
                                , '/^.*\/userposts\.php(?:%3F|\?).*\.comments\.(\d+).*$/i'
@@ -102,7 +138,7 @@ class e107_Redirector {
                                )
            ),
       array( 'type'    => 'forum'
-           , 'mapping' => $forum_mapping
+           , 'mapping' => $this->forum_mapping
            , 'rules'   => array( '/^.*\/forum_viewforum\.php(?:%3F|\?)(\d+).*$/i'
                                    # /forum_viewforum.php?4
 
@@ -114,7 +150,7 @@ class e107_Redirector {
                                )
            ),
       array( 'type'    => 'forum_post'
-           , 'mapping' => $forum_post_mapping
+           , 'mapping' => $this->forum_post_mapping
            , 'rules'   => array( '/^.*\/forum_viewtopic\.php(?:%3F|\?).*#post_(\d+).*$/i'
                                    # /forum_viewtopic.php?12301.0#post_19026
                                    # /forum_viewtopic.php?12301.100#post_19026
@@ -124,13 +160,13 @@ class e107_Redirector {
                                )
            ),
       array( 'type'    => 'forum_thread_last_page'
-           , 'mapping' => $forum_post_mapping
+           , 'mapping' => $this->forum_post_mapping
            , 'rules'   => array( '/^.*\/forum_viewtopic\.php(?:%3F|\?)(\d+)\.last.*$/i'
                                    # /forum_viewtopic.php?19026.last
                                )
            ),
       array( 'type'    => 'forum_user'
-           , 'mapping' => $user_mapping
+           , 'mapping' => $this->user_mapping
            , 'rules'   => array( '/^.*\/userposts\.php(?:%3F|\?).*\.forums\.(\d+).*$/i'
                                    # /userposts.php?0.forums.29
                                )
@@ -249,7 +285,7 @@ class e107_Redirector {
 
     // Normalize image URLs in the mapping: strip domains and unencode characters
     $image_regexps = array();
-    foreach ($image_mapping as $orig_url => $attachment_id) {
+    foreach ($this->image_mapping as $orig_url => $attachment_id) {
       $img_path = $orig_url;
       // Add a dummy domain to relative and absolute URLs to let parse_url work
       if (!preg_match('/^https?:\/\//i', $img_path))
