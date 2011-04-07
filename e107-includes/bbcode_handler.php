@@ -11,9 +11,9 @@
 |     GNU General Public License (http://gnu.org).
 |
 |     $URL: https://e107.svn.sourceforge.net/svnroot/e107/trunk/e107_0.7/e107_handlers/bbcode_handler.php $
-|     $Revision: 11799 $
-|     $Id: bbcode_handler.php 11799 2010-09-18 14:32:12Z e107steved $
-|     $Author: e107steved $
+|     $Revision: 12112 $
+|     $Id: bbcode_handler.php 12112 2011-03-21 11:57:50Z secretr $
+|     $Author: secretr $
 +----------------------------------------------------------------------------+
 */
 
@@ -86,7 +86,7 @@ class e_bbcode
 			{
 				$this->preProcess = TRUE;
 				unset($strip_array[0]);
-				if (count($strip_array) == 0) 
+				if (count($strip_array) == 0)
 				{
 					$bbStrip = FALSE;
 				}
@@ -94,7 +94,7 @@ class e_bbcode
 				{
 					$bbStrip = TRUE;
 				}
-				
+
 			}
 		}
 		$pattern = '#^\[(/?)([A-Za-z_]+)(\d*)([=:]?)(.*?)]$#i';	// Pattern to split up bbcodes
@@ -119,7 +119,7 @@ class e_bbcode
 					$bbparam = (isset($matches[5])) ? $matches[5] : '';
 					$bbword = (isset($matches[2])) ? $matches[2] : '';
 					if($cont[1] != '/')
-					{ 
+					{
 						$bbsep = varset($matches[4]);
 					}
 					if ($force_lower) $bbword = strtolower($bbword);
@@ -259,19 +259,42 @@ class e_bbcode
 		return $result;
 	}
 
+	/**
+	 * Filter bbcode Input
+	 * @param string $input [optional]
+	 * @return string
+	 */
+	function filter($input='')
+	{
+		if(!$input)
+		{
+			return;
+		}
+
+		// filter is breaking bbcodes with - input is modified with strtolower()
+		//$input = strtolower($input);
+		//$search = array('document.cookie','location.href','onload');
+		//return str_replace($search,"",$input);
+
+		// a quick fix attempt - basic filtering
+		return preg_replace('/(document\.cookie|location\.href|onload)/i', '', $input);
+	}
 
 
+	/**
+	 * Invoke the actual bbcode handler
+	 * @param string $code - textual value of the bbcode (already begins with '_' if a single code)
+	 * @param string $param1 - any text after '=' in the opening code
+	 * @param string $code_text_par - text between the opening and closing codes
+	 * @param string $param2 - any text after '=' for the closing code
+	 * @param string $sep - character separating bbcode name and any parameters
+	 * @param string $full_text - the 'raw' text between, and including, the opening and closing bbcode tags
+	 * @return
+	 */
 	function proc_bbcode($code, $param1='',$code_text_par='', $param2='', $sep='', $full_text='')
-	// Invoke an actual bbcode handler
-	// $code - textual value of the bbcode (already begins with '_' if a single code)
-	// $param1 - any text after '=' in the opening code
-	// $code_text_par - text between the opening and closing codes
-	// $param2 - any text after '=' for the closing code
-	// $sep - character separating bbcode name and any parameters
-	// $full_text - the 'raw' text between, and including, the opening and closing bbcode tags
 	{
 		global $tp, $postID, $code_text, $parm;
-		$parm = $param1;
+		$parm = $this->filter($param1);
 
 		$code_text = $code_text_par;
 

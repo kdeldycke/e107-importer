@@ -33,7 +33,7 @@ This plugin allows you to extract the most important content and data from an e1
 
 This tool was tested with:
 
-* [e107 0.7.25-rc1](http://e107.org/news.php?item.879),
+* [e107 0.7.25](http://e107.org/news.php?item.880),
 * [WordPress 3.1](http://wordpress.org/news/2011/02/threeone/) and
 * [development version of bbPress WordPress plugin (SVN r2992)](http://trac.bbpress.org/browser/branches/plugin?rev=2992).
 
@@ -113,7 +113,7 @@ FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugin
 
 Here is a list of e107 and WordPress versions I tested my plugin with:
 
-* e107-importer 1.3 : e107 0.7.25-rc1 / WordPress 3.1.1 / bbPress plugin SVN r2992
+* e107-importer 1.3 : e107 0.7.25 / WordPress 3.1.1 / bbPress plugin SVN r2992
 * e107-importer 1.2 : e107 0.7.25-rc1 / WordPress 3.1 / bbPress plugin SVN r2992
 * e107-importer 1.1 : e107 0.7.24 / WordPress 3.1 / bbPress plugin SVN r2942
 * e107-importer 1.0 : e107 0.7.24 / WordPress 3.1-RC3
@@ -132,6 +132,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 == Changelog ==
 
 = 1.3 =
+* Upgrade embedded e107 code with latest 0.7.25.
 * Redirect imported images to attachments.
 * Purge invalid mapping entries on import.
 * Replace old e107 URLs in content by new WordPress permalinks.
