@@ -16,7 +16,7 @@ This plugin allows you to extract the most important content and data from an e1
 **Features**:
 
 * Import news and their categories.
-* Handle extended part of news nicely.
+* Take care of news extended part.
 * Import custom pages (and take care of their private / public visibility).
 * Import comments (both from news and custom pages).
 * Import forums and threads to bbPress WordPress plugin.
