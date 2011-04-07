@@ -97,11 +97,15 @@ class e107_Redirector {
 
 
   // Update content mapping
-  function update_mapping($keyword, $data) {
-    $option_name = OPTION_PREFIX.$keyword;
-    if (!get_option($option_name))
-      add_option($option_name);
-    update_option($option_name, $data);
+  function update_mapping($name, $data) {
+    $option_name = OPTION_PREFIX.$name;
+    if (sizeof($data) == 0) {
+      delete_option($option_name);
+    } else {
+      if (!get_option($option_name))
+        add_option($option_name);
+      update_option($option_name, $data);
+    }
   }
 
 
