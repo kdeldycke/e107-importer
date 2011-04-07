@@ -27,7 +27,7 @@ class e107_Redirector {
   // PHP5 constructor
   function __construct() {
     // Load mappings
-    $this->loadE107Mapping();
+    $this->load_mappings();
     // Register the redirect action
     add_action('template_redirect', array(&$this, 'redirect'));
   }
@@ -46,7 +46,7 @@ class e107_Redirector {
 
 
   // Load pre-existing mappings and clean them
-  function loadE107Mapping() {
+  function load_mappings() {
     // Here is the list of mappings and the type of WordPress content they can point to
     $mapping_list = array(
         array('name' => 'news_mapping'      , 'types' => array('post')                                              )

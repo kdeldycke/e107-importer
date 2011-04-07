@@ -179,7 +179,7 @@ class e107_Import extends WP_Importer {
 
 
   // Generic code to initialize the e107 context
-  function inite107Context() {
+  function init_e107_context() {
     /* Some part of the code below is copy of (and/or inspired by) code from the e107 project, licensed
     ** under the GPL and (c) copyrighted to e107's contributors.
     */
@@ -294,7 +294,7 @@ class e107_Import extends WP_Importer {
 
     // Load preferences if not already loaded
     if (!isset($this->e107_pref) || !is_array($this->e107_pref))
-      $this->loadE107Preferences();
+      $this->load_e107_preferences();
 
     // Override BBCode definition files configuration
     $this->e107_pref['bbcode_list'] = array();
@@ -335,7 +335,7 @@ class e107_Import extends WP_Importer {
 
   // Establish a connection to the e107 database.
   // This code is kept in a separate method to not mess with $wpdb ...
-  function connectToE107DB() {
+  function connect_to_e107_db() {
     $this->e107db = mysql_connect($this->e107_db_host, $this->e107_db_user, $this->e107_db_pass) or
       wp_die("Can't connect to e107 database server: " . mysql_error());
     // Force UTF-8 querying
@@ -346,7 +346,7 @@ class e107_Import extends WP_Importer {
   }
 
 
-  function queryE107DB($sql) {
+  function query_e107_db($sql) {
     $result = mysql_query($sql, $this->e107db);
     if (!$result)
       wp_die('Invalid query: ' . mysql_error());
@@ -361,17 +361,17 @@ class e107_Import extends WP_Importer {
   }
 
 
-  function loadE107Preferences() {
+  function load_e107_preferences() {
     $e107_coreTable = $this->e107_db_prefix.'core';
     $sql = "SELECT e107_value FROM `".$e107_coreTable."` WHERE e107_name = 'SitePrefs'";
-    $site_pref = $this->queryE107DB($sql);
+    $site_pref = $this->query_e107_db($sql);
     extract($site_pref[0]);
     $this->e107_pref = '';
     @eval('$this->e107_pref = '.trim($e107_value).';');
   }
 
 
-  function getE107UserList() {
+  function get_e107_user_list() {
     // Prepare the SQL request
     $e107_userTable         = $this->e107_db_prefix."user";
     $e107_userExtendedTable = $this->e107_db_prefix."user_extended";
@@ -380,79 +380,79 @@ class e107_Import extends WP_Importer {
     // Exclude banned and un-verified users
     $sql .= "WHERE user_ban = 0";
     // Perform the request and return rows
-    return $this->queryE107DB($sql);
+    return $this->query_e107_db($sql);
   }
 
 
-  function getE107CategoryList() {
+  function get_e107_category_list() {
     // Prepare the SQL request
     $e107_newsCategoryTable = $this->e107_db_prefix."news_category";
     $sql = "SELECT * FROM `".$e107_newsCategoryTable."`";
     // Perform the request and return rows
-    return $this->queryE107DB($sql);
+    return $this->query_e107_db($sql);
   }
 
 
-  function getE107NewsList() {
+  function get_e107_news_list() {
     // Prepare the SQL request
     $e107_newsTable = $this->e107_db_prefix."news";
     $sql = "SELECT * FROM `".$e107_newsTable."`";
     // Perform the request and return rows
-    return $this->queryE107DB($sql);
+    return $this->query_e107_db($sql);
   }
 
 
-  function getE107PageList() {
+  function get_e107_page_list() {
     // Prepare the SQL request
     $e107_pagesTable = $this->e107_db_prefix."page";
     $sql = "SELECT * FROM `".$e107_pagesTable."`";
     // Perform the request and return rows
-    return $this->queryE107DB($sql);
+    return $this->query_e107_db($sql);
   }
 
 
-  function getE107CommentList() {
+  function get_e107_comment_list() {
     // Prepare the SQL request
     $e107_commentsTable = $this->e107_db_prefix."comments";
     $sql  = "SELECT * FROM `".$e107_commentsTable."`";
     // Perform the request and return rows
-    return $this->queryE107DB($sql);
+    return $this->query_e107_db($sql);
   }
 
 
-  function getE107ForumList() {
+  function get_e107_forum_list() {
     // Prepare the SQL request
     $e107_forumsTable = $this->e107_db_prefix."forum";
     $sql  = "SELECT * FROM `".$e107_forumsTable."` ORDER BY forum_parent, forum_id";
     // Perform the request and return rows
-    return $this->queryE107DB($sql);
+    return $this->query_e107_db($sql);
   }
 
 
-  function getE107ForumPostList() {
+  function get_e107_forum_post_list() {
     // Prepare the SQL request
     $e107_postsTable = $this->e107_db_prefix."forum_t";
     $sql  = "SELECT * FROM `".$e107_postsTable."` ORDER BY thread_parent, thread_id";
     // Perform the request and return rows
-    return $this->queryE107DB($sql);
+    return $this->query_e107_db($sql);
   }
 
 
   // Get a list of all WordPress's user IDs
-  function getWPUserIDs() {
+  function get_wp_user_ids() {
     global $wpdb;
     return $wpdb->get_col($wpdb->prepare("SELECT $wpdb->users.ID FROM $wpdb->users ORDER BY %s ASC", 'ID'));
   }
 
 
   // Load pre-existing e107 Redirector mappings and clean them
-  function loadE107Mapping() {
-    e107_Redirector::loadE107Mapping();
+  function load_mappings() {
+    e107_Redirector::load_mappings();
   }
 
 
   // Import e107 preferences (aka global config)
-  function importPreferences() {
+  function import_preferences() {
     update_option('blogname'            ,  $this->e107_pref['sitename']);
     update_option('admin_email'         ,  $this->e107_pref['siteadminemail']);
     update_option('users_can_register'  ,  $this->e107_pref['user_reg']);
@@ -475,9 +475,9 @@ class e107_Import extends WP_Importer {
 
 
   // Method to force ownership of all imported content to a single user
-  function setGlobalOwnership($new_owner_id) {
+  function set_global_ownership($new_owner_id) {
     // Get the list of all e107 user IDs
-    $user_list = $this->getE107UserList();
+    $user_list = $this->get_e107_user_list();
 
     // The new user mapping is set to our given global owner
     $this->user_mapping = array();
@@ -490,16 +490,16 @@ class e107_Import extends WP_Importer {
 
 
   // Import all e107 users to WordPress
-  function importUsers() {
+  function import_users() {
     // Get user list
-    $user_list = $this->getE107UserList();
+    $user_list = $this->get_e107_user_list();
     foreach ($user_list as $user)
-      $this->importUser($user);
+      $this->import_user($user);
   }
 
 
   // Migrate one user to WordPress using its e107 data
-  function importUser($user) {
+  function import_user($user) {
     extract($user);
     $user_id = (int) $user_id;
 
@@ -589,20 +589,20 @@ class e107_Import extends WP_Importer {
 
 
   // Import all e107 news and categories to WordPress
-  function importNewsAndCategories() {
+  function import_news_and_categories() {
     // Import categories
-    $category_list = $this->getE107CategoryList();
+    $category_list = $this->get_e107_category_list();
     foreach ($category_list as $category)
-      $this->importCategory($category);
+      $this->import_category($category);
     // Import news
-    $news_list = $this->getE107NewsList();
+    $news_list = $this->get_e107_news_list();
     foreach ($news_list as $news)
-      $this->importNews($news);
+      $this->import_news($news);
   }
 
 
   // Migrate one category to WordPress using its e107 data
-  function importCategory($category) {
+  function import_category($category) {
     extract($category);
     $cat_id = category_exists($category_name);
     if (!$cat_id) {
@@ -615,7 +615,7 @@ class e107_Import extends WP_Importer {
 
 
   // Migrate one news to WordPress using its e107 data
-  function importNews($news) {
+  function import_news($news) {
     extract($news);
     $news_id = (int) $news_id;
 
@@ -693,15 +693,15 @@ class e107_Import extends WP_Importer {
 
 
   // Import all e107 pages to WordPress
-  function importPages() {
-    $page_list = $this->getE107PageList();
+  function import_pages() {
+    $page_list = $this->get_e107_page_list();
     foreach ($page_list as $page)
-      $this->importPage($page);
+      $this->import_page($page);
   }
 
 
   // Migrate one page to WordPress using its e107 data
-  function importPage($page) {
+  function import_page($page) {
     extract($page);
     $page_id = (int) $page_id;
 
@@ -753,15 +753,15 @@ class e107_Import extends WP_Importer {
 
 
   // Import all e107 comments to WordPress
-  function importComments() {
-    $comment_list = $this->getE107CommentList();
+  function import_comments() {
+    $comment_list = $this->get_e107_comment_list();
     foreach ($comment_list as $comment)
-      $this->importComment($comment);
+      $this->import_comment($comment);
   }
 
 
   // Migrate one comment to WordPress using its e107 data
-  function importComment($comment) {
+  function import_comment($comment) {
     extract($comment);
     $comment_id      = (int) $comment_id;
     $comment_item_id = (int) $comment_item_id;
@@ -835,10 +835,10 @@ class e107_Import extends WP_Importer {
 
 
   // Import all e107 forums to bbPress plugin
-  function importForums() {
+  function import_forums() {
     // Group users by class
     $user_classes = array();
-    $user_list = $this->getE107UserList();
+    $user_list = $this->get_e107_user_list();
     foreach ($user_list as $user) {
       extract($user);
       if (!empty($user_class)) {
@@ -851,14 +851,14 @@ class e107_Import extends WP_Importer {
       }
     }
     // Import all forum
-    $forum_list = $this->getE107ForumList();
+    $forum_list = $this->get_e107_forum_list();
     foreach ($forum_list as $forum)
-      $this->importForum($forum, $user_classes);
+      $this->import_forum($forum, $user_classes);
   }
 
 
   // Migrate one forum to bbPress plugin using its e107 data
-  function importForum($forum, $user_classes) {
+  function import_forum($forum, $user_classes) {
     extract($forum);
     $forum_id         = (int) $forum_id;
     $forum_parent     = (int) $forum_parent;
@@ -887,7 +887,7 @@ class e107_Import extends WP_Importer {
       ksort($potential_authors);
       $author_id = array_shift($potential_authors);
     } else {
-      $user_ids = $this->getWPUserIDs();
+      $user_ids = $this->get_wp_user_ids();
       foreach ($user_ids as $user_id) {
         if (user_can($user_id, 'publish_forums')) {
           $author_id = $user_id;
@@ -964,16 +964,16 @@ class e107_Import extends WP_Importer {
 
 
   // Import all e107 forum threads to bbPress plugin
-  function importForumThreads() {
-    $forum_post_list = $this->getE107ForumPostList();
+  function import_forum_threads() {
+    $forum_post_list = $this->get_e107_forum_post_list();
     foreach ($forum_post_list as $thread)
-      $this->importForumThread($thread);
+      $this->import_forum_thread($thread);
   }
 
 
   // Import e107 forum content to bbPress WordPress plugin
   // This method mimick bbp_new_topic_handler() and bbp_new_reply_handler()
-  function importForumThread($thread) {
+  function import_forum_thread($thread) {
     extract($thread);
     $thread_id       = (int) $thread_id;
     $thread_forum_id = (int) $thread_forum_id;
@@ -1085,7 +1085,7 @@ class e107_Import extends WP_Importer {
 
   // This method recount all forum metadata
   // Code inspired by the bbp_admin_tools() method
-  function recountForumStats() {
+  function recount_forum_stats() {
     $recount_list = bbp_recount_list();
     foreach ((array)$recount_list as $item)
       if (isset($item[2]) && is_callable($item[2]))
@@ -1094,8 +1094,8 @@ class e107_Import extends WP_Importer {
 
 
   // This method replace old e107 URLs embeded in news, pages and comments by WP permalinks
-  // TODO: merge with parseAndUpdate() method
-  function replaceWithPermalinks() {
+  // TODO: merge with parse_and_update() method
+  function replace_with_permalinks() {
     // Associate each mapping with their related regexp
     // TODO: Load mappings from the e107-redirector.php plugin
     $redirect_rules = array(
@@ -1176,7 +1176,7 @@ class e107_Import extends WP_Importer {
 
 
   // Perform some transformation in WordPress content
-  function parseAndUpdate($content_ids, $content_type, $property, $parser) {
+  function parse_and_update($content_ids, $content_type, $property, $parser) {
     // $content_ids   is a list of WordPress IDs we want to modify.
     // $content_type  can be 'post' or 'comment'.
     // $property      is the name of the property we would like to apply the parser to (only tested on 'title' and 'content').
@@ -1207,17 +1207,17 @@ class e107_Import extends WP_Importer {
             break;
           case 'clean_markup':
             // Some advanced cleaning needs to parse BBCode
-            $new_content = $this->preCleanUpMarkup($content);
+            $new_content = $this->pre_cleanup_markup($content);
             // Transform BBCode to HTML using original e107 parser
             $new_content = $this->e107_parser->toHTML($new_content, $parseBB = True, 'no_make_clickable, nobreak');
             // Clean-up markup produced by e107's BBCode parser
-            $new_content = $this->postCleanUpMarkup($new_content);
+            $new_content = $this->post_cleanup_markup($new_content);
             break;
           case 'upload_local_images':
             $domain_list = $this->get_local_domains();
           case 'upload_all_images':
             $domain_list = (isset($domain_list)) ? $domain_list : array();
-            $results = $this->importImages($content, $content_id, $content_type, $domain_list);
+            $results = $this->import_images($content, $content_id, $content_type, $domain_list);
             $new_content = $results[0];
             $counter = (empty($counter)) ? $results[1] : $counter + $results[1];
             break;
@@ -1249,7 +1249,7 @@ class e107_Import extends WP_Importer {
 
 
   // Clean-up BBCode before feeding it to the e107's parser
-  function preCleanUpMarkup($content) {
+  function pre_cleanup_markup($content) {
     $new_content = $content;
 
     $content_transforms = array(
@@ -1266,7 +1266,7 @@ class e107_Import extends WP_Importer {
 
 
   // Clean-up HTML markup produced by e107's BBCode parser
-  function postCleanUpMarkup($content) {
+  function post_cleanup_markup($content) {
     $new_content = $content;
 
     // Filter bad HTML
@@ -1360,7 +1360,7 @@ class e107_Import extends WP_Importer {
 
 
   // This method import all images embedded in HTML content
-  function importImages($html_content, $content_id, $content_type, $allowed_domains = array()) {
+  function import_images($html_content, $content_id, $content_type, $allowed_domains = array()) {
     $image_counter = 0;
 
     // An attachment can only belongs to a post, not a comment. Use parent post in the latter case.
@@ -1472,7 +1472,7 @@ class e107_Import extends WP_Importer {
 
 
   // Update the e107 Redirector plugin with content mapping
-  function updateRedirectorSettings($keyword, $data) {
+  function update_redirector_settings($keyword, $data) {
     $option_name = 'e107_redirector_'.$keyword;
     if (!get_option($option_name))
       add_option($option_name);
@@ -1488,7 +1488,7 @@ class e107_Import extends WP_Importer {
     if (!empty($action) and $action == 'import')
       $this->import();
     else
-      $this->printOptionScreen();
+      $this->print_option_screen();
   }
 
 
@@ -1504,7 +1504,7 @@ class e107_Import extends WP_Importer {
   }
 
 
-  function printOptionScreen() {
+  function print_option_screen() {
     $this->header();
     ?>
 
@@ -1696,18 +1696,18 @@ class e107_Import extends WP_Importer {
     <h3><?php _e('e107 database', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
       <li><?php _e('Connecting...', 'e107-importer'); ?></li>
-      <?php $this->connectToE107DB(); ?>
+      <?php $this->connect_to_e107_db(); ?>
       <li><?php _e('Connected.', 'e107-importer'); ?></li>
     </ul>
 
     <h3><?php _e('Site preferences', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
       <li><?php _e('Load preferences...', 'e107-importer'); ?></li>
-      <?php $this->loadE107Preferences(); ?>
+      <?php $this->load_e107_preferences(); ?>
       <li><?php _e('Preferences loaded.', 'e107-importer'); ?></li>
       <li><?php _e('Import preferences...', 'e107-importer'); ?></li>
       <?php if ($this->e107_preferences == 'import_pref') { ?>
-        <?php $this->importPreferences(); ?>
+        <?php $this->import_preferences(); ?>
         <li><?php _e('All preferences imported.', 'e107-importer'); ?></li>
       <?php } else { ?>
         <li><?php _e('Do not import preferences.', 'e107-importer'); ?></li>
@@ -1717,7 +1717,7 @@ class e107_Import extends WP_Importer {
     <h3><?php _e('Content mapping', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
       <li><?php _e('Load pre-existing e107 content mapping and clean them up...', 'e107-importer'); ?></li>
-      <?php $this->loadE107Mapping(); ?>
+      <?php $this->load_mappings(); ?>
       <li><?php _e('Existing content mapping from previous imports loaded and cleaned up.', 'e107-importer'); ?></li>
     </ul>
 
@@ -1731,15 +1731,15 @@ class e107_Import extends WP_Importer {
         ?>
         <li><?php printf(__('<em>%s</em> (#%s) will take ownership of all imported content.', 'e107-importer'), $owner->user_login, $owner_id); ?></li>
         <li><?php _e('Force ownership of all imported content...', 'e107-importer'); ?></li>
-        <?php $this->setGlobalOwnership($owner_id); ?>
+        <?php $this->set_global_ownership($owner_id); ?>
         <li><?php _e('Ownership forced.', 'e107-importer'); ?></li>
       <?php } else { ?>
         <li><?php _e('Import users...', 'e107-importer'); ?></li>
-        <?php $this->importUsers(); ?>
+        <?php $this->import_users(); ?>
         <li><?php printf(__('%s users imported.', 'e107-importer'), sizeof($this->user_mapping)); ?></li>
       <?php } ?>
       <li><?php _e('Update redirection plugin with user mapping...', 'e107-importer'); ?></li>
-      <?php $this->updateRedirectorSettings('user_mapping', $this->user_mapping); ?>
+      <?php $this->update_redirector_settings('user_mapping', $this->user_mapping); ?>
       <li><?php _e('Old user URLs are now redirected.', 'e107-importer'); ?></li>
     </ul>
 
@@ -1747,14 +1747,14 @@ class e107_Import extends WP_Importer {
     <ul class="ul-disc">
       <?php if ($this->e107_import_news) { ?>
         <li><?php _e('Import news and categories...', 'e107-importer'); ?></li>
-        <?php $this->importNewsAndCategories(); ?>
+        <?php $this->import_news_and_categories(); ?>
         <li><?php printf(__('%s news imported.', 'e107-importer'), sizeof($this->news_mapping)); ?></li>
         <li><?php printf(__('%s categories imported.', 'e107-importer'), sizeof($this->category_mapping)); ?></li>
         <li><?php _e('Update redirection plugin with news mapping...', 'e107-importer'); ?></li>
-        <?php $this->updateRedirectorSettings('news_mapping', $this->news_mapping); ?>
+        <?php $this->update_redirector_settings('news_mapping', $this->news_mapping); ?>
         <li><?php _e('Old news URLs are now redirected to permalinks.', 'e107-importer'); ?></li>
         <li><?php _e('Update redirection plugin with category mapping...', 'e107-importer'); ?></li>
-        <?php $this->updateRedirectorSettings('category_mapping', $this->category_mapping); ?>
+        <?php $this->update_redirector_settings('category_mapping', $this->category_mapping); ?>
         <li><?php _e('Old news category URLs are now redirected to permalinks.', 'e107-importer'); ?></li>
       <?php } else { ?>
         <li><?php _e('e107 news and categories import skipped.', 'e107-importer'); ?></li>
@@ -1765,10 +1765,10 @@ class e107_Import extends WP_Importer {
     <ul class="ul-disc">
       <?php if ($this->e107_import_pages) { ?>
         <li><?php _e('Import pages...', 'e107-importer'); ?></li>
-        <?php $this->importPages(); ?>
+        <?php $this->import_pages(); ?>
         <li><?php printf(__('%s pages imported.', 'e107-importer'), sizeof($this->page_mapping)); ?></li>
         <li><?php _e('Update redirection plugin with page mapping...', 'e107-importer'); ?></li>
-        <?php $this->updateRedirectorSettings('page_mapping', $this->page_mapping); ?>
+        <?php $this->update_redirector_settings('page_mapping', $this->page_mapping); ?>
         <li><?php _e('Old page URLs are now redirected to permalinks.', 'e107-importer'); ?></li>
       <?php } else { ?>
         <li><?php _e('e107 pages import skipped.', 'e107-importer'); ?></li>
@@ -1785,10 +1785,10 @@ class e107_Import extends WP_Importer {
       <?php } ?>
       <?php if ($this->e107_import_news or $this->e107_import_pages) { ?>
         <li><?php _e('Import comments...', 'e107-importer'); ?></li>
-        <?php $this->importComments(); ?>
+        <?php $this->import_comments(); ?>
         <li><?php printf(__('%s comments imported.', 'e107-importer'), sizeof($this->comment_mapping)); ?></li>
         <li><?php _e('Update redirection plugin with comment mapping...', 'e107-importer'); ?></li>
-        <?php $this->updateRedirectorSettings('comment_mapping', $this->comment_mapping); ?>
+        <?php $this->update_redirector_settings('comment_mapping', $this->comment_mapping); ?>
         <li><?php _e('Old comments URLs are now redirected.', 'e107-importer'); ?></li>
       <?php } ?>
     </ul>
@@ -1802,17 +1802,17 @@ class e107_Import extends WP_Importer {
           <li><?php _e('Plugin activated.', 'e107-importer'); ?></li>
         <?php } ?>
         <li><?php _e('Import forums and forum categories...', 'e107-importer'); ?></li>
-        <?php $this->importForums(); ?>
+        <?php $this->import_forums(); ?>
         <li><?php printf(__('%s forums and forum categories imported.', 'e107-importer'), sizeof($this->forum_mapping)); ?></li>
         <li><?php _e('Import forum threads...', 'e107-importer'); ?></li>
-        <?php $this->importForumThreads(); ?>
+        <?php $this->import_forum_threads(); ?>
         <li><?php printf(__('%s forum posts imported.', 'e107-importer'), sizeof($this->forum_post_mapping)); ?></li>
         <li><?php _e('Update redirection plugin with forum and forum post mapping...', 'e107-importer'); ?></li>
-        <?php $this->updateRedirectorSettings('forum_mapping',      $this->forum_mapping); ?>
-        <?php $this->updateRedirectorSettings('forum_post_mapping', $this->forum_post_mapping); ?>
+        <?php $this->update_redirector_settings('forum_mapping',      $this->forum_mapping); ?>
+        <?php $this->update_redirector_settings('forum_post_mapping', $this->forum_post_mapping); ?>
         <li><?php _e('Old forum URLs are now redirected.', 'e107-importer'); ?></li>
         <li><?php _e('Recount forum stats...', 'e107-importer'); ?></li>
-        <?php $this->recountForumStats(); ?>
+        <?php $this->recount_forum_stats(); ?>
         <li><?php _e('Forums stats up to date.', 'e107-importer'); ?></li>
       <?php } else { ?>
         <li><?php _e('e107 forums import skipped.', 'e107-importer'); ?></li>
@@ -1822,30 +1822,30 @@ class e107_Import extends WP_Importer {
     <h3><?php _e('Content parsing', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
       <li><?php _e('Initialize e107 context...', 'e107-importer'); ?></li>
-      <?php $this->inite107Context(); ?>
+      <?php $this->init_e107_context(); ?>
       <li><?php _e('e107 context initialized.', 'e107-importer'); ?></li>
       <?php if ($this->e107_import_news) { ?>
         <li><?php _e('Replace e107 constants in news...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'title'  , 'constants'); ?>
-        <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'excerpt', 'constants'); ?>
-        <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', 'constants'); ?>
+        <?php $this->parse_and_update(array_values($this->news_mapping), 'post', 'title'  , 'constants'); ?>
+        <?php $this->parse_and_update(array_values($this->news_mapping), 'post', 'excerpt', 'constants'); ?>
+        <?php $this->parse_and_update(array_values($this->news_mapping), 'post', 'content', 'constants'); ?>
       <?php } ?>
       <?php if ($this->e107_import_pages) { ?>
         <li><?php _e('Replace e107 constants in pages...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'title'  , 'constants'); ?>
-        <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', 'constants'); ?>
+        <?php $this->parse_and_update(array_values($this->page_mapping), 'post', 'title'  , 'constants'); ?>
+        <?php $this->parse_and_update(array_values($this->page_mapping), 'post', 'content', 'constants'); ?>
       <?php } ?>
       <?php if ($this->e107_import_news or $this->e107_import_pages) { ?>
         <li><?php _e('Replace e107 constants in comments...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->comment_mapping),    'comment', 'content', 'constants'); ?>
+        <?php $this->parse_and_update(array_values($this->comment_mapping),    'comment', 'content', 'constants'); ?>
       <?php } ?>
       <?php if ($this->e107_import_forums) { ?>
         <li><?php _e('Replace e107 constants in forums...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'title'  , 'constants'); ?>
-        <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'content', 'constants'); ?>
+        <?php $this->parse_and_update(array_values($this->forum_mapping), 'post', 'title'  , 'constants'); ?>
+        <?php $this->parse_and_update(array_values($this->forum_mapping), 'post', 'content', 'constants'); ?>
         <li><?php _e('Replace e107 constants in forum threads...', 'e107-importer'); ?></li>
-        <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'title'  , 'constants'); ?>
-        <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'content', 'constants'); ?>
+        <?php $this->parse_and_update(array_values($this->forum_post_mapping), 'post', 'title'  , 'constants'); ?>
+        <?php $this->parse_and_update(array_values($this->forum_post_mapping), 'post', 'content', 'constants'); ?>
       <?php } ?>
       <li><?php _e('All e107 constants replaced by proper URLs.', 'e107-importer'); ?></li>
       <?php if ($this->e107_bbcode_parser == 'none') { ?>
@@ -1858,26 +1858,26 @@ class e107_Import extends WP_Importer {
         <?php } ?>
         <?php if ($this->e107_import_news) { ?>
           <li><?php _e('Parse news title, excerpt and content...', 'e107-importer'); ?></li>
-          <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'title'  , $this->e107_bbcode_parser); ?>
-          <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'excerpt', $this->e107_bbcode_parser); ?>
-          <?php $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
+          <?php $this->parse_and_update(array_values($this->news_mapping), 'post', 'title'  , $this->e107_bbcode_parser); ?>
+          <?php $this->parse_and_update(array_values($this->news_mapping), 'post', 'excerpt', $this->e107_bbcode_parser); ?>
+          <?php $this->parse_and_update(array_values($this->news_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
         <?php } ?>
         <?php if ($this->e107_import_pages) { ?>
           <li><?php _e('Parse pages title and content...', 'e107-importer'); ?></li>
-          <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'title'  , $this->e107_bbcode_parser); ?>
-          <?php $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
+          <?php $this->parse_and_update(array_values($this->page_mapping), 'post', 'title'  , $this->e107_bbcode_parser); ?>
+          <?php $this->parse_and_update(array_values($this->page_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
         <?php } ?>
         <?php if ($this->e107_import_news or $this->e107_import_pages) { ?>
           <li><?php _e('Parse comments...', 'e107-importer'); ?></li>
-          <?php $this->parseAndUpdate(array_values($this->comment_mapping), 'comment', 'content', $this->e107_bbcode_parser); ?>
+          <?php $this->parse_and_update(array_values($this->comment_mapping), 'comment', 'content', $this->e107_bbcode_parser); ?>
         <?php } ?>
         <?php if ($this->e107_import_forums) { ?>
           <li><?php _e('Parse forums title and content...', 'e107-importer'); ?></li>
-          <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'title', $this->e107_bbcode_parser); ?>
-          <?php $this->parseAndUpdate(array_values($this->forum_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
+          <?php $this->parse_and_update(array_values($this->forum_mapping), 'post', 'title', $this->e107_bbcode_parser); ?>
+          <?php $this->parse_and_update(array_values($this->forum_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
           <li><?php _e('Parse forum threads title and content...', 'e107-importer'); ?></li>
-          <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'title', $this->e107_bbcode_parser); ?>
-          <?php $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
+          <?php $this->parse_and_update(array_values($this->forum_post_mapping), 'post', 'title', $this->e107_bbcode_parser); ?>
+          <?php $this->parse_and_update(array_values($this->forum_post_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
         <?php } ?>
         <li><?php _e('All BBCodes converted to HTML.', 'e107-importer'); ?></li>
       <?php } ?>
@@ -1896,27 +1896,27 @@ class e107_Import extends WP_Importer {
         <?php } ?>
         <?php if ($this->e107_import_news) { ?>
           <li><?php _e('Import images embedded in news content...', 'e107-importer'); ?></li>
-          <?php $images = $this->parseAndUpdate(array_values($this->news_mapping), 'post', 'content', $this->e107_import_images); ?>
+          <?php $images = $this->parse_and_update(array_values($this->news_mapping), 'post', 'content', $this->e107_import_images); ?>
           <li><?php printf(__('%s images uploaded from news.', 'e107-importer'), $images); ?></li>
         <?php } ?>
         <?php if ($this->e107_import_pages) { ?>
           <li><?php _e('Import images embedded in page content...', 'e107-importer'); ?></li>
-          <?php $images = $this->parseAndUpdate(array_values($this->page_mapping), 'post', 'content', $this->e107_import_images); ?>
+          <?php $images = $this->parse_and_update(array_values($this->page_mapping), 'post', 'content', $this->e107_import_images); ?>
         <li><?php printf(__('%s images uploaded from pages.', 'e107-importer'), $images); ?></li>
         <?php } ?>
         <?php if ($this->e107_import_forums) { ?>
           <li><?php _e('Import images embedded in forum thread content...', 'e107-importer'); ?></li>
-          <?php $images = $this->parseAndUpdate(array_values($this->forum_post_mapping), 'post', 'content', $this->e107_import_images); ?>
+          <?php $images = $this->parse_and_update(array_values($this->forum_post_mapping), 'post', 'content', $this->e107_import_images); ?>
           <li><?php printf(__('%s images uploaded from forum threads.', 'e107-importer'), $images); ?></li>
         <?php } ?>
         <!-- Import images of comment-like content after all posts to have images attached to posts in priority -->
         <?php if ($this->e107_import_news or $this->e107_import_pages) { ?>
           <li><?php _e('Import images embedded in comments...', 'e107-importer'); ?></li>
-          <?php $images = $this->parseAndUpdate(array_values($this->comment_mapping), 'comment', 'content', $this->e107_import_images); ?>
+          <?php $images = $this->parse_and_update(array_values($this->comment_mapping), 'comment', 'content', $this->e107_import_images); ?>
           <li><?php printf(__('%s images uploaded from comments.', 'e107-importer'), $images); ?></li>
         <?php } ?>
         <li><?php _e('Update redirection plugin with image mapping...', 'e107-importer'); ?></li>
-        <?php $this->updateRedirectorSettings('image_mapping', $this->image_mapping); ?>
+        <?php $this->update_redirector_settings('image_mapping', $this->image_mapping); ?>
         <li><?php _e('Old image URLs are now redirected.', 'e107-importer'); ?></li>
       <?php } ?>
     </ul>
@@ -1924,7 +1924,7 @@ class e107_Import extends WP_Importer {
     <h3><?php _e('Internal links', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
       <li><?php _e('Update internal links...', 'e107-importer'); ?></li>
-      <!--?php $this->replaceWithPermalinks(); ?-->
+      <!--?php $this->replace_with_permalinks(); ?-->
       <li><?php _e('Not implemented yet.', 'e107-importer'); ?><!--?php _e('All internal links updated.', 'e107-importer'); ?--></li>
     </ul>
 
