@@ -229,7 +229,7 @@ class e107_Redirector {
     // Redirect feeds as explained there: http://kevin.deldycke.com/2007/05/feedburner-and-e107-integration/
     if (preg_match('/\/e107_plugins\/(?:rss_menu\/|forum\/e_)rss\.php(?:%3F|\?)?(.*)/i', $url, $matches)) {
       // Default feed redirections
-      $feed_content = '';
+      $feed_content = null;
       $feed_type    = 'rss2';
       // Analyze feed parameters
       $feed_params = explode('.', $matches[1]);
@@ -284,7 +284,7 @@ class e107_Redirector {
             $feed_type = 'atom';
             break;
         }
-      if ($feed_content != '') {
+      if (!is_null($feed_content)) {
       // Redirect to proper WordPress feed
         $wordpress_feed = $feed_content.$feed_type.'_url';
         return get_bloginfo($wordpress_feed);
