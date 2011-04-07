@@ -88,10 +88,8 @@ class e107_Redirector {
   }
 
 
-  function execute() {
-    // Requested URL
-    $requested = $_SERVER['REQUEST_URI'];
-
+  // Parse an e107 URL and return its new destination according the data found in the mappings
+  function translate_url($url) {
     // Final destination
     $link = '';
 
@@ -180,7 +178,7 @@ class e107_Redirector {
       $rules   = $rule_set['rules'];
       if (sizeof($rules) > 0 && $mapping && is_array($mapping) && sizeof($mapping) > 0) {
         foreach ($rules as $regexp) {
-          if (preg_match($regexp, $requested, $matches)) {
+          if (preg_match($regexp, $url, $matches)) {
             if (array_key_exists($matches[1], $mapping)) {
               $content_id = $mapping[$matches[1]];
               switch ($ctype) {
@@ -211,7 +209,7 @@ class e107_Redirector {
                 default:
                   $link = get_permalink($content_id);
               }
-              wp_redirect($link, $status = 301);
+              return $link;
             }
           }
         }
@@ -219,7 +217,7 @@ class e107_Redirector {
     }
 
     // Redirect feeds as explained there: http://kevin.deldycke.com/2007/05/feedburner-and-e107-integration/
-    if (empty($link) && preg_match('/^.*\/e107_plugins\/(?:rss_menu\/|forum\/e_)rss\.php(?:%3F|\?)?(.*)$/i', $requested, $matches)) {
+    if (empty($link) && preg_match('/^.*\/e107_plugins\/(?:rss_menu\/|forum\/e_)rss\.php(?:%3F|\?)?(.*)$/i', $url, $matches)) {
       // Default feed redirections
       $feed_content = '';
       $feed_type    = 'rss2';
@@ -279,7 +277,7 @@ class e107_Redirector {
       if ($feed_content != '') {
       // Redirect to proper WordPress feed
         $wordpress_feed = $feed_content.$feed_type.'_url';
-        wp_redirect(get_bloginfo($wordpress_feed), $status = 301);
+        return get_bloginfo($wordpress_feed);
       }
     }
 
@@ -301,10 +299,10 @@ class e107_Redirector {
     }
     // Redirect images
     foreach ($image_regexps as $regexp => $attachment_id) {
-      $normalized_url = $this->normalize_urlpath($requested);
+      $normalized_url = $this->normalize_urlpath($url);
       if (preg_match($regexp, $normalized_url)) {
         $image_data = wp_get_attachment_image_src($attachment_id, $size='full');
-        wp_redirect($image_data[0], $status = 301);
+        return $image_data[0];
       }
     }
 
@@ -312,26 +310,37 @@ class e107_Redirector {
     if (empty($link)) {
 
       // Redirect to the WordPress home page
-      if (preg_match('/^.*\/news\.php.*$/i', $requested))
-        wp_redirect(get_option('siteurl'), $status = 301);
+      if (preg_match('/^.*\/news\.php.*$/i', $url))
+        return get_option('siteurl');
 
       // Redirect to bbPress home page
-      elseif (preg_match('/^.*\/forum(.*).php.*$/i', $requested))
-        wp_redirect(get_option('siteurl').'/'.get_option('_bbp_root_slug'), $status = 301);
+      elseif (preg_match('/^.*\/forum(.*).php.*$/i', $url))
+        return get_option('siteurl').'/'.get_option('_bbp_root_slug');
 
       // Redirects to forum stats
-#      elseif (preg_match('/^.*\/forum_stats\.php.*$/i', $requested))
-#        wp_redirect(XXX, $status = 301);
+#      elseif (preg_match('/^.*\/forum_stats\.php.*$/i', $url))
+#        return XXX;
 
       // Redirects to most active threads of all time
-#      elseif (preg_match('/^.*\/top\.php(?:%3F|\?)0\.active.*$/i', $requested))
-#        wp_redirect(XXX, $status = 301);
+#      elseif (preg_match('/^.*\/top\.php(?:%3F|\?)0\.active.*$/i', $url))
+#        return XXX;
 
        // Redirects to ???
-#      elseif (preg_match('/^.*\/top\.php(?:%3F|\?)0\.top\.forum\.10.*$/i', $requested))
-#        wp_redirect(XXX, $status = 301);
+#      elseif (preg_match('/^.*\/top\.php(?:%3F|\?)0\.top\.forum\.10.*$/i', $url))
+#        return XXX;
     }
+    return $link;
+  }
 
+
+  function execute() {
+    // Requested URL
+    $requested = $_SERVER['REQUEST_URI'];
+
+    // Final destination
+    $link = $this->translate_url($requested);
+    if (!empty($link))
+      wp_redirect($link, $status = 301);
     // Do nothing: let WordPress do its job (and probably show user a 404 error ;) )
   }
 
