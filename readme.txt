@@ -15,19 +15,21 @@ This plugin allows you to extract the most important content and data from an e1
 
 **Features**:
 
-* Import news and their categories.
-* Take care of news extended part.
+* Import news (both body and extended parts).
+* Import news categories.
 * Import custom pages (and take care of their private / public visibility).
 * Import comments (both from news and custom pages).
 * Import forums and threads to bbPress WordPress plugin.
 * Import images embedded in HTML as attachments.
 * Let you choose which kind of images you want to upload to WordPress (external or not).
 * Import preferences (site name, description, ...).
-* Convert embedded BBCode to plain HTML.
-* Import users and their profile (or try to update the profile if user already exist).
+* Import new users and their profile (or update existing users).
+* Send new credentials to users by mail.
 * Try to map users to an appropriate role.
-* Send mails to users to inform them about their new credentials.
+* Convert embedded BBCode to plain HTML.
+* Clean-up HTML to align it with what WordPress produce by default.
 * Redirect old e107 news, pages, users, forums, threads and feeds URLs to new WordPress content via an integrated plugin (for SEO).
+* Replace old e107 URLs in content by new WordPress permalinks.
 
 This tool was tested with:
 
@@ -132,6 +134,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 = 1.3 =
 * Redirect imported images to attachments.
 * Purge invalid mapping entries on import.
+* Replace old e107 URLs in content by new WordPress permalinks.
 
 = 1.2 =
 * Upgrade e107 code to match latest 0.7.25-rc1.
