@@ -115,26 +115,26 @@ class e107_Redirector {
     $redirect_rules = array(
       array( 'type'    => 'post'
            , 'mapping' => $this->news_mapping
-           , 'rules'   => array( '/^.*\/comment\.php(?:%3F|\?)comment\.news\.(\d+).*$/i'
+           , 'rules'   => array( '/\/comment\.php(?:%3F|\?)comment\.news\.(\d+)/i'
                                    # /comment.php?comment.news.138
                                    # /comment.php?comment.news.138&dfsd
-                               , '/^.*\/news\.php(?:%3F|\?)item\.(\d+).*$/i'
+                               , '/\/news\.php(?:%3F|\?)item\.(\d+)/i'
                                    # /news.php?item.138
                                    # /news.php?item.100.3
                                    # /news.php?item.138&res=1680x1050
-                               , '/^.*\/news\.php(?:%3F|\?)extend\.(\d+).*$/i'
+                               , '/\/news\.php(?:%3F|\?)extend\.(\d+)/i'
                                    # /news.php?extend.17
                                )
            ),
       array( 'type'    => 'category'
            , 'mapping' => $this->category_mapping
-           , 'rules'   => array( '/^.*\/news\.php(?:%3F|\?)cat\.(\d+).*$/i'
+           , 'rules'   => array( '/\/news\.php(?:%3F|\?)cat\.(\d+)/i'
                                    # /news.php?cat.3
                                )
            ),
       array( 'type'    => 'post'
            , 'mapping' => $this->page_mapping
-           , 'rules'   => array( '/^.*\/page\.php(?:%3F|\?)(\d+).*$/i'
+           , 'rules'   => array( '/\/page\.php(?:%3F|\?)(\d+)/i'
                                    # /page.php?16
                                    # /page.php?16&res=1680x1050
                                    # /page.php%3F16
@@ -147,15 +147,15 @@ class e107_Redirector {
            ),
       array( 'type'    => 'user'
            , 'mapping' => $this->user_mapping
-           , 'rules'   => array( '/^.*\/user\.php(?:%3F|\?)id\.(\d+).*$/i'
+           , 'rules'   => array( '/\/user\.php(?:%3F|\?)id\.(\d+)/i'
                                    # /user.php?id.29
-                               , '/^.*\/userposts\.php(?:%3F|\?).*\.comments\.(\d+).*$/i'
+                               , '/\/userposts\.php(?:%3F|\?).*\.comments\.(\d+)/i'
                                    # /userposts.php?0.comments.29
                                )
            ),
       array( 'type'    => 'forum'
            , 'mapping' => $this->forum_mapping
-           , 'rules'   => array( '/^.*\/forum_viewforum\.php(?:%3F|\?)(\d+).*$/i'
+           , 'rules'   => array( '/\/forum_viewforum\.php(?:%3F|\?)(\d+)/i'
                                    # /forum_viewforum.php?4
 
                                    # TODO ###
@@ -167,23 +167,23 @@ class e107_Redirector {
            ),
       array( 'type'    => 'forum_post'
            , 'mapping' => $this->forum_post_mapping
-           , 'rules'   => array( '/^.*\/forum_viewtopic\.php(?:%3F|\?).*#post_(\d+).*$/i'
+           , 'rules'   => array( '/\/forum_viewtopic\.php(?:%3F|\?).*#post_(\d+)/i'
                                    # /forum_viewtopic.php?12301.0#post_19026
                                    # /forum_viewtopic.php?12301.100#post_19026
-                               , '/^.*\/forum_viewtopic\.php(?:%3F|\?)(\d+).*$/i'
+                               , '/\/forum_viewtopic\.php(?:%3F|\?)(\d+)/i'
                                    # /forum_viewtopic.php?19026
                                    # /forum_viewtopic.php?19026.post
                                )
            ),
       array( 'type'    => 'forum_thread_last_page'
            , 'mapping' => $this->forum_post_mapping
-           , 'rules'   => array( '/^.*\/forum_viewtopic\.php(?:%3F|\?)(\d+)\.last.*$/i'
+           , 'rules'   => array( '/\/forum_viewtopic\.php(?:%3F|\?)(\d+)\.last/i'
                                    # /forum_viewtopic.php?19026.last
                                )
            ),
       array( 'type'    => 'forum_user'
            , 'mapping' => $this->user_mapping
-           , 'rules'   => array( '/^.*\/userposts\.php(?:%3F|\?).*\.forums\.(\d+).*$/i'
+           , 'rules'   => array( '/\/userposts\.php(?:%3F|\?).*\.forums\.(\d+)/i'
                                    # /userposts.php?0.forums.29
                                )
            )
@@ -227,7 +227,7 @@ class e107_Redirector {
     }
 
     // Redirect feeds as explained there: http://kevin.deldycke.com/2007/05/feedburner-and-e107-integration/
-    if (preg_match('/^.*\/e107_plugins\/(?:rss_menu\/|forum\/e_)rss\.php(?:%3F|\?)?(.*)$/i', $url, $matches)) {
+    if (preg_match('/\/e107_plugins\/(?:rss_menu\/|forum\/e_)rss\.php(?:%3F|\?)?(.*)/i', $url, $matches)) {
       // Default feed redirections
       $feed_content = '';
       $feed_type    = 'rss2';
@@ -304,7 +304,7 @@ class e107_Redirector {
       $img_regexp = $this->normalize_urlpath($img_path);
       $img_regexp = str_replace('/', '\/', $img_regexp);
       $img_regexp = str_replace('.', '\.', $img_regexp);
-      $img_regexp = '/^.*'.$img_regexp.'.*$/i';
+      $img_regexp = '/'.$img_regexp.'/i';
       $image_regexps[$img_regexp] = $attachment_id;
     }
     // Redirect images
@@ -319,23 +319,23 @@ class e107_Redirector {
     // Generic redirects and catch-alls
 
     // Redirect to the WordPress home page
-    if (preg_match('/^.*\/news\.php.*$/i', $url))
+    if (preg_match('/\/news\.php/i', $url))
       return get_option('siteurl');
 
     // Redirect to bbPress home page
-    elseif (preg_match('/^.*\/forum(.*).php.*$/i', $url))
+    elseif (preg_match('/\/forum(.*).php/i', $url))
       return get_option('siteurl').'/'.get_option('_bbp_root_slug');
 
     // Redirects to forum stats
-#    elseif (preg_match('/^.*\/forum_stats\.php.*$/i', $url))
+#    elseif (preg_match('/\/forum_stats\.php/i', $url))
 #      return XXX;
 
     // Redirects to most active threads of all time
-#    elseif (preg_match('/^.*\/top\.php(?:%3F|\?)0\.active.*$/i', $url))
+#    elseif (preg_match('/\/top\.php(?:%3F|\?)0\.active/i', $url))
 #      return XXX;
 
       // Redirects to ???
-#    elseif (preg_match('/^.*\/top\.php(?:%3F|\?)0\.top\.forum\.10.*$/i', $url))
+#    elseif (preg_match('/\/top\.php(?:%3F|\?)0\.top\.forum\.10/i', $url))
 #      return XXX;
 
     return False;
