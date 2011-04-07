@@ -26,6 +26,9 @@ class e107_Redirector {
 
   // PHP5 constructor
   function __construct() {
+    // Load mappings
+    $this->loadE107Mapping();
+    // Register the redirect action
     add_action('template_redirect', array(&$this, 'execute'));
   }
 
@@ -88,9 +91,6 @@ class e107_Redirector {
   function execute() {
     // Requested URL
     $requested = $_SERVER['REQUEST_URI'];
-
-    // Load mappings
-    $this->loadE107Mapping();
 
     // Final destination
     $link = '';
