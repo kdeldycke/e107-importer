@@ -336,18 +336,18 @@ class e107_Import extends WP_Importer {
   // Establish a connection to the e107 database.
   // This code is kept in a separate method to not mess with $wpdb ...
   function connect_to_e107_db() {
-    $this->e107db = mysql_connect($this->e107_db_host, $this->e107_db_user, $this->e107_db_pass) or
+    $this->e107_db = mysql_connect($this->e107_db_host, $this->e107_db_user, $this->e107_db_pass) or
       wp_die("Can't connect to e107 database server: " . mysql_error());
     // Force UTF-8 querying
-    @mysql_query("SET NAMES `utf8`", $this->e107db);
-    //@mysql_query("SET CHARACTER SET `utf8`", $this->e107db);
+    @mysql_query("SET NAMES `utf8`", $this->e107_db);
+    //@mysql_query("SET CHARACTER SET `utf8`", $this->e107_db);
     $this->e107_db_prefix = $this->e107_db_name.'`.`'.$this->e107_db_prefix;
     set_magic_quotes_runtime(0);
   }
 
 
   function query_e107_db($sql) {
-    $result = mysql_query($sql, $this->e107db);
+    $result = mysql_query($sql, $this->e107_db);
     if (!$result)
       wp_die('Invalid query: ' . mysql_error());
     $result_array = array();
