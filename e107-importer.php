@@ -1474,10 +1474,7 @@ class e107_Import extends WP_Importer {
 
   // Update the e107 Redirector plugin with content mapping
   function update_redirector_settings($keyword, $data) {
-    $option_name = 'e107_redirector_'.$keyword;
-    if (!get_option($option_name))
-      add_option($option_name);
-    update_option($option_name, $data);
+    e107_Redirector::update_mapping($keyword, $data);
   }
 
 

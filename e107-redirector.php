@@ -11,6 +11,11 @@ License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 */
 
 
+// Mapping naming conventions
+define('MAPPING_SUFFIX', '_mapping');
+define('OPTION_PREFIX' , 'e107_redirector_');
+
+
 class e107_Redirector {
 
   // e107 to WordPress content mapping
@@ -49,14 +54,14 @@ class e107_Redirector {
   function load_mappings() {
     // Here is the list of mappings and the type of WordPress content they can point to
     $mapping_list = array(
-        array('name' => 'user_mapping'      , 'types' => array('user')                                              )
-      , array('name' => 'news_mapping'      , 'types' => array('post')                                              )
-      , array('name' => 'category_mapping'  , 'types' => array('category')                                          )
-      , array('name' => 'page_mapping'      , 'types' => array('page')                                              )
-      , array('name' => 'comment_mapping'   , 'types' => array('comment')                                           )
-      , array('name' => 'forum_mapping'     , 'types' => array(bbp_get_forum_post_type())                           )
-      , array('name' => 'forum_post_mapping', 'types' => array(bbp_get_reply_post_type(), bbp_get_topic_post_type()))
-      , array('name' => 'image_mapping'     , 'types' => array('attachment')                                        )
+        array('name' => 'user'      , 'types' => array('user')                                              )
+      , array('name' => 'news'      , 'types' => array('post')                                              )
+      , array('name' => 'category'  , 'types' => array('category')                                          )
+      , array('name' => 'page'      , 'types' => array('page')                                              )
+      , array('name' => 'comment'   , 'types' => array('comment')                                           )
+      , array('name' => 'forum'     , 'types' => array(bbp_get_forum_post_type())                           )
+      , array('name' => 'forum_post', 'types' => array(bbp_get_reply_post_type(), bbp_get_topic_post_type()))
+      , array('name' => 'image'     , 'types' => array('attachment')                                        )
       );
 
     // List of content types that are not based on posts
@@ -64,8 +69,8 @@ class e107_Redirector {
 
     // Load pre-existing mappings
     foreach ($mapping_list as $map_data) {
-      $map_name = $map_data['name'];
-      $option_name = 'e107_redirector_'.$map_name;
+      $map_name = $map_data['name'].MAPPING_SUFFIX;
+      $option_name = OPTION_PREFIX.$map_name;
       if (get_option($option_name)) {
         $this->$map_name = get_option($option_name);
       } else {
@@ -77,7 +82,7 @@ class e107_Redirector {
     foreach ($mapping_list as $map_data) {
       $allowed_types = $map_data['types'];
       if (sizeof(array_intersect($allowed_types, $non_post_types)) == 0) {
-        $map_name = $map_data['name'];
+        $map_name = $map_data['name'].MAPPING_SUFFIX;
         $cleaned_map = array();
         foreach ($this->$map_name as $source => $post_id) {
           if (in_array(get_post_type($post_id), $allowed_types)) {
@@ -87,6 +92,15 @@ class e107_Redirector {
         $this->$map_name = $cleaned_map;
       }
     }
+  }
+
+
+  // Update content mapping
+  function update_mapping($keyword, $data) {
+    $option_name = OPTION_PREFIX.$keyword;
+    if (!get_option($option_name))
+      add_option($option_name);
+    update_option($option_name, $data);
   }
 
 
