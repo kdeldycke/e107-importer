@@ -42,15 +42,15 @@ class redefined_e107 {
 
 if ( class_exists( 'WP_Importer' ) ) {
 class e107_Import extends WP_Importer {
-  // Class wide variables
+  // e107 database variables
   var $e107_db;
-
   var $e107_db_host;
   var $e107_db_user;
   var $e107_db_pass;
   var $e107_db_name;
   var $e107_db_prefix;
 
+  // User options
   var $e107_content_ownership;
   var $e107_mail_user;
   var $e107_import_news;
@@ -59,6 +59,7 @@ class e107_Import extends WP_Importer {
   var $e107_bbcode_parser;
   var $e107_import_images;
 
+  // e107 to WordPress content mapping
   var $user_mapping;
   var $news_mapping;
   var $category_mapping;
