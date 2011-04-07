@@ -14,6 +14,18 @@ License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 class e107_Redirector {
 
 
+  // PHP5 constructor
+  function __construct() {
+    add_action('template_redirect', array(&$this, 'execute'));
+  }
+
+
+  // PHP4 constructor
+  function e107_Redirector() {
+    $this->__construct();
+  }
+
+
   // This method encode all non-alphanumerical characters of an URL path but keeps slashes
   function normalize_urlpath($urlpath) {
     return str_replace('%2F', '/', rawurlencode(rawurldecode($urlpath)));
@@ -286,7 +298,9 @@ class e107_Redirector {
 
     // Do nothing: let WordPress do its job (and probably show user a 404 error ;) )
   }
+
+
 }
 
 
-add_action('template_redirect', array('e107_Redirector', 'execute'));
+$e107_Redirector = new e107_Redirector();
