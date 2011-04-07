@@ -1088,88 +1088,6 @@ class e107_Import extends WP_Importer {
   }
 
 
-  // This method replace old e107 URLs embeded in news, pages and comments by WP permalinks
-  // TODO: merge with parse_and_update() method
-  function replace_with_permalinks() {
-    // Associate each mapping with their related regexp
-    // TODO: Load mappings from the e107-redirector.php plugin
-    $redirect_rules = array(
-      array( 'mapping' => $this->news_mapping
-           , 'rules'   => array( '/^\/*comment\.php(?:%3F|\?)comment\.news\.(\d+)(.*)$/i'
-                                   # /comment.php?comment.news.138
-                                   # /comment.php?comment.news.138&dfsd
-                               , '/^\/*news\.php(?:%3F|\?)item\.(\d+)(.*)$/i'
-                                   # /news.php?item.138
-                                   # /news.php?item.100.3
-                                   # /news.php?item.138&res=1680x1050
-                               , '/^\/*news\.php(?:%3F|\?)extend\.(\d+)(.*)$/i'
-                                   # /news.php?extend.17
-                               )
-           ),
-      array( 'mapping' => $this->page_mapping
-           , 'rules'   => array( '/^\/*page\.php(?:%3F|\?)(\d+)(.*)$/i'
-                                   # /page.php?16
-                                   # /page.php?16&res=1680x1050
-                                   # /page.php%3F16
-                               )
-           )
-    );
-
-    // Transform the site url string to make it regexp compatible
-    $siteurl_regexp = $this->e107_pref['siteurl'];
-    // Delete trailing slashes
-    $siteurl_regexp = rtrim($siteurl_regexp, '/');
-    // Escape all slashes with anti-slash
-    $siteurl_regexp = str_replace('/', '\/', $siteurl_regexp);
-    // Escape all dots
-    $siteurl_regexp = str_replace('.', '\.', $siteurl_regexp);
-
-    // Add the e107 site url at the beginning of each regexp
-    for ($i=0; $i<count($redirect_rules); $i++) {
-      $rule_set = $redirect_rules[$i];
-      $mapping  = $rule_set['mapping'];
-      $rules    = $rule_set['rules'];
-      if ($mapping && is_array($mapping) && sizeof($mapping) > 0) {
-        for ($j=0; $j<count($rules); $j++) {
-          $regexp    = $rules[$j];
-          // Remove the "absolutiveness" of the regexp (aka "^$")
-          $regexp    = str_replace('/^', '/'.$siteurl_regexp, $regexp);
-          $rules[$j] = str_replace('(.*)$/i', '(.*)/i', $regexp);
-        }
-        $redirect_rules[$i]['rules'] = $rules;
-      }
-    }
-
-    // Get the list of WP news and page IDs
-    $news_and_pages_ids = array_merge(array_values($this->news_mapping), array_values($this->page_mapping));
-    foreach ($news_and_pages_ids as $post_id) {
-      // Get post content
-      $post    = get_post($post_id);
-      $content = $post->post_content;
-      // Search content for something that look like e107 URL
-      foreach ($redirect_rules as $rule_set) {
-        $mapping = $rule_set['mapping'];
-        $rules   = $rule_set['rules'];
-        if ($mapping && is_array($mapping) && sizeof($mapping) > 0)
-          foreach ($rules as $regexp) {
-            preg_match_all($regexp, $content, $matches, PREG_SET_ORDER);
-            foreach ($matches as $match)
-              if (array_key_exists($match[1], $mapping)) {
-                $new_link = get_permalink($mapping[$match[1]]);
-                $old_link = substr($match[0], 0, strlen($match[0]) - strlen($match[2]));
-                $content = str_replace($old_link, $new_link, $content);
-              }
-          }
-      }
-      // Update post content
-      wp_update_post(array(
-          'ID'           => $post_id
-        , 'post_content' => $content
-        ));
-    }
-  }
-
-
   // Perform some transformation in WordPress content
   function parse_and_update($content_ids, $content_type, $property, $parser) {
     // $content_ids   is a list of WordPress IDs we want to modify.
@@ -1215,6 +1133,9 @@ class e107_Import extends WP_Importer {
             $results = $this->import_images($content, $content_id, $content_type, $domain_list);
             $new_content = $results[0];
             $counter = (empty($counter)) ? $results[1] : $counter + $results[1];
+            break;
+          case 'permalink_update':
+            $new_content = $this->permalink_update($content);
             break;
         }
 
@@ -1463,6 +1384,14 @@ class e107_Import extends WP_Importer {
     }
 
     return array($html_content, $image_counter);
+  }
+
+
+  // Replace old e107 URLs by WordPress permalinks
+  function permalink_update($content) {
+    // TODO: this is just a placeholder, update using e107-redirector methods
+    $new_content = $content;
+    return $new_content;
   }
 
 
@@ -1907,11 +1836,29 @@ class e107_Import extends WP_Importer {
       <?php } ?>
     </ul>
 
-    <h3><?php _e('Internal links', 'e107-importer'); ?></h3>
+    <h3><?php _e('Permalinks', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
-      <li><?php _e('Update internal links...', 'e107-importer'); ?></li>
-      <!--?php $this->replace_with_permalinks(); ?-->
-      <li><?php _e('Not implemented yet.', 'e107-importer'); ?><!--?php _e('All internal links updated.', 'e107-importer'); ?--></li>
+      <li><?php _e('Replace old e107 URLs by WordPress permalinks...', 'e107-importer'); ?></li>
+      <?php if ($this->e107_import_news) { ?>
+        <li><?php _e('Update URLs in news content and excerpt...', 'e107-importer'); ?></li>
+        <?php $this->parse_and_update(array_values($this->news_mapping), 'post', 'content', 'permalink_update'); ?>
+        <?php $this->parse_and_update(array_values($this->news_mapping), 'post', 'excerpt', 'permalink_update'); ?>
+      <?php } ?>
+      <?php if ($this->e107_import_pages) { ?>
+        <li><?php _e('Update URLs in pages content...', 'e107-importer'); ?></li>
+        <?php $this->parse_and_update(array_values($this->page_mapping), 'post', 'content', 'permalink_update'); ?>
+      <?php } ?>
+      <?php if ($this->e107_import_news or $this->e107_import_pages) { ?>
+        <li><?php _e('Update URLs in comments...', 'e107-importer'); ?></li>
+        <?php $this->parse_and_update(array_values($this->comment_mapping), 'comment', 'content', 'permalink_update'); ?>
+      <?php } ?>
+      <?php if ($this->e107_import_forums) { ?>
+        <li><?php _e('Update URLs in forums content...', 'e107-importer'); ?></li>
+        <?php $this->parse_and_update(array_values($this->forum_mapping), 'post', 'content', 'permalink_update'); ?>
+        <li><?php _e('Update URLs in forum threads content...', 'e107-importer'); ?></li>
+        <?php $this->parse_and_update(array_values($this->forum_post_mapping), 'post', 'content', 'permalink_update'); ?>
+      <?php } ?>
+      <li><?php _e('All old URLs replaced by permalinks.', 'e107-importer'); ?></li>
     </ul>
 
     <h3><?php _e('e107 redirector', 'e107-importer'); ?></h3>
