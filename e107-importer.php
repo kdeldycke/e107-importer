@@ -59,14 +59,14 @@ class e107_Import extends WP_Importer {
   var $e107_bbcode_parser;
   var $e107_import_images;
 
-  var $user_mapping       = array();
-  var $news_mapping       = array();
-  var $category_mapping   = array();
-  var $page_mapping       = array();
-  var $comment_mapping    = array();
-  var $forum_mapping      = array();
-  var $forum_post_mapping = array();
-  var $image_mapping      = array();
+  var $user_mapping;
+  var $news_mapping;
+  var $category_mapping;
+  var $page_mapping;
+  var $comment_mapping;
+  var $forum_mapping;
+  var $forum_post_mapping;
+  var $image_mapping;
 
   // Initialized in initImportContext()
   var $e107_pref;

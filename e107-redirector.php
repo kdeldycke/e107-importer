@@ -14,14 +14,14 @@ License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 class e107_Redirector {
 
   // All mappings starts as empty arrays
-  var $user_mapping       = array();
-  var $news_mapping       = array();
-  var $category_mapping   = array();
-  var $page_mapping       = array();
-  var $comment_mapping    = array();
-  var $forum_mapping      = array();
-  var $forum_post_mapping = array();
-  var $image_mapping      = array();
+  var $user_mapping;
+  var $news_mapping;
+  var $category_mapping;
+  var $page_mapping;
+  var $comment_mapping;
+  var $forum_mapping;
+  var $forum_post_mapping;
+  var $image_mapping;
 
 
   // PHP5 constructor
@@ -68,6 +68,8 @@ class e107_Redirector {
       $option_name = 'e107_redirector_'.$map_name;
       if (get_option($option_name)) {
         $this->$map_name = get_option($option_name);
+      } else {
+        $this->$map_name = array();
       }
     }
 
