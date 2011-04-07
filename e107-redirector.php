@@ -49,11 +49,11 @@ class e107_Redirector {
   function load_mappings() {
     // Here is the list of mappings and the type of WordPress content they can point to
     $mapping_list = array(
-        array('name' => 'news_mapping'      , 'types' => array('post')                                              )
+        array('name' => 'user_mapping'      , 'types' => array('user')                                              )
+      , array('name' => 'news_mapping'      , 'types' => array('post')                                              )
       , array('name' => 'category_mapping'  , 'types' => array('category')                                          )
       , array('name' => 'page_mapping'      , 'types' => array('page')                                              )
       , array('name' => 'comment_mapping'   , 'types' => array('comment')                                           )
-      , array('name' => 'user_mapping'      , 'types' => array('user')                                              )
       , array('name' => 'forum_mapping'     , 'types' => array(bbp_get_forum_post_type())                           )
       , array('name' => 'forum_post_mapping', 'types' => array(bbp_get_reply_post_type(), bbp_get_topic_post_type()))
       , array('name' => 'image_mapping'     , 'types' => array('attachment')                                        )
