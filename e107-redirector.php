@@ -29,7 +29,7 @@ class e107_Redirector {
     // Load mappings
     $this->loadE107Mapping();
     // Register the redirect action
-    add_action('template_redirect', array(&$this, 'execute'));
+    add_action('template_redirect', array(&$this, 'redirect'));
   }
 
 
@@ -90,9 +90,6 @@ class e107_Redirector {
 
   // Parse an e107 URL and return its new destination according the data found in the mappings
   function translate_url($url) {
-    // Final destination
-    $link = '';
-
     // Associate each mapping with their related regexp
     $redirect_rules = array(
       array( 'type'    => 'post'
@@ -183,33 +180,25 @@ class e107_Redirector {
               $content_id = $mapping[$matches[1]];
               switch ($ctype) {
                 case 'comment':
-                  $link = get_comment_link($content_id);
-                  break;
+                  return get_comment_link($content_id);
                 case 'category':
-                  $link = get_category_link($content_id);
-                  break;
+                  return get_category_link($content_id);
                 case 'user':
-                  $link = get_author_posts_url($content_id);
-                  break;
+                  return get_author_posts_url($content_id);
                 case 'forum':
-                  $link = bbp_get_forum_permalink($content_id);
-                  break;
+                  return bbp_get_forum_permalink($content_id);
                 case 'forum_thread_last_page':
                   $content_id = bbp_topic_last_reply_id($content_id);
                 case 'forum_post':
-                  if (bbp_is_topic($content_id)) {
-                    $link = bbp_get_topic_permalink($content_id);
-                  } else {
-                    $link = bbp_get_reply_permalink($content_id);
-                  }
-                  break;
+                  if (bbp_is_topic($content_id))
+                    return bbp_get_topic_permalink($content_id);
+                  else
+                    return bbp_get_reply_permalink($content_id);
                 case 'forum_user':
-                  $link = bbp_get_user_profile_url($content_id);
-                  break;
+                  return bbp_get_user_profile_url($content_id);
                 default:
-                  $link = get_permalink($content_id);
+                  return get_permalink($content_id);
               }
-              return $link;
             }
           }
         }
@@ -217,7 +206,7 @@ class e107_Redirector {
     }
 
     // Redirect feeds as explained there: http://kevin.deldycke.com/2007/05/feedburner-and-e107-integration/
-    if (empty($link) && preg_match('/^.*\/e107_plugins\/(?:rss_menu\/|forum\/e_)rss\.php(?:%3F|\?)?(.*)$/i', $url, $matches)) {
+    if (preg_match('/^.*\/e107_plugins\/(?:rss_menu\/|forum\/e_)rss\.php(?:%3F|\?)?(.*)$/i', $url, $matches)) {
       // Default feed redirections
       $feed_content = '';
       $feed_type    = 'rss2';
@@ -307,40 +296,38 @@ class e107_Redirector {
     }
 
     // Generic redirects and catch-alls
-    if (empty($link)) {
 
-      // Redirect to the WordPress home page
-      if (preg_match('/^.*\/news\.php.*$/i', $url))
-        return get_option('siteurl');
+    // Redirect to the WordPress home page
+    if (preg_match('/^.*\/news\.php.*$/i', $url))
+      return get_option('siteurl');
 
-      // Redirect to bbPress home page
-      elseif (preg_match('/^.*\/forum(.*).php.*$/i', $url))
-        return get_option('siteurl').'/'.get_option('_bbp_root_slug');
+    // Redirect to bbPress home page
+    elseif (preg_match('/^.*\/forum(.*).php.*$/i', $url))
+      return get_option('siteurl').'/'.get_option('_bbp_root_slug');
 
-      // Redirects to forum stats
-#      elseif (preg_match('/^.*\/forum_stats\.php.*$/i', $url))
-#        return XXX;
+    // Redirects to forum stats
+#    elseif (preg_match('/^.*\/forum_stats\.php.*$/i', $url))
+#      return XXX;
 
-      // Redirects to most active threads of all time
-#      elseif (preg_match('/^.*\/top\.php(?:%3F|\?)0\.active.*$/i', $url))
-#        return XXX;
+    // Redirects to most active threads of all time
+#    elseif (preg_match('/^.*\/top\.php(?:%3F|\?)0\.active.*$/i', $url))
+#      return XXX;
 
-       // Redirects to ???
-#      elseif (preg_match('/^.*\/top\.php(?:%3F|\?)0\.top\.forum\.10.*$/i', $url))
-#        return XXX;
-    }
-    return $link;
+      // Redirects to ???
+#    elseif (preg_match('/^.*\/top\.php(?:%3F|\?)0\.top\.forum\.10.*$/i', $url))
+#      return XXX;
+
+    return False;
   }
 
 
-  function execute() {
+  function redirect() {
     // Requested URL
     $requested = $_SERVER['REQUEST_URI'];
-
     // Final destination
-    $link = $this->translate_url($requested);
-    if (!empty($link))
-      wp_redirect($link, $status = 301);
+    $new_destination = $this->translate_url($requested);
+    if (!empty($new_destination))
+      wp_redirect($new_destination, $status = 301);
     // Do nothing: let WordPress do its job (and probably show user a 404 error ;) )
   }
 
