@@ -1389,8 +1389,26 @@ class e107_Import extends WP_Importer {
 
   // Replace old e107 URLs by WordPress permalinks
   function permalink_update($content) {
-    // TODO: this is just a placeholder, update using e107-redirector methods
     $new_content = $content;
+
+    // Part 1: parse HTML tags
+
+    // Here is a list of tags attributes were we look for URLs
+    $url_holders = array('a' => 'href', 'img' => 'src');
+
+    // Parse HTML
+    foreach ($url_holders as $tag_name => $tag_attribute) {
+      $tag_list = $this->extract_html_tags($new_content, $tag_name, array('http', 'https'));
+      foreach ($tag_list as $tag) {
+        $url = $tag['attributes'][$tag_attribute];
+        $permalink = e107_Redirector::translate_url($url);
+        if ($permalink != False)
+          $new_content = str_replace($url, $permalink, $new_content);
+      }
+    }
+
+    // TODO: Part 2: look for URLs in plain text
+
     return $new_content;
   }
 
