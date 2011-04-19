@@ -1556,8 +1556,8 @@ class e107_Import extends WP_Importer {
           <tr valign="top">
             <th scope="row"><?php _e('Do you want to import forums ?', 'e107-importer'); ?></th>
             <td>
-              <label for="import-forums"><input name="e107_import_forums" type="radio" id="import-forums" value="import_forums"/> <?php _e('Yes: import forums from e107', 'e107-importer'); ?><?php if (!is_plugin_active(BBPRESS_PLUGIN)) _e(' and activate the bbPress plugin', 'e107-importer'); ?>.</label><br/>
-              <label for="skip-forums"><input name="e107_import_forums" type="radio" id="skip-forums" value="skip_forums" checked="checked"/> <?php _e('No: do not import forums from e107 to bbPress.', 'e107-importer'); ?></label><br/>
+              <label for="import-forums"><input name="e107_import_forums" type="radio" id="import-forums" value="import_forums" checked="checked"/> <?php _e('Yes: import forums from e107', 'e107-importer'); ?><?php if (!is_plugin_active(BBPRESS_PLUGIN)) _e(' and activate the bbPress plugin', 'e107-importer'); ?>.</label><br/>
+              <label for="skip-forums"><input name="e107_import_forums" type="radio" id="skip-forums" value="skip_forums"/> <?php _e('No: do not import forums from e107 to bbPress.', 'e107-importer'); ?></label><br/>
             </td>
           </tr>
         </table>
