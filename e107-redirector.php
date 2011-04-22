@@ -301,7 +301,7 @@ class e107_Redirector {
       $img_path = parse_url($img_path, PHP_URL_PATH);
       $img_path = trim($img_path, '/');
       // Build up the matching regular expression
-      $img_regexp = $this->normalize_urlpath($img_path);
+      $img_regexp = e107_Redirector::normalize_urlpath($img_path);
       $img_regexp = str_replace('/', '\/', $img_regexp);
       $img_regexp = str_replace('.', '\.', $img_regexp);
       $img_regexp = '/'.$img_regexp.'/i';
@@ -309,7 +309,7 @@ class e107_Redirector {
     }
     // Redirect images
     foreach ($image_regexps as $regexp => $attachment_id) {
-      $normalized_url = $this->normalize_urlpath($url);
+      $normalized_url = e107_Redirector::normalize_urlpath($url);
       if (preg_match($regexp, $normalized_url)) {
         $image_data = wp_get_attachment_image_src($attachment_id, $size='full');
         return $image_data[0];
