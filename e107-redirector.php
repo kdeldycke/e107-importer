@@ -327,6 +327,7 @@ class e107_Redirector {
       return get_option('siteurl').'/'.get_option('_bbp_root_slug');
 
     // Redirects to forum stats
+    // TODO: I have found a statistics template at bbp-themes/bbp-twentyten/page-forum-statistics.php but can't find its permalink
 #    elseif (preg_match('/\/forum_stats\.php/i', $url))
 #      return XXX;
 
