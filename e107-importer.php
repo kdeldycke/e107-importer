@@ -58,6 +58,7 @@ class e107_Import extends WP_Importer {
   var $e107_import_pages;
   var $e107_bbcode_parser;
   var $e107_import_images;
+  var $e107_url_update;
 
   // e107 to WordPress content mapping
   var $user_mapping;
@@ -1591,6 +1592,18 @@ class e107_Import extends WP_Importer {
         </tr>
       </table>
 
+      <h3><?php _e('Permalinks', 'e107-importer'); ?></h3>
+      <p><?php _e('This tool can update old e107 URLs found in imported content with their new WordPress permalinks. If URLs are updated, it has the nice side-effect of making all URL clickable.', 'e107-importer'); ?></p>
+      <table class="form-table">
+        <tr valign="top">
+          <th scope="row"><?php _e('Do you want to replace URLs by their permalinks ?', 'e107-importer'); ?></th>
+          <td>
+            <label for="update-urls"><input name="e107_url_update" type="radio" id="update-urls" value="update_urls" checked="checked"/> <?php _e('Yes: update e107 URLs with permalinks in imported content.', 'e107-importer'); ?></label><br/>
+            <label for="no-update"><input name="e107_url_update" type="radio" id="no-update" value="no_update"/> <?php _e('No: don\'t modify URLs in imported content.', 'e107-importer'); ?></label><br/>
+          </td>
+        </tr>
+      </table>
+
       <p class="submit">
         <input type="submit" class="button-primary" id="submit" name="submit" value="<?php esc_attr_e('Import e107 to WordPress', 'e107-importer'); ?>"/>
       </p>
@@ -1613,6 +1626,7 @@ class e107_Import extends WP_Importer {
                               , 'e107_import_forums'
                               , 'e107_bbcode_parser'
                               , 'e107_import_images'
+                              , 'e107_url_update'
                               );
 
     // Register each option as class global variables
@@ -1859,27 +1873,31 @@ class e107_Import extends WP_Importer {
 
     <h3><?php _e('Permalinks', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
-      <li><?php _e('Replace old e107 URLs by WordPress permalinks...', 'e107-importer'); ?></li>
-      <?php if ($this->e107_import_news) { ?>
-        <li><?php _e('Update URLs in news content and excerpt...', 'e107-importer'); ?></li>
-        <?php $this->parse_and_update(array_values($this->news_mapping), 'post', 'content', 'permalink_update'); ?>
-        <?php $this->parse_and_update(array_values($this->news_mapping), 'post', 'excerpt', 'permalink_update'); ?>
+      <?php if ($this->e107_url_update == 'no_update') { ?>
+        <li><?php _e('Old e107 URLs update to permalinks skipped by user.', 'e107-importer'); ?></li>
+      <?php } else { ?>
+        <li><?php _e('Replace old e107 URLs by WordPress permalinks...', 'e107-importer'); ?></li>
+        <?php if ($this->e107_import_news) { ?>
+          <li><?php _e('Update URLs in news content and excerpt...', 'e107-importer'); ?></li>
+          <?php $this->parse_and_update(array_values($this->news_mapping), 'post', 'content', 'permalink_update'); ?>
+          <?php $this->parse_and_update(array_values($this->news_mapping), 'post', 'excerpt', 'permalink_update'); ?>
+        <?php } ?>
+        <?php if ($this->e107_import_pages) { ?>
+          <li><?php _e('Update URLs in pages content...', 'e107-importer'); ?></li>
+          <?php $this->parse_and_update(array_values($this->page_mapping), 'post', 'content', 'permalink_update'); ?>
+        <?php } ?>
+        <?php if ($this->e107_import_news or $this->e107_import_pages) { ?>
+          <li><?php _e('Update URLs in comments...', 'e107-importer'); ?></li>
+          <?php $this->parse_and_update(array_values($this->comment_mapping), 'comment', 'content', 'permalink_update'); ?>
+        <?php } ?>
+        <?php if ($this->e107_import_forums) { ?>
+          <li><?php _e('Update URLs in forums content...', 'e107-importer'); ?></li>
+          <?php $this->parse_and_update(array_values($this->forum_mapping), 'post', 'content', 'permalink_update'); ?>
+          <li><?php _e('Update URLs in forum threads content...', 'e107-importer'); ?></li>
+          <?php $this->parse_and_update(array_values($this->forum_post_mapping), 'post', 'content', 'permalink_update'); ?>
+        <?php } ?>
+        <li><?php _e('All old URLs replaced by permalinks.', 'e107-importer'); ?></li>
       <?php } ?>
-      <?php if ($this->e107_import_pages) { ?>
-        <li><?php _e('Update URLs in pages content...', 'e107-importer'); ?></li>
-        <?php $this->parse_and_update(array_values($this->page_mapping), 'post', 'content', 'permalink_update'); ?>
-      <?php } ?>
-      <?php if ($this->e107_import_news or $this->e107_import_pages) { ?>
-        <li><?php _e('Update URLs in comments...', 'e107-importer'); ?></li>
-        <?php $this->parse_and_update(array_values($this->comment_mapping), 'comment', 'content', 'permalink_update'); ?>
-      <?php } ?>
-      <?php if ($this->e107_import_forums) { ?>
-        <li><?php _e('Update URLs in forums content...', 'e107-importer'); ?></li>
-        <?php $this->parse_and_update(array_values($this->forum_mapping), 'post', 'content', 'permalink_update'); ?>
-        <li><?php _e('Update URLs in forum threads content...', 'e107-importer'); ?></li>
-        <?php $this->parse_and_update(array_values($this->forum_post_mapping), 'post', 'content', 'permalink_update'); ?>
-      <?php } ?>
-      <li><?php _e('All old URLs replaced by permalinks.', 'e107-importer'); ?></li>
     </ul>
 
     <h3><?php _e('e107 redirector', 'e107-importer'); ?></h3>
