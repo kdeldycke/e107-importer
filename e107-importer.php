@@ -1391,11 +1391,16 @@ class e107_Import extends WP_Importer {
   function permalink_update($content) {
     $new_content = $content;
 
-    // Part 1: parse HTML tags
+    // Part 1: force clickablability of plain text URLs.
+    // URLs are in fact automatticaly made clickable by WordPress in:
+    //  * comments (see wp-includes/default-filters.php)
+    //  * bbPress topics and replies (see wp-content/plugins/bbpress/bbp-includes/bbp-hooks.php)
+    // But we will force URLs to be made clickable to let them have a chance to be parsed and replaced in the second phase below.
+    $new_content = make_clickable($new_content);
 
+    // Part 2: parse HTML tags
     // Here is a list of tags attributes were we look for URLs
     $url_holders = array('a' => 'href', 'img' => 'src');
-
     // Parse HTML
     foreach ($url_holders as $tag_name => $tag_attribute) {
       $tag_list = $this->extract_html_tags($new_content, $tag_name, array('http', 'https'));
@@ -1406,8 +1411,6 @@ class e107_Import extends WP_Importer {
           $new_content = str_replace($url, $permalink, $new_content);
       }
     }
-
-    // TODO: Part 2: look for URLs in plain text
 
     return $new_content;
   }
