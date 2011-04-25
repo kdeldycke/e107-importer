@@ -272,6 +272,11 @@ class e107_Import extends WP_Importer {
     // Don't know why but in certain cases e_IMAGE was not defined
     define("e_IMAGE" , $IMAGES_DIRECTORY);
 
+    // e107-includes/quote.bb refers to some language files.
+    // Force it to use the default english translation bundled with this WordPress plugin.
+    define("e_LANGUAGEDIR", e_HANDLER);
+    define("e_LANGUAGE"   , '');
+
     // Create a dummy e107 instance to accomodate the img BBCode parser
     global $e107;
     $e107 = new redefined_e107();
