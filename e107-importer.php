@@ -427,8 +427,8 @@ class e107_Import extends WP_Importer {
 
 
   function load_e107_preferences() {
-    $e107_coreTable = $this->e107_db_prefix.'core';
-    $sql = "SELECT e107_value FROM `".$e107_coreTable."` WHERE e107_name = 'SitePrefs'";
+    $e107_core_table = $this->e107_db_prefix.'core';
+    $sql = "SELECT e107_value FROM `".$e107_core_table."` WHERE e107_name = 'SitePrefs'";
     $site_pref = $this->query_e107_db($sql);
     extract($site_pref[0]);
     $this->e107_pref = '';
@@ -438,10 +438,10 @@ class e107_Import extends WP_Importer {
 
   function get_e107_user_list() {
     // Prepare the SQL request
-    $e107_userTable         = $this->e107_db_prefix."user";
-    $e107_userExtendedTable = $this->e107_db_prefix."user_extended";
-    $sql  = "SELECT `".$e107_userTable."`.* FROM `".$e107_userTable."` ";
-    $sql .= "LEFT JOIN `".$e107_userExtendedTable."` ON `".$e107_userTable."`.user_id = `".$e107_userExtendedTable."`.user_extended_id ";
+    $e107_user_table          = $this->e107_db_prefix."user";
+    $e107_user_extended_table = $this->e107_db_prefix."user_extended";
+    $sql  = "SELECT `".$e107_user_table."`.* FROM `".$e107_user_table."` ";
+    $sql .= "LEFT JOIN `".$e107_user_extended_table."` ON `".$e107_user_table."`.user_id = `".$e107_user_extended_table."`.user_extended_id ";
     // Exclude banned and un-verified users
     $sql .= "WHERE user_ban = 0";
     // Perform the request and return rows
@@ -451,8 +451,8 @@ class e107_Import extends WP_Importer {
 
   function get_e107_category_list() {
     // Prepare the SQL request
-    $e107_newsCategoryTable = $this->e107_db_prefix."news_category";
-    $sql = "SELECT * FROM `".$e107_newsCategoryTable."`";
+    $e107_news_category_table = $this->e107_db_prefix."news_category";
+    $sql = "SELECT * FROM `".$e107_news_category_table."`";
     // Perform the request and return rows
     return $this->query_e107_db($sql);
   }
@@ -460,8 +460,8 @@ class e107_Import extends WP_Importer {
 
   function get_e107_news_list() {
     // Prepare the SQL request
-    $e107_newsTable = $this->e107_db_prefix."news";
-    $sql = "SELECT * FROM `".$e107_newsTable."`";
+    $e107_news_table = $this->e107_db_prefix."news";
+    $sql = "SELECT * FROM `".$e107_news_table."`";
     // Perform the request and return rows
     return $this->query_e107_db($sql);
   }
@@ -469,8 +469,8 @@ class e107_Import extends WP_Importer {
 
   function get_e107_page_list() {
     // Prepare the SQL request
-    $e107_pagesTable = $this->e107_db_prefix."page";
-    $sql = "SELECT * FROM `".$e107_pagesTable."`";
+    $e107_pages_table = $this->e107_db_prefix."page";
+    $sql = "SELECT * FROM `".$e107_pages_table."`";
     // Perform the request and return rows
     return $this->query_e107_db($sql);
   }
@@ -478,8 +478,8 @@ class e107_Import extends WP_Importer {
 
   function get_e107_comment_list() {
     // Prepare the SQL request
-    $e107_commentsTable = $this->e107_db_prefix."comments";
-    $sql = "SELECT * FROM `".$e107_commentsTable."`";
+    $e107_comments_table = $this->e107_db_prefix."comments";
+    $sql = "SELECT * FROM `".$e107_comments_table."`";
     // Perform the request and return rows
     return $this->query_e107_db($sql);
   }
@@ -487,14 +487,14 @@ class e107_Import extends WP_Importer {
 
   function get_e107_forum_list($forum_id_list = array()) {
     // Prepare the SQL request
-    $e107_forumsTable = $this->e107_db_prefix."forum";
-    $sql = "SELECT * FROM `".$e107_forumsTable."`";
+    $e107_forums_table = $this->e107_db_prefix."forum";
+    $sql = "SELECT * FROM `".$e107_forums_table."`";
     // Only get a subset of forums
     if (!empty($forum_id_list)) {
       // Get all parents of the forum
       $forums_parents = array();
       foreach ($forum_id_list as $forum_id) {
-        $forums_parents = array_merge($forums_parents, $this->mysql_get_path($forum_id, $e107_forumsTable));
+        $forums_parents = array_merge($forums_parents, $this->mysql_get_path($forum_id, $e107_forums_table));
       }
       $forums_to_fetch = array_unique(array_merge($forums_parents, $forum_id_list));
       $sql .= " WHERE forum_id IN (".implode(', ', $forums_to_fetch).")";
@@ -508,8 +508,8 @@ class e107_Import extends WP_Importer {
 
   function get_e107_forum_post_list($forum_id_list = array()) {
     // Prepare the SQL request
-    $e107_postsTable = $this->e107_db_prefix."forum_t";
-    $sql = "SELECT * FROM `".$e107_postsTable."`";
+    $e107_posts_table = $this->e107_db_prefix."forum_t";
+    $sql = "SELECT * FROM `".$e107_posts_table."`";
     // Only get posts from a subset of forums
     if (!empty($forum_id_list)) {
       $sql .= " WHERE thread_forum_id IN (".implode(', ', $forum_id_list).")";
