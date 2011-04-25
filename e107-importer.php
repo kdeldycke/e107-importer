@@ -324,7 +324,7 @@ class e107_Import extends WP_Importer {
     }
 
     function include_lan($path, $force = False) {
-      $ret = ($force) ? e107_include($path) : e107_include_once($path);
+      $ret = ($force) ? include($path) : include_once($path);
       return (isset($ret)) ? $ret : '';
     }
 
