@@ -104,19 +104,19 @@ class e107_Import extends WP_Importer {
 
   // Walk a hierarchical MySQL table structure to return the path of a particular node
   // Function inspired by http://blogs.sitepoint.com/hierarchical-data-database/
-  function mysql_get_path($node_id, $table_name) {
+  function mysql_get_path($node_id, $table_name, $node_column_name, $parent_column_name) {
     $path = array();
     // Get the parent of the current node
-    $sql = "SELECT forum_parent FROM `".$table_name."` WHERE forum_id = ".$node_id;
+    $sql = "SELECT ".$parent_column_name." FROM `".$table_name."` WHERE ".$node_column_name." = ".$node_id;
     $parents = $this->query_e107_db($sql);
     foreach ($parents as $parent) {
       $parent_id = 0;
-      if (array_key_exists('forum_parent', $parent)) {
-        $parent_id = $parent['forum_parent'];
+      if (array_key_exists($parent_column_name, $parent)) {
+        $parent_id = $parent[$parent_column_name];
       }
       if (!empty($parent_id)) {
         $path[] = $parent_id;
-        $path = array_merge($this->mysql_get_path($parent_id, $table_name), $path);
+        $path = array_merge($this->mysql_get_path($parent_id, $table_name, $node_column_name, $parent_column_name), $path);
       }
     }
     return $path;
@@ -494,7 +494,7 @@ class e107_Import extends WP_Importer {
       // Get all parents of the forum
       $forums_parents = array();
       foreach ($forum_id_list as $forum_id) {
-        $forums_parents = array_merge($forums_parents, $this->mysql_get_path($forum_id, $e107_forums_table));
+        $forums_parents = array_merge($forums_parents, $this->mysql_get_path($forum_id, $e107_forums_table, 'forum_id', 'forum_parent'));
       }
       $forums_to_fetch = array_unique(array_merge($forums_parents, $forum_id_list));
       $sql .= " WHERE forum_id IN (".implode(', ', $forums_to_fetch).")";
