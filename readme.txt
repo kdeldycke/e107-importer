@@ -137,6 +137,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 * Purge invalid mapping entries on import.
 * Replace old e107 URLs in content by new WordPress permalinks.
 * Allow both imported and already-existing content to by updated with new permalinks.
+* Let user specify the list of e107 forums to import.
 
 = 1.2 =
 * Upgrade e107 code to match latest 0.7.25-rc1.

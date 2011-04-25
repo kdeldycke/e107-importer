@@ -56,6 +56,8 @@ class e107_Import extends WP_Importer {
   var $e107_import_news;
   var $e107_extended_news;
   var $e107_import_pages;
+  var $e107_import_forums;
+  var $e107_import_forum_ids;
   var $e107_bbcode_parser;
   var $e107_import_images;
   var $e107_url_update;
@@ -75,9 +77,49 @@ class e107_Import extends WP_Importer {
   var $e107_parser;
 
 
+  // Parse a list of user-provided integers
+  function parse_id_list($id_list_string) {
+    $id_list = array();
+    $cleaned_string = '';
+    foreach (str_split($id_list_string) as $i => $c) {
+      $ascii_code = ord($c);
+      if ($ascii_code >= 48 and $ascii_code <= 57)
+        $cleaned_string .= $c;
+      else
+        $cleaned_string .= ' ';
+    }
+    foreach (explode(' ', $cleaned_string) as $s) {
+      if (!empty($s))
+        $id_list[] = (int)$s;
+    }
+    return array_unique($id_list);
+  }
+
+
   // Convert unix timestamp to mysql datetimestamp
   function mysql_date($unix_time) {
     return date("Y-m-d H:i:s", $unix_time);
+  }
+
+
+  // Walk a hierarchical MySQL table structure to return the path of a particular node
+  // Function inspired by http://blogs.sitepoint.com/hierarchical-data-database/
+  function mysql_get_path($node_id, $table_name) {
+    $path = array();
+    // Get the parent of the current node
+    $sql = "SELECT forum_parent FROM `".$table_name."` WHERE forum_id = ".$node_id;
+    $parents = $this->query_e107_db($sql);
+    foreach ($parents as $parent) {
+      $parent_id = 0;
+      if (array_key_exists('forum_parent', $parent)) {
+        $parent_id = $parent['forum_parent'];
+      }
+      if (!empty($parent_id)) {
+        $path[] = $parent_id;
+        $path = array_merge($this->mysql_get_path($parent_id, $table_name), $path);
+      }
+    }
+    return $path;
   }
 
 
@@ -437,25 +479,43 @@ class e107_Import extends WP_Importer {
   function get_e107_comment_list() {
     // Prepare the SQL request
     $e107_commentsTable = $this->e107_db_prefix."comments";
-    $sql  = "SELECT * FROM `".$e107_commentsTable."`";
+    $sql = "SELECT * FROM `".$e107_commentsTable."`";
     // Perform the request and return rows
     return $this->query_e107_db($sql);
   }
 
 
-  function get_e107_forum_list() {
+  function get_e107_forum_list($forum_id_list = array()) {
     // Prepare the SQL request
     $e107_forumsTable = $this->e107_db_prefix."forum";
-    $sql  = "SELECT * FROM `".$e107_forumsTable."` ORDER BY forum_parent, forum_id";
+    $sql = "SELECT * FROM `".$e107_forumsTable."`";
+    // Only get a subset of forums
+    if (!empty($forum_id_list)) {
+      // Get all parents of the forum
+      $forums_parents = array();
+      foreach ($forum_id_list as $forum_id) {
+        $forums_parents = array_merge($forums_parents, $this->mysql_get_path($forum_id, $e107_forumsTable));
+      }
+      $forums_to_fetch = array_unique(array_merge($forums_parents, $forum_id_list));
+      $sql .= " WHERE forum_id IN (".implode(', ', $forums_to_fetch).")";
+    }
+    // Forcing the order makes sure we have childrens before their parents
+    $sql .= " ORDER BY forum_parent, forum_id";
     // Perform the request and return rows
     return $this->query_e107_db($sql);
   }
 
 
-  function get_e107_forum_post_list() {
+  function get_e107_forum_post_list($forum_id_list = array()) {
     // Prepare the SQL request
     $e107_postsTable = $this->e107_db_prefix."forum_t";
-    $sql  = "SELECT * FROM `".$e107_postsTable."` ORDER BY thread_parent, thread_id";
+    $sql = "SELECT * FROM `".$e107_postsTable."`";
+    // Only get posts from a subset of forums
+    if (!empty($forum_id_list)) {
+      $sql .= " WHERE thread_forum_id IN (".implode(', ', $forum_id_list).")";
+    }
+    // Forcing the order makes sure we have childrens before their parents
+    $sql .= " ORDER BY thread_parent, thread_id";
     // Perform the request and return rows
     return $this->query_e107_db($sql);
   }
@@ -852,7 +912,7 @@ class e107_Import extends WP_Importer {
 
 
   // Import all e107 forums to bbPress plugin
-  function import_forums() {
+  function import_forums($forum_id_list = array()) {
     // Group users by class
     $user_classes = array();
     $user_list = $this->get_e107_user_list();
@@ -868,7 +928,7 @@ class e107_Import extends WP_Importer {
       }
     }
     // Import all forum
-    $forum_list = $this->get_e107_forum_list();
+    $forum_list = $this->get_e107_forum_list($forum_id_list);
     foreach ($forum_list as $forum)
       $this->import_forum($forum, $user_classes);
   }
@@ -981,8 +1041,8 @@ class e107_Import extends WP_Importer {
 
 
   // Import all e107 forum threads to bbPress plugin
-  function import_forum_threads() {
-    $forum_post_list = $this->get_e107_forum_post_list();
+  function import_forum_threads($forum_id_list = array()) {
+    $forum_post_list = $this->get_e107_forum_post_list($forum_id_list);
     foreach ($forum_post_list as $thread)
       $this->import_forum_thread($thread);
   }
@@ -1581,7 +1641,8 @@ class e107_Import extends WP_Importer {
           <tr valign="top">
             <th scope="row"><?php _e('Do you want to import forums ?', 'e107-importer'); ?></th>
             <td>
-              <label for="import-forums"><input name="e107_import_forums" type="radio" id="import-forums" value="import_forums" checked="checked"/> <?php _e('Yes: import forums from e107', 'e107-importer'); ?><?php if (!is_plugin_active(BBPRESS_PLUGIN)) _e(' and activate the bbPress plugin', 'e107-importer'); ?>.</label><br/>
+              <label for="import-all-forums"><input name="e107_import_forums" type="radio" id="import-all-forums" value="import_all_forums" checked="checked"/> <?php _e('Yes: import all forums from e107', 'e107-importer'); ?><?php if (!is_plugin_active(BBPRESS_PLUGIN)) _e(' and activate the bbPress plugin', 'e107-importer'); ?>.</label><br/>
+              <label for="import-some-forums"><input name="e107_import_forums" type="radio" id="import-some-forums" value="import_some_forums"/> <?php _e('Yes, but: only import forums having the following e107 IDs:', 'e107-importer'); ?> <input type="text" name="e107_import_forum_ids" id="e107-import-forum-ids" value="" size="20"/> <?php _e('(separate IDs by spaces, commas or semi-colons)', 'e107-importer'); ?></label><br/>
               <label for="skip-forums"><input name="e107_import_forums" type="radio" id="skip-forums" value="skip_forums"/> <?php _e('No: do not import forums from e107 to bbPress.', 'e107-importer'); ?></label><br/>
             </td>
           </tr>
@@ -1646,6 +1707,7 @@ class e107_Import extends WP_Importer {
                               , 'e107_extended_news'
                               , 'e107_import_pages'
                               , 'e107_import_forums'
+                              , 'e107_import_forum_ids'
                               , 'e107_bbcode_parser'
                               , 'e107_import_images'
                               , 'e107_url_update'
@@ -1657,10 +1719,12 @@ class e107_Import extends WP_Importer {
         $this->$o = $_POST[$o];
 
     // Normalize boolean options
-    $this->e107_mail_user     == 'mail_user'     ? $this->e107_mail_user     = True : $this->e107_mail_user     = False;
-    $this->e107_import_news   == 'import_news'   ? $this->e107_import_news   = True : $this->e107_import_news   = False;
-    $this->e107_import_pages  == 'import_pages'  ? $this->e107_import_pages  = True : $this->e107_import_pages  = False;
-    $this->e107_import_forums == 'import_forums' ? $this->e107_import_forums = True : $this->e107_import_forums = False;
+    $this->e107_mail_user    == 'mail_user'    ? $this->e107_mail_user    = True : $this->e107_mail_user    = False;
+    $this->e107_import_news  == 'import_news'  ? $this->e107_import_news  = True : $this->e107_import_news  = False;
+    $this->e107_import_pages == 'import_pages' ? $this->e107_import_pages = True : $this->e107_import_pages = False;
+
+    // Normalize ID list
+    $this->e107_import_forum_ids = $this->parse_id_list($this->e107_import_forum_ids);
 
     $this->header();
     ?>
@@ -1767,17 +1831,22 @@ class e107_Import extends WP_Importer {
 
     <h3><?php _e('Forums', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
-      <?php if ($this->e107_import_forums) { ?>
+      <?php if ($this->e107_import_forums == 'skip_forums') { ?>
+        <li><?php _e('e107 forums import skipped.', 'e107-importer'); ?></li>
+      <?php } else { ?>
         <?php if (!is_plugin_active(BBPRESS_PLUGIN)) { ?>
           <li><?php _e('Activate bbPress plugin...', 'e107-importer'); ?></li>
           <?php activate_plugin(BBPRESS_PLUGIN, '', false, true); ?>
           <li><?php _e('Plugin activated.', 'e107-importer'); ?></li>
         <?php } ?>
+        <?php if ($this->e107_import_forums == 'import_some_forums') { ?>
+          <li><?php printf(__('Only import content from forums with the following IDs: %s.', 'e107-importer'), implode(', ', $this->e107_import_forum_ids)); ?></li>
+        <?php } ?>
         <li><?php _e('Import forums and forum categories...', 'e107-importer'); ?></li>
-        <?php $this->import_forums(); ?>
+        <?php $this->import_forums($this->e107_import_forum_ids); ?>
         <li><?php printf(__('%s forums and forum categories imported.', 'e107-importer'), sizeof($this->forum_mapping)); ?></li>
         <li><?php _e('Import forum threads...', 'e107-importer'); ?></li>
-        <?php $this->import_forum_threads(); ?>
+        <?php $this->import_forum_threads($this->e107_import_forum_ids); ?>
         <li><?php printf(__('%s forum posts imported.', 'e107-importer'), sizeof($this->forum_post_mapping)); ?></li>
         <li><?php _e('Update redirection plugin with forum and forum post mapping...', 'e107-importer'); ?></li>
         <?php e107_Redirector::update_mapping('forum_mapping',      $this->forum_mapping); ?>
@@ -1786,8 +1855,6 @@ class e107_Import extends WP_Importer {
         <li><?php _e('Recount forum stats...', 'e107-importer'); ?></li>
         <?php $this->recount_forum_stats(); ?>
         <li><?php _e('Forums stats up to date.', 'e107-importer'); ?></li>
-      <?php } else { ?>
-        <li><?php _e('e107 forums import skipped.', 'e107-importer'); ?></li>
       <?php } ?>
     </ul>
 
@@ -1811,7 +1878,7 @@ class e107_Import extends WP_Importer {
         <li><?php _e('Replace e107 constants in comments...', 'e107-importer'); ?></li>
         <?php $this->parse_and_update(array_values($this->comment_mapping),    'comment', 'content', 'constants'); ?>
       <?php } ?>
-      <?php if ($this->e107_import_forums) { ?>
+      <?php if ($this->e107_import_forums != 'skip_forums') { ?>
         <li><?php _e('Replace e107 constants in forums...', 'e107-importer'); ?></li>
         <?php $this->parse_and_update(array_values($this->forum_mapping), 'post', 'title'  , 'constants'); ?>
         <?php $this->parse_and_update(array_values($this->forum_mapping), 'post', 'content', 'constants'); ?>
@@ -1843,7 +1910,7 @@ class e107_Import extends WP_Importer {
           <li><?php _e('Parse comments...', 'e107-importer'); ?></li>
           <?php $this->parse_and_update(array_values($this->comment_mapping), 'comment', 'content', $this->e107_bbcode_parser); ?>
         <?php } ?>
-        <?php if ($this->e107_import_forums) { ?>
+        <?php if ($this->e107_import_forums != 'skip_forums') { ?>
           <li><?php _e('Parse forums title and content...', 'e107-importer'); ?></li>
           <?php $this->parse_and_update(array_values($this->forum_mapping), 'post', 'title', $this->e107_bbcode_parser); ?>
           <?php $this->parse_and_update(array_values($this->forum_mapping), 'post', 'content', $this->e107_bbcode_parser); ?>
@@ -1876,7 +1943,7 @@ class e107_Import extends WP_Importer {
           <?php $images = $this->parse_and_update(array_values($this->page_mapping), 'post', 'content', $this->e107_import_images); ?>
         <li><?php printf(__('%s images uploaded from pages.', 'e107-importer'), $images); ?></li>
         <?php } ?>
-        <?php if ($this->e107_import_forums) { ?>
+        <?php if ($this->e107_import_forums != 'skip_forums') { ?>
           <li><?php _e('Import images embedded in forum thread content...', 'e107-importer'); ?></li>
           <?php $images = $this->parse_and_update(array_values($this->forum_post_mapping), 'post', 'content', $this->e107_import_images); ?>
           <li><?php printf(__('%s images uploaded from forum threads.', 'e107-importer'), $images); ?></li>
@@ -1920,7 +1987,7 @@ class e107_Import extends WP_Importer {
             <li><?php _e('Update URLs in comments...', 'e107-importer'); ?></li>
             <?php $this->parse_and_update(array_values($this->comment_mapping), 'comment', 'content', 'permalink_update'); ?>
           <?php } ?>
-          <?php if ($this->e107_import_forums) { ?>
+          <?php if ($this->e107_import_forums != 'skip_forums') { ?>
             <li><?php _e('Update URLs in forums content...', 'e107-importer'); ?></li>
             <?php $this->parse_and_update(array_values($this->forum_mapping), 'post', 'content', 'permalink_update'); ?>
             <li><?php _e('Update URLs in forum threads content...', 'e107-importer'); ?></li>
