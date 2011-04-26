@@ -16,6 +16,12 @@ define('MAPPING_SUFFIX', '_mapping');
 define('OPTION_PREFIX' , 'e107_redirector_');
 
 
+// Redefine some bbPress methods to avoid PHP errors if bbPress is not installed or activated
+if (!function_exists('bbp_get_forum_post_type')) { function bbp_get_forum_post_type() { return 'forum';}}
+if (!function_exists('bbp_get_topic_post_type')) { function bbp_get_topic_post_type() { return 'topic';}}
+if (!function_exists('bbp_get_reply_post_type')) { function bbp_get_reply_post_type() { return 'reply';}}
+
+
 class e107_Redirector {
 
   // e107 to WordPress content mapping

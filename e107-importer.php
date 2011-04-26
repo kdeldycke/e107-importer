@@ -30,6 +30,12 @@ define("E107_REDIRECTOR_PLUGIN", 'e107-importer/e107-redirector.php');
 define("BBPRESS_PLUGIN"        , 'bbpress/bbpress.php');
 
 
+// Redefine some bbPress methods to avoid PHP errors if bbPress is not installed or activated
+if (!function_exists('bbp_get_forum_post_type')) { function bbp_get_forum_post_type() { return 'forum';}}
+if (!function_exists('bbp_get_topic_post_type')) { function bbp_get_topic_post_type() { return 'topic';}}
+if (!function_exists('bbp_get_reply_post_type')) { function bbp_get_reply_post_type() { return 'reply';}}
+
+
 // Define a dummy class mimicking e107_handlers/e107_class.php:e107
 // This is necessary as it is used by e107_files/bbcode/img.bb to compute some paths
 class redefined_e107 {
