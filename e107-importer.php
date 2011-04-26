@@ -1768,6 +1768,9 @@ class e107_Import extends WP_Importer {
 
     <h3><?php _e('Content mapping', 'e107-importer'); ?></h3>
     <ul class="ul-disc">
+      <li><?php _e('Activate e107 redirector plugin...', 'e107-importer'); ?></li>
+      <?php activate_plugin(E107_REDIRECTOR_PLUGIN, '', False, True); ?>
+      <li><?php _e('Plugin activated.', 'e107-importer'); ?></li>
       <li><?php _e('Load pre-existing e107 content mapping and clean them up...', 'e107-importer'); ?></li>
       <?php e107_Redirector::load_mappings(); ?>
       <li><?php _e('Existing content mapping from previous imports loaded and cleaned up.', 'e107-importer'); ?></li>
@@ -2012,13 +2015,6 @@ class e107_Import extends WP_Importer {
         <?php } ?>
         <li><?php _e('All e107 URLs replaced by permalinks.', 'e107-importer'); ?></li>
       <?php } ?>
-    </ul>
-
-    <h3><?php _e('e107 redirector', 'e107-importer'); ?></h3>
-    <ul class="ul-disc">
-      <li><?php _e('Activate plugin...', 'e107-importer'); ?></li>
-      <?php activate_plugin(E107_REDIRECTOR_PLUGIN, '', False, True); ?>
-      <li><?php _e('Plugin activated.', 'e107-importer'); ?></li>
     </ul>
 
     <h3><?php _e('Finished !', 'e107-importer'); ?></h3>
