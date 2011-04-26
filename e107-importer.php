@@ -30,12 +30,6 @@ define("E107_REDIRECTOR_PLUGIN", 'e107-importer/e107-redirector.php');
 define("BBPRESS_PLUGIN"        , 'bbpress/bbpress.php');
 
 
-// Redefine some bbPress methods to avoid PHP errors if bbPress is not installed or activated
-if (!function_exists('bbp_get_forum_post_type')) { function bbp_get_forum_post_type() { return 'forum';}}
-if (!function_exists('bbp_get_topic_post_type')) { function bbp_get_topic_post_type() { return 'topic';}}
-if (!function_exists('bbp_get_reply_post_type')) { function bbp_get_reply_post_type() { return 'reply';}}
-
-
 // Define a dummy class mimicking e107_handlers/e107_class.php:e107
 // This is necessary as it is used by e107_files/bbcode/img.bb to compute some paths
 class redefined_e107 {
@@ -1731,13 +1725,17 @@ class e107_Import extends WP_Importer {
 
     // Register each option as class global variables
     foreach ($e107_option_names as $o)
-      if ($_POST[$o])
+      if (array_key_exists($o, $_POST) and $_POST[$o])
         $this->$o = $_POST[$o];
 
     // Normalize boolean options
     $this->e107_mail_user    == 'mail_user'    ? $this->e107_mail_user    = True : $this->e107_mail_user    = False;
     $this->e107_import_news  == 'import_news'  ? $this->e107_import_news  = True : $this->e107_import_news  = False;
     $this->e107_import_pages == 'import_pages' ? $this->e107_import_pages = True : $this->e107_import_pages = False;
+
+    // Set default forum options
+    if (!isset($this->e107_import_forums   )) $this->e107_import_forums    = 'skip_forums';
+    if (!isset($this->e107_import_forum_ids)) $this->e107_import_forum_ids = '';
 
     // Normalize ID list
     $this->e107_import_forum_ids = $this->parse_id_list($this->e107_import_forum_ids);
