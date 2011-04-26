@@ -1639,9 +1639,9 @@ class e107_Import extends WP_Importer {
       <h3><?php _e('Forums', 'e107-importer'); ?></h3>
       <p><?php _e('e107 forums can be imported to <a href="http://wordpress.org/extend/plugins/bbpress/">bbPress plugin</a>.', 'e107-importer'); ?>
       <?php if (!array_key_exists(BBPRESS_PLUGIN, get_plugins())) { ?>
-        <?php _e('The latter is not available on your system. If you want to import forums, please install and activate it first before coming back to this screen.', 'e107-importer'); ?></p>
+        <?php printf(__('The latter is not available on your system. If you want to import forums, please <a href="%s/wp-admin/plugin-install.php?tab=search&type=term&s=bbpress">install and activate it</a> first before coming back to this screen.', 'e107-importer'), get_option('siteurl')); ?></p>
       <?php } elseif (!is_plugin_active(BBPRESS_PLUGIN)) { ?>
-        <?php _e('The latter is available on your system, but is not active. Please activate it first before coming back to this screen.', 'e107-importer'); ?></p>
+        <?php printf(__('The latter is available on your system, but is not active. Please <a href="%s/wp-admin/plugins.php">activate it</a> first before coming back to this screen.', 'e107-importer'), get_option('siteurl')); ?></p>
       <?php } else { ?>
         <?php _e('The latter is available on your system, and ready to receive forum content from e107.', 'e107-importer'); ?></p>
         <p><?php _e('e107 allows you to define moderators per-forum. On the other hand, bbPress moderation rights applies to all forums. Importing forums means that all users which were moderators in e107 will be granted to bbPress\' <code>Forum Moderator</code> role, but only if they currently have no role or are <code>Subscribers</code>.', 'e107-importer'); ?></p>
