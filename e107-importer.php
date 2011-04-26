@@ -1637,15 +1637,13 @@ class e107_Import extends WP_Importer {
       </table>
 
       <h3><?php _e('Forums', 'e107-importer'); ?></h3>
-      <p><?php _e('e107 forums can be imported to <a href="http://wordpress.org/extend/plugins/bbpress/">bbPress plugin</a>.', 'e107-importer'); ?></p>
+      <p><?php _e('e107 forums can be imported to <a href="http://wordpress.org/extend/plugins/bbpress/">bbPress plugin</a>.', 'e107-importer'); ?>
       <?php if (!array_key_exists(BBPRESS_PLUGIN, get_plugins())) { ?>
-        <p><?php _e('bbPress plugin is not available on your system. If you want to import forums, please install it first before coming back to this screen. ', 'e107-importer'); ?></p>
+        <?php _e('The latter is not available on your system. If you want to import forums, please install and activate it first before coming back to this screen.', 'e107-importer'); ?></p>
       <?php } elseif (!is_plugin_active(BBPRESS_PLUGIN)) { ?>
-        <p><?php _e('bbPress plugin is available on your system, but is not active. It will be activated automaticcaly if you choose to import forums below.', 'e107-importer'); ?></p>
+        <?php _e('The latter is available on your system, but is not active. Please activate it first before coming back to this screen.', 'e107-importer'); ?></p>
       <?php } else { ?>
-        <p><?php _e('bbPress plugin is available on your system, and ready to receive forum content from e107.', 'e107-importer'); ?></p>
-      <?php } ?>
-      <?php if (array_key_exists(BBPRESS_PLUGIN, get_plugins())) { ?>
+        <?php _e('The latter is available on your system, and ready to receive forum content from e107.', 'e107-importer'); ?></p>
         <p><?php _e('e107 allows you to define moderators per-forum. On the other hand, bbPress moderation rights applies to all forums. Importing forums means that all users which were moderators in e107 will be granted to bbPress\' <code>Forum Moderator</code> role, but only if they currently have no role or are <code>Subscribers</code>.', 'e107-importer'); ?></p>
         <table class="form-table">
           <tr valign="top">
@@ -1851,11 +1849,6 @@ class e107_Import extends WP_Importer {
       <?php if ($this->e107_import_forums == 'skip_forums') { ?>
         <li><?php _e('e107 forums import skipped.', 'e107-importer'); ?></li>
       <?php } else { ?>
-        <?php if (!is_plugin_active(BBPRESS_PLUGIN)) { ?>
-          <li><?php _e('Activate bbPress plugin...', 'e107-importer'); ?></li>
-          <?php activate_plugin(BBPRESS_PLUGIN, '', false, true); ?>
-          <li><?php _e('Plugin activated.', 'e107-importer'); ?></li>
-        <?php } ?>
         <?php if ($this->e107_import_forums == 'import_some_forums') { ?>
           <li><?php printf(__('Only import content from forums with the following IDs: %s.', 'e107-importer'), implode(', ', $this->e107_import_forum_ids)); ?></li>
         <?php } ?>
