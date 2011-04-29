@@ -1499,7 +1499,7 @@ class e107_Import extends WP_Importer {
       $tag_list = $this->extract_html_tags($new_content, $tag_name, array('http', 'https'));
       foreach ($tag_list as $tag) {
         $url = $tag['attributes'][$tag_attribute];
-        $permalink = e107_Redirector::translate_url($url);
+        $permalink = e107_Redirector::translate_url($url, $catch_all=False);
         if ($permalink != False)
           $new_content = str_replace($url, $permalink, $new_content);
       }

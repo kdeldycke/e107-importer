@@ -116,7 +116,7 @@ class e107_Redirector {
 
 
   // Parse an e107 URL and return its new destination according the data found in the mappings
-  function translate_url($url) {
+  function translate_url($url, $catch_all = True) {
     // Associate each mapping with their related regexp
     $redirect_rules = array(
       array( 'type'    => 'post'
@@ -320,6 +320,11 @@ class e107_Redirector {
         $image_data = wp_get_attachment_image_src($attachment_id, $size='full');
         return $image_data[0];
       }
+    }
+
+    // Don't try to catch all requests
+    if (!$catch_all) {
+      return False;
     }
 
     // Generic redirects and catch-alls
