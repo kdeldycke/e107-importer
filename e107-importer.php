@@ -1169,7 +1169,6 @@ class e107_Import extends WP_Importer {
 
   // This method recount all forum metadata
   // Code inspired by the bbp_admin_tools() method
-  // XXX Know bug: recount is currenlty returning errors: http://trac.bbpress.org/ticket/1508
   function recount_forum_stats() {
     $recount_list = bbp_recount_list();
     foreach ((array)$recount_list as $item)
