@@ -16,11 +16,6 @@ define('MAPPING_SUFFIX', '_mapping');
 define('OPTION_PREFIX' , 'e107_redirector_');
 
 
-// Redefine some bbPress methods to avoid PHP errors if bbPress is not installed or activated
-if (!function_exists('bbp_get_forum_post_type')) { function bbp_get_forum_post_type() { return 'forum';}}
-if (!function_exists('bbp_get_topic_post_type')) { function bbp_get_topic_post_type() { return 'topic';}}
-if (!function_exists('bbp_get_reply_post_type')) { function bbp_get_reply_post_type() { return 'reply';}}
-
 
 class e107_Redirector {
 
@@ -56,18 +51,27 @@ class e107_Redirector {
   }
 
 
+  // Wrap some bbPress methods to avoid PHP errors if bbPress is not installed or activated
+  function e107_get_forum_post_type() { return function_exists('bbp_get_forum_post_type') ? bbp_get_forum_post_type() : 'forum';}
+  function e107_get_topic_post_type() { return function_exists('bbp_get_topic_post_type') ? bbp_get_topic_post_type() : 'topic';}
+  function e107_get_reply_post_type() { return function_exists('bbp_get_reply_post_type') ? bbp_get_reply_post_type() : 'reply';}
+
+
   // Load pre-existing mappings and clean them
   function load_mappings() {
     // Here is the list of mappings and the type of WordPress content they can point to
     $mapping_list = array(
-        array('name' => 'user'      , 'types' => array('user')                                              )
-      , array('name' => 'news'      , 'types' => array('post')                                              )
-      , array('name' => 'category'  , 'types' => array('category')                                          )
-      , array('name' => 'page'      , 'types' => array('page')                                              )
-      , array('name' => 'comment'   , 'types' => array('comment')                                           )
-      , array('name' => 'forum'     , 'types' => array(bbp_get_forum_post_type())                           )
-      , array('name' => 'forum_post', 'types' => array(bbp_get_reply_post_type(), bbp_get_topic_post_type()))
-      , array('name' => 'image'     , 'types' => array('attachment')                                        )
+        array('name' => 'user'      , 'types' => array('user'))
+      , array('name' => 'news'      , 'types' => array('post'))
+      , array('name' => 'category'  , 'types' => array('category'))
+      , array('name' => 'page'      , 'types' => array('page'))
+      , array('name' => 'comment'   , 'types' => array('comment'))
+      , array('name' => 'forum'     , 'types' => array( e107_Redirector::e107_get_forum_post_type()
+                                                      ))
+      , array('name' => 'forum_post', 'types' => array( e107_Redirector::e107_get_reply_post_type()
+                                                      , e107_Redirector::e107_get_topic_post_type()
+                                                      ))
+      , array('name' => 'image'     , 'types' => array('attachment'))
       );
 
     // List of content types that are not based on posts
