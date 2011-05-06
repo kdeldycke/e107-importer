@@ -63,7 +63,7 @@ While importing content from e107, you may encounter one of the following error:
 
 These means that the script has failed one way or another.
 
-Generally, this is due constraints set by your hosting provider, limiting the execution time of PHP scripts. This issue affect all scripts consuming lots of CPU and memory resources, like all import scripts.
+Generally, this is due to constraints set by your hosting provider, limiting the execution time of PHP scripts. This issue affect all scripts consuming lots of CPU and memory resources, like all import scripts.
 
 The issue and [solutions are detailed in WordPress FAQ](http://codex.wordpress.org/FAQ_Working_with_WordPress#How_do_I_Import_a_WordPress_WXR_file_when_it_says_it_is_too_large_to_import.3F), please read this article before complaining to me.
 
