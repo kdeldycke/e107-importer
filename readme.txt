@@ -3,7 +3,7 @@ Contributors: Coolkevman
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XEXREDEHXSQUJ
 Tags: importer, e107, cms, migration, bbPress
 Requires at least: 3.1
-Tested up to: 3.1
+Tested up to: 3.1.2
 Stable tag: 1.2
 License: GPLv2
 
