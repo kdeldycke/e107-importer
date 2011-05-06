@@ -67,6 +67,10 @@ Generally, this is due constraints set by your hosting provider, limiting the ex
 
 The issue and [solutions are detailed in WordPress FAQ](http://codex.wordpress.org/FAQ_Working_with_WordPress#How_do_I_Import_a_WordPress_WXR_file_when_it_says_it_is_too_large_to_import.3F), please read this article before complaining to me.
 
+= Can I import content step by step ? =
+
+Yes, you can. I designed this plugin to let you have the opportunity to import one kind of content at a time. So you should be able to import news first, then re-run the importer process to only import pages, then do it again for forums and so on...
+
 = Why accents in my imported content are replaced by strange characters ? =
 
 Looks like you have some kind of Unicode transcoding errors. Before running e107 Importer, your e107 site must be fully encoded in UTF-8. If it's not the case, please have a look at the [*Upgrading database content to UTF-8*](http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8) article on e107 wiki.
