@@ -5,7 +5,7 @@ Plugin URI: http://github.com/kdeldycke/e107-importer/blob/master/e107-redirecto
 Description: Redirect URLs from previous e107 website to new WordPress blog after a migration. This plugin is only designed to be used with e107 Importer plugin and is a subproject of it.
 Author: Kevin Deldycke
 Author URI: http://kevin.deldycke.com
-Version: 1.3
+Version: 1.4.dev
 Stable tag: 1.3
 License: GPL v2 - http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 */
