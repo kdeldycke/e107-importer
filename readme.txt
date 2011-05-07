@@ -113,7 +113,7 @@ FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugin
 
 == Screenshots ==
 
-1. e107 Importer options. (e107-importer 1.2)
+1. e107 Importer options. (e107-importer 1.3)
 
 == Tested with... ==
 
