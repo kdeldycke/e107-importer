@@ -1140,7 +1140,7 @@ class e107_Import extends WP_Importer {
     $anonymous_data = array();
     if ($author_id == 0) {
       $anonymous_data = array( 'bbp_anonymous_name'  => empty($author_name) ? 'Anonymous user' : $author_name
-                             , 'bbp_anonymous_ip'    => empty($author_ip  ) ? '192.0.2.0'      : $author_ip   # See RFC 5735
+                             , 'bbp_author_ip'       => empty($author_ip  ) ? '192.0.2.0'      : $author_ip   # See RFC 5735
                              , 'bbp_anonymous_email' => 'anonymous@example.com'
                              // Website is optionnal in bbPress
                              );
