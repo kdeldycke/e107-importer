@@ -34,7 +34,7 @@ This plugin allows you to extract the most important content and data from an e1
 This tool was tested with:
 
 * [e107 0.7.25](http://e107.org/news.php?item.880),
-* [WordPress 3.1.2](http://wordpress.org/news/2011/04/wordpress-3-1-2/) and
+* [WordPress 3.2-beta1](http://wordpress.org/news/2011/05/wordpress-3-2-beta-1/) and
 * [development version of bbPress WordPress plugin (SVN r3113)](http://trac.bbpress.org/browser/branches/plugin?rev=3113)
 
 If you have any older versions, please upgrade first.
