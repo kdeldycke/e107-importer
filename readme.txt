@@ -3,7 +3,7 @@ Contributors: Coolkevman
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XEXREDEHXSQUJ
 Tags: importer, e107, cms, migration, bbPress
 Requires at least: 3.1
-Tested up to: 3.1.2
+Tested up to: 3.2-beta1
 Stable tag: 1.3
 License: GPLv2
 
@@ -119,7 +119,7 @@ FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugin
 
 Here is a list of e107 and WordPress versions I tested my plugin with:
 
-* e107-importer 1.4 : e107 0.7.25 / WordPress 3.1.2 / bbPress plugin SVN r3113
+* e107-importer 1.4 : e107 0.7.25 / WordPress 3.2-beta1 / bbPress plugin SVN r3113
 * e107-importer 1.3 : e107 0.7.25 / WordPress 3.1.2 / bbPress plugin SVN r3113
 * e107-importer 1.2 : e107 0.7.25-rc1 / WordPress 3.1 / bbPress plugin SVN r2992
 * e107-importer 1.1 : e107 0.7.24 / WordPress 3.1 / bbPress plugin SVN r2942
