@@ -139,8 +139,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 == Changelog ==
 
 = 1.4 =
-
-No changes yet.
+* Fix BBCode's quote tag transformation by enhanced parser.
 
 = 1.3 =
 * Upgrade embedded e107 code with latest 0.7.25.

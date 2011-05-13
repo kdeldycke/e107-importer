@@ -1262,8 +1262,8 @@ class e107_Import extends WP_Importer {
         '/\[\s*blockquote\s*\]/i'   => '<blockquote>'
       , '/\[\/\s*blockquote\s*\]/i' => '</blockquote>'
       // Replace "[quoteXXXXX]...[/quoteXXXXX]" with "<blockquote>...</blockquote>"
-      , '/\[\s*quote.*\]/i'   => '<blockquote>'
-      , '/\[\/\s*quote.*\]/i' => '</blockquote>'
+      , '/\[\s*quote(.*?)\]/i'   => '<blockquote>'
+      , '/\[\/\s*quote(.*?)\]/i' => '</blockquote>'
       // Fix malformated [link="URL"] and [link=&quot;URL&quot;] BBCodes (e107 parser fails on double quotes)
       , '/\[\s*link\s*=\s*("|&quot;)(.*?)\1\s*\]/i' => '[link=\2]'
       );
