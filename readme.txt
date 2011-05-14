@@ -49,9 +49,11 @@ If you have any older versions, please upgrade first.
 
 = What is the status of this plugin ? =
 
-This plugin is currently actively developed and maintained.
+This plugin is not far from being feature-complete. I think I’m reaching the end of the active development of this plugin. I don’t see the need to add new features.
 
-I have personal e107 sites to migrate, and as long as I have these migrations to do, I will not officially declare my plugin dead and unmaintained. But be careful: the day I've got rid of of all my e107 personal sites, I'll stop developing this plugin.
+I also feel this way because I succeeded in moving to WordPress most of the content of my old e107 sites. I now only need to import some stuff to definitively get rid of e107 from my life. After finishing these imports, I'll declare the plugin no longer active. This mean I will no longer update it, but will still integrate code other developers are willing to contribute.
+
+Before that happen, I will of course release one or two revisions of this plugin. But expect bug fixes and tiny enhancements, not big new features.
 
 = Why the import process fail, or do not end well ? =
 
