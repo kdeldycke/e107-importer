@@ -576,8 +576,12 @@ class e107_Import extends WP_Importer {
   function import_users() {
     // Get user list
     $user_list = $this->get_e107_user_list();
-    foreach ($user_list as $user)
+    foreach ($user_list as $user) {
+      // Do not import a user that was previously imported
+      if (array_key_exists((int)$user['user_id'], $this->user_mapping))
+        continue;
       $this->import_user($user);
+    }
   }
 
 
@@ -675,18 +679,27 @@ class e107_Import extends WP_Importer {
   function import_news_and_categories() {
     // Import categories
     $category_list = $this->get_e107_category_list();
-    foreach ($category_list as $category)
+    foreach ($category_list as $category) {
+      // Do not import a category that was previously imported
+      if (array_key_exists((int)$category['category_id'], $this->category_mapping))
+        continue;
       $this->import_category($category);
+    }
     // Import news
     $news_list = $this->get_e107_news_list();
-    foreach ($news_list as $news)
+    foreach ($news_list as $news) {
+      // Do not import a news that was previously imported
+      if (array_key_exists((int)$news['news_id'], $this->news_mapping))
+        continue;
       $this->import_news($news);
+    }
   }
 
 
   // Migrate one category to WordPress using its e107 data
   function import_category($category) {
     extract($category);
+    $category_id = (int) $category_id;
     $cat_id = category_exists($category_name);
     if (!$cat_id) {
       $new_cat = array();
@@ -778,8 +791,12 @@ class e107_Import extends WP_Importer {
   // Import all e107 pages to WordPress
   function import_pages() {
     $page_list = $this->get_e107_page_list();
-    foreach ($page_list as $page)
+    foreach ($page_list as $page) {
+      // Do not import a page that was previously imported
+      if (array_key_exists((int)$page['page_id'], $this->page_mapping))
+        continue;
       $this->import_page($page);
+    }
   }
 
 
@@ -838,8 +855,12 @@ class e107_Import extends WP_Importer {
   // Import all e107 comments to WordPress
   function import_comments() {
     $comment_list = $this->get_e107_comment_list();
-    foreach ($comment_list as $comment)
+    foreach ($comment_list as $comment) {
+      // Do not import a comment that was previously imported
+      if (array_key_exists((int)$comment['comment_id'], $this->comment_mapping))
+        continue;
       $this->import_comment($comment);
+    }
   }
 
 
@@ -935,8 +956,12 @@ class e107_Import extends WP_Importer {
     }
     // Import all forum
     $forum_list = $this->get_e107_forum_list($forum_id_list);
-    foreach ($forum_list as $forum)
+    foreach ($forum_list as $forum) {
+      // If the original forum ID is found in the mapping, it means this forum was already imported by this plugin some times ago, so let's proceed to the next.
+      if (array_key_exists((int)$forum['forum_id'], $this->forum_mapping))
+        continue;
       $this->import_forum($forum, $user_classes);
+    }
   }
 
 
@@ -1049,8 +1074,12 @@ class e107_Import extends WP_Importer {
   // Import all e107 forum threads to bbPress plugin
   function import_forum_threads($forum_id_list = array()) {
     $forum_post_list = $this->get_e107_forum_post_list($forum_id_list);
-    foreach ($forum_post_list as $thread)
+    foreach ($forum_post_list as $thread) {
+      // Do not import a forum thread that was previously imported
+      if (array_key_exists((int)$thread['thread_id'], $this->forum_post_mapping))
+        continue;
       $this->import_forum_thread($thread);
+    }
   }
 
 
