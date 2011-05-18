@@ -519,6 +519,10 @@ class e107_Import extends WP_Importer {
     // Only get posts from a subset of forums
     if (!empty($forum_id_list)) {
       $sql .= " WHERE thread_forum_id IN (".implode(', ', $forum_id_list).")";
+      // XXX Here is a hack I selectively activated to import a big forum in 3 parts
+      // $sql .= " AND thread_id < 5000";
+      // $sql .= " AND thread_id >= 5000 AND thread_id < 10000";
+      // $sql .= " AND thread_id >= 10000";
     }
     // Forcing the order makes sure we have childrens before their parents
     $sql .= " ORDER BY thread_parent, thread_id";
