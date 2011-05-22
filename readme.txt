@@ -19,7 +19,7 @@ This plugin allows you to extract the most important content and data from an e1
 * Import news categories.
 * Import custom pages (and take care of their private / public visibility).
 * Import comments (both from news and custom pages).
-* Import forums and threads to bbPress WordPress plugin.
+* Import forums and threads to bbPress.
 * Import images embedded in HTML as attachments.
 * Let you choose which kind of images you want to upload to WordPress (external or not).
 * Import preferences (site name, description, ...).
@@ -35,7 +35,7 @@ This tool was tested with:
 
 * [e107 0.7.25](http://e107.org/news.php?item.880),
 * [WordPress 3.2-beta1](http://wordpress.org/news/2011/05/wordpress-3-2-beta-1/) and
-* [development version of bbPress WordPress plugin (SVN r3172)](http://trac.bbpress.org/browser/branches/plugin?rev=3172)
+* [bbPress 2.0-beta-1](http://bbpress.org/blog/2011/05/bbpress-2-0-beta-1/)
 
 If you have any older versions, please upgrade first.
 
@@ -77,11 +77,11 @@ Yes, you can. I designed this plugin to let you have the opportunity to import o
 
 Looks like you have some kind of Unicode transcoding errors. Before running e107 Importer, your e107 site must be fully encoded in UTF-8. If it's not the case, please have a look at the [*Upgrading database content to UTF-8*](http://wiki.e107.org/?title=Upgrading_database_content_to_UTF8) article on e107 wiki.
 
-= Can you add import of e107 forums to BuddyPress and bbPress ? =
+= Can you add import of e107 forums to BuddyPress and bbPress 1.x ? =
 
-This plugin currently import forums to bbPress. But [the WordPress plugin version](http://wordpress.org/extend/plugins/bbpress/), not [the standalone version](http://bbpress.org/). I also don't plan to support [BuddyPress](http://buddypress.org/) forums. I'm only interested in the bbPress plugin as it currently has features I'm interested in.
+This plugin currently import forums to bbPress. But [the brand new 2.x plugin version](http://wordpress.org/extend/plugins/bbpress/), not the legacy standalone 1.x version. As for [BuddyPress](http://buddypress.org/) forums, they are [planed to be replaced](http://bbpress.org/blog/2011/05/bbpress-2-0-beta-1/) by a future version of the new 2.x bbPress.
 
-I'm still happy to add support of the two others if you have code to contribute.
+So as you can see, there is no need to add specific support of the these forums. You just have to be patient.
 
 = Why profanities show up in imported content ? =
 
@@ -121,7 +121,7 @@ FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugin
 
 Here is a list of e107 and WordPress versions I tested my plugin with:
 
-* e107-importer 1.4 : e107 0.7.25 / WordPress 3.2-beta1 / bbPress plugin SVN r3172
+* e107-importer 1.4 : e107 0.7.25 / WordPress 3.2-beta1 / bbPress 2.0-beta-1
 * e107-importer 1.3 : e107 0.7.25 / WordPress 3.1.2 / bbPress plugin SVN r3113
 * e107-importer 1.2 : e107 0.7.25-rc1 / WordPress 3.1 / bbPress plugin SVN r2992
 * e107-importer 1.1 : e107 0.7.24 / WordPress 3.1 / bbPress plugin SVN r2942
@@ -141,6 +141,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 == Changelog ==
 
 = 1.4 =
+* Based on the official bbPress 2.0-beta-1 release.
 * Reuse already imported content.
 * Fix BBCode's quote tag transformation by enhanced parser.
 
@@ -238,6 +239,8 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 * First draft of e107 to WordPress importer.
 
 == Upgrade Notice ==
+= 1.4 =
+Based on official bbPress 2.0-beta-1 release.
 
 = 1.3 =
 Upgraded against e107 0.7.25. Replace old e107 URLs by permalinks in content. Allow phased import.
