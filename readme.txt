@@ -3,7 +3,7 @@ Contributors: Coolkevman
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XEXREDEHXSQUJ
 Tags: importer, e107, cms, migration, bbPress
 Requires at least: 3.1
-Tested up to: 3.2-beta1
+Tested up to: 3.2-RC1
 Stable tag: 1.3
 License: GPLv2
 
@@ -34,8 +34,8 @@ This plugin allows you to extract the most important content and data from an e1
 This tool was tested with:
 
 * [e107 0.7.25](http://e107.org/news.php?item.880),
-* [WordPress 3.2-beta1](http://wordpress.org/news/2011/05/wordpress-3-2-beta-1/) and
-* [bbPress 2.0-beta-1](http://bbpress.org/blog/2011/05/bbpress-2-0-beta-1/)
+* [WordPress 3.2-RC1](http://wordpress.org/news/2011/06/wordpress-3-2-release-candidate/) and
+* [bbPress 2.0-beta-3](http://bbpress.org/blog/2011/06/bbpress-2-0-beta-3/)
 
 If you have any older versions, please upgrade first.
 
@@ -121,7 +121,7 @@ FYI, this plugin is [also hosted on WordPress plugins' Subversion](http://plugin
 
 Here is a list of e107 and WordPress versions I tested my plugin with:
 
-* e107-importer 1.4 : e107 0.7.25 / WordPress 3.2-beta1 / bbPress 2.0-beta-1
+* e107-importer 1.4 : e107 0.7.25 / WordPress 3.2-RC1 / bbPress 2.0-beta-3
 * e107-importer 1.3 : e107 0.7.25 / WordPress 3.1.2 / bbPress plugin SVN r3113
 * e107-importer 1.2 : e107 0.7.25-rc1 / WordPress 3.1 / bbPress plugin SVN r2992
 * e107-importer 1.1 : e107 0.7.24 / WordPress 3.1 / bbPress plugin SVN r2942
@@ -141,7 +141,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 == Changelog ==
 
 = 1.4 =
-* Based on the official bbPress 2.0-beta-1 release.
+* Based on the official bbPress 2.0-beta-3 release.
 * Reuse already imported content.
 * Fix BBCode's quote tag transformation by enhanced parser.
 
