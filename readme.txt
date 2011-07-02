@@ -49,25 +49,32 @@ If you have any older versions, please upgrade first.
 
 = What is the status of this plugin ? =
 
-This plugin is not far from being feature-complete. I think I’m reaching the end of the active development of this plugin. I don’t see the need to add new features.
+This plugin is **not in activate development**.
 
-I also feel this way because I succeeded in moving to WordPress most of the content of my old e107 sites. I now only need to import some stuff to definitively get rid of e107 from my life. After finishing these imports, I'll declare the plugin no longer active. This mean I will no longer update it, but will still integrate code other developers are willing to contribute.
+As I succeeded in moving to WordPress all my old e107 sites, I have no longer interest of maintaining this plugin. But I'll still integrate code other developers are willing to contribute.
 
-Before that happen, I will of course release one or two revisions of this plugin. But expect bug fixes and tiny enhancements, not big new features.
+= How can I know the import process finished well ? =
 
-= Why the import process fail, or do not end well ? =
+The only way you can tell is by having the "Finished !" / "Have fun !" message at the end of the import report. If not, it means the import process didn't had enough time to finish or encountered an error.
+
+= Why the import process failed, or did not end well ? =
 
 While importing content from e107, you may encounter one of the following error:
 
 * *Internal Server Error*
 * *MySQL has gone away*
 * *PHP Fatal error: Maximum execution time exceeded*
+* or not at all ([like the issue described here](http://github.com/kdeldycke/e107-importer/issues/5))
 
 These means that the script has failed one way or another.
 
-Generally, this is due to constraints set by your hosting provider, limiting the execution time of PHP scripts. This issue affect all scripts consuming lots of CPU and memory resources, like all import scripts.
+Generally, this is due to constraints set by your hosting provider, limiting the execution time of PHP scripts. This issue affect all scripts consuming lots of CPU and memory resources, like all import scripts. The timeout can come from MySQL, Apache or PHP.
 
 The issue and [solutions are detailed in WordPress FAQ](http://codex.wordpress.org/FAQ_Working_with_WordPress#How_do_I_Import_a_WordPress_WXR_file_when_it_says_it_is_too_large_to_import.3F), please read this article before complaining to me.
+
+= How long this plugin takes to import content ? =
+
+Importing big forums takes a lot of time. For example, on my 4-cores 1.5GHz laptop, it takes more than an hour to import a forum with 18000+ replies. That's expected as I didn't designed this plugin for performances: it doesn't make sense to spend time working on performance for a plugin you'll only use once in the life of your WordPress site.
 
 = Can I import content step by step ? =
 
