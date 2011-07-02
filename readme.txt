@@ -148,6 +148,7 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 == Changelog ==
 
 = 1.4 =
+* Declare this plugin as unmaintained.
 * Based on the official bbPress 2.0-beta-3b release.
 * Reuse already imported content.
 * Fix BBCode's quote tag transformation by enhanced parser.
