@@ -148,8 +148,8 @@ This plugin contain original code from the e107 project, licensed under the GPL.
 
 == Changelog ==
 
-= 1.5 =
-No changes yet.
+= 1.5.dev =
+* Check that the site URL we get from e107 preferences is set properly.
 
 = 1.4 =
 * Declare this plugin as unmaintained.

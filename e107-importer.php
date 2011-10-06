@@ -395,6 +395,10 @@ class e107_Import extends WP_Importer {
 
     // Set global SITEURL as it's used by replaceConstants() method
     $site_url = $this->e107_pref['siteurl'];
+    // If the e107 site URL is not set to something we expect, raise an error
+    // Check that URL starts with "http[s]://"
+    if (!preg_match('/^https?:\/\//i', $site_url))
+      wp_die("e107's site URL must be set properly (= must start with 'http://' or 'https://').");
     // Normalize URL: it must end with a single slash
     define("SITEURL", rtrim($site_url, '/').'/');
 
